@@ -43,7 +43,6 @@ public class Position {
 			return false;
 		}
 		Position position = (Position) o;
-
 		return (Double.compare(position.xPos, xPos) == 0) && (Double.compare(position.yPos, yPos) == 0);
 	}
 	@Override

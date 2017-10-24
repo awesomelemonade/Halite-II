@@ -27,14 +27,24 @@ public class DebugLog {
 	public PrintWriter getWriter() {
 		return writer;
 	}
-	static void initialize(String filename) {
+	public static void initialize(String filename) {
 		if (instance != null) {
 			throw new IllegalStateException("Already Initialized DebugLog"); // Fail Fast
 		}
 		instance = new DebugLog(new File(filename));
 	}
 	public static void log(String message) {
+		if(instance==null) {
+			return;
+		}
 		instance.getWriter().println(message);
+		instance.getWriter().flush();
+	}
+	public static void log(Exception ex) {
+		if(instance==null) {
+			return;
+		}
+		ex.printStackTrace(instance.getWriter());
 		instance.getWriter().flush();
 	}
 }

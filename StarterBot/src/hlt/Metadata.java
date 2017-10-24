@@ -1,16 +1,17 @@
 package hlt;
 
-public class Metadata {
-	private String[] metadata;
-	private int index = 0;
+import java.util.StringTokenizer;
 
-	public Metadata(String[] metadata) {
-		this.metadata = metadata;
+public class Metadata {
+	private StringTokenizer metadataTokenizer;
+
+	public Metadata(String metadata) {
+		this.metadataTokenizer = new StringTokenizer(metadata);
 	}
 	public String pop() {
-		return metadata[index++];
+		return metadataTokenizer.nextToken();
 	}
 	public boolean isEmpty() {
-		return index == metadata.length;
+		return !metadataTokenizer.hasMoreTokens();
 	}
 }

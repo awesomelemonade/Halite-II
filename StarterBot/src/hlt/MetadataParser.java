@@ -54,4 +54,7 @@ public class MetadataParser {
 	public static int parsePlayerId(Metadata metadata) {
 		return Integer.parseInt(metadata.pop());
 	}
+	public static int parsePlanetNum(Metadata metadata) {
+		return Integer.parseInt(metadata.pop());
+	}
 }

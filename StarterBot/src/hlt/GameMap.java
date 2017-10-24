@@ -8,25 +8,31 @@ import java.util.Collections;
 import java.util.Collection;
 
 public class GameMap {
+	private int turnNumber;
 	private int width, height;
 	private int playerId;
 	private List<Player> players;
 	private List<Player> playersUnmodifiable;
 	private Map<Integer, Planet> planets;
-	private List<Ship> allShips;
-	private List<Ship> allShipsUnmodifiable;
+	private List<Ship> ships;
+	private List<Ship> shipsUnmodifiable;
 	// used only during parsing to reduce memory allocations
-	private List<Ship> currentShips = new ArrayList<>();
+	private List<Ship> currentShips;
 
 	public GameMap(int width, int height, int playerId) {
 		this.width = width;
 		this.height = height;
 		this.playerId = playerId;
-		players = new ArrayList<>(Constants.MAX_PLAYERS);
-		playersUnmodifiable = Collections.unmodifiableList(players);
-		planets = new TreeMap<>();
-		allShips = new ArrayList<>();
-		allShipsUnmodifiable = Collections.unmodifiableList(allShips);
+		this.players = new ArrayList<Player>(Constants.MAX_PLAYERS);
+		this.playersUnmodifiable = Collections.unmodifiableList(players);
+		this.planets = new TreeMap<Integer, Planet>();
+		this.ships = new ArrayList<Ship>();
+		this.shipsUnmodifiable = Collections.unmodifiableList(ships);
+		this.currentShips = new ArrayList<Ship>();
+		this.turnNumber = -1;
+	}
+	public int getTurnNumber() {
+		return turnNumber;
 	}
 	public int getHeight() {
 		return height;
@@ -37,11 +43,11 @@ public class GameMap {
 	public int getMyPlayerId() {
 		return playerId;
 	}
-	public List<Player> getAllPlayers() {
+	public List<Player> getPlayers() {
 		return playersUnmodifiable;
 	}
 	public Player getMyPlayer() {
-		return getAllPlayers().get(getMyPlayerId());
+		return getPlayers().get(getMyPlayerId());
 	}
 	public Ship getShip(int playerId, int entityId) throws IndexOutOfBoundsException {
 		return players.get(playerId).getShip(entityId);
@@ -49,16 +55,16 @@ public class GameMap {
 	public Planet getPlanet(int entityId) {
 		return planets.get(entityId);
 	}
-	public Map<Integer, Planet> getAllPlanets() {
-		return planets;
+	public Collection<Planet> getPlanets() {
+		return planets.values();
 	}
-	public List<Ship> getAllShips() {
-		return allShipsUnmodifiable;
+	public List<Ship> getShips() {
+		return shipsUnmodifiable;
 	}
 	public ArrayList<Entity> objectsBetween(Position start, Position target) {
-		ArrayList<Entity> entitiesFound = new ArrayList<>();
+		ArrayList<Entity> entitiesFound = new ArrayList<Entity>();
 		addEntitiesBetween(entitiesFound, start, target, planets.values());
-		addEntitiesBetween(entitiesFound, start, target, allShips);
+		addEntitiesBetween(entitiesFound, start, target, ships);
 		return entitiesFound;
 	}
 	private static void addEntitiesBetween(List<Entity> entitiesFound, Position start, Position target,
@@ -73,14 +79,14 @@ public class GameMap {
 		}
 	}
 	public Map<Double, Entity> nearbyEntitiesByDistance(Entity entity) {
-		Map<Double, Entity> entityByDistance = new TreeMap<>();
+		Map<Double, Entity> entityByDistance = new TreeMap<Double, Entity>();
 		for (Planet planet : planets.values()) {
 			if (planet.equals(entity)) {
 				continue;
 			}
 			entityByDistance.put(entity.getPosition().getDistanceTo(planet.getPosition()), planet);
 		}
-		for (Ship ship : allShips) {
+		for (Ship ship : ships) {
 			if (ship.equals(entity)) {
 				continue;
 			}
@@ -88,37 +94,37 @@ public class GameMap {
 		}
 		return entityByDistance;
 	}
-	public GameMap updateMap(Metadata mapMetadata) {
-		DebugLog.log("GameMap[--- NEW TURN ---]");
-		int numberOfPlayers = MetadataParser.parsePlayerNum(mapMetadata);
+	public GameMap updateMap(Metadata metadata) {
+		int numberOfPlayers = MetadataParser.parsePlayerNum(metadata);
 		players.clear();
 		planets.clear();
-		allShips.clear();
+		ships.clear();
 		// update players info
 		for (int i = 0; i < numberOfPlayers; ++i) {
 			currentShips.clear();
-			Map<Integer, Ship> currentPlayerShips = new TreeMap<>();
-			int playerId = MetadataParser.parsePlayerId(mapMetadata);
+			Map<Integer, Ship> currentPlayerShips = new TreeMap<Integer, Ship>();
+			int playerId = MetadataParser.parsePlayerId(metadata);
 
 			Player currentPlayer = new Player(playerId, currentPlayerShips);
-			MetadataParser.populateShipList(currentShips, playerId, mapMetadata);
-			allShips.addAll(currentShips);
+			MetadataParser.populateShipList(currentShips, playerId, metadata);
+			ships.addAll(currentShips);
 
 			for (Ship ship : currentShips) {
 				currentPlayerShips.put(ship.getId(), ship);
 			}
 			players.add(currentPlayer);
 		}
-		int numberOfPlanets = Integer.parseInt(mapMetadata.pop());
+		int numberOfPlanets = MetadataParser.parsePlanetNum(metadata);
 		for (int i = 0; i < numberOfPlanets; ++i) {
-			List<Integer> dockedShips = new ArrayList<>();
-			Planet planet = MetadataParser.newPlanetFromMetadata(dockedShips, mapMetadata);
+			List<Integer> dockedShips = new ArrayList<Integer>();
+			Planet planet = MetadataParser.newPlanetFromMetadata(dockedShips, metadata);
 			planets.put(planet.getId(), planet);
 		}
-		if (!mapMetadata.isEmpty()) {
+		if (!metadata.isEmpty()) {
 			throw new IllegalStateException(
 					"Failed to parse data from Halite game engine. Please contact maintainers.");
 		}
+		turnNumber++;
 		return this;
 	}
 }
