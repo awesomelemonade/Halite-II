@@ -1,15 +1,19 @@
 import hlt.*;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MyBot {
+	public static final SimpleDateFormat READABLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+	public static final SimpleDateFormat FILENAME_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
 	public static void main(String[] args) {
 		try {
-			DebugLog.initialize(String.format("logs/log-%d-%f.log", System.currentTimeMillis(), Math.random()));
+			Date currentDate = new Date();
 			GameMap gameMap = Networking.initialize();
-			//DebugLog.initialize(String.format("logs/log-%d-%d.log", gameMap.getMyPlayerId(), System.currentTimeMillis()));
-			DebugLog.log("Initialization");
+			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
+			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
 			
 			Networking.finalizeInitialization("Lemon");
 			
