@@ -10,7 +10,7 @@ public class Ship extends Entity {
 	private int weaponCooldown;
 	public Ship(int owner, int id, Position position, int health, DockingStatus dockingStatus, int dockedPlanet,
 			int dockingProgress, int weaponCooldown) {
-		super(owner, id, position, health, Constants.SHIP_RADIUS);
+		super(owner, id, position, health, GameConstants.SHIP_RADIUS);
 
 		this.dockingStatus = dockingStatus;
 		this.dockedPlanet = dockedPlanet;
@@ -30,7 +30,7 @@ public class Ship extends Entity {
 		return dockedPlanet;
 	}
 	public boolean canDock(Planet planet) {
-		return this.getPosition().getDistanceTo(planet.getPosition()) <= Constants.DOCK_RADIUS + planet.getRadius();
+		return this.getPosition().getDistanceTo(planet.getPosition()) <= GameConstants.DOCK_RADIUS + planet.getRadius();
 	}
 	@Override
 	public String toString() {

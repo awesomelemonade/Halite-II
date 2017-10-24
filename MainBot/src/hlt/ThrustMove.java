@@ -1,15 +1,15 @@
 package hlt;
 
 public class ThrustMove extends Move {
-	private int angleDeg;
+	private double angle;
 	private int thrust;
-	public ThrustMove(Ship ship, int angleDeg, int thrust) {
+	public ThrustMove(Ship ship, double angle, int thrust) {
 		super(MoveType.Thrust, ship);
 		this.thrust = thrust;
-		this.angleDeg = angleDeg;
+		this.angle = angle;
 	}
-	public int getAngle() {
-		return angleDeg;
+	public double getAngle() {
+		return angle;
 	}
 	public int getThrust() {
 		return thrust;

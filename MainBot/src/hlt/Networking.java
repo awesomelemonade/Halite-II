@@ -25,7 +25,7 @@ public class Networking {
 				break;
 			case Thrust:
 				moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
-						.append(((ThrustMove) move).getThrust()).append(' ').append(((ThrustMove) move).getAngle())
+						.append(((ThrustMove) move).getThrust()).append(' ').append((int)Math.toDegrees(((ThrustMove) move).getAngle()))
 						.append(' ');
 				break;
 			}

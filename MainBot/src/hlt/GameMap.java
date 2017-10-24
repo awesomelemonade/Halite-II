@@ -23,7 +23,7 @@ public class GameMap {
 		this.width = width;
 		this.height = height;
 		this.playerId = playerId;
-		this.players = new ArrayList<Player>(Constants.MAX_PLAYERS);
+		this.players = new ArrayList<Player>(GameConstants.MAX_PLAYERS);
 		this.playersUnmodifiable = Collections.unmodifiableList(players);
 		this.planets = new TreeMap<Integer, Planet>();
 		this.ships = new ArrayList<Ship>();
@@ -61,45 +61,11 @@ public class GameMap {
 	public List<Ship> getShips() {
 		return shipsUnmodifiable;
 	}
-	public ArrayList<Entity> objectsBetween(Position start, Position target) {
-		ArrayList<Entity> entitiesFound = new ArrayList<Entity>();
-		addEntitiesBetween(entitiesFound, start, target, planets.values());
-		addEntitiesBetween(entitiesFound, start, target, ships);
-		return entitiesFound;
-	}
-	private static void addEntitiesBetween(List<Entity> entitiesFound, Position start, Position target,
-			Collection<? extends Entity> entitiesToCheck) {
-		for (Entity entity : entitiesToCheck) {
-			if (entity.getPosition().equals(start) || entity.getPosition().equals(target)) {
-				continue;
-			}
-			if (Collision.segmentCircleIntersect(start, target, entity, Constants.FORECAST_FUDGE_FACTOR)) {
-				entitiesFound.add(entity);
-			}
-		}
-	}
-	public Map<Double, Entity> nearbyEntitiesByDistance(Entity entity) {
-		Map<Double, Entity> entityByDistance = new TreeMap<Double, Entity>();
-		for (Planet planet : planets.values()) {
-			if (planet.equals(entity)) {
-				continue;
-			}
-			entityByDistance.put(entity.getPosition().getDistanceTo(planet.getPosition()), planet);
-		}
-		for (Ship ship : ships) {
-			if (ship.equals(entity)) {
-				continue;
-			}
-			entityByDistance.put(entity.getPosition().getDistanceTo(ship.getPosition()), ship);
-		}
-		return entityByDistance;
-	}
 	public GameMap updateMap(Metadata metadata) {
 		int numberOfPlayers = MetadataParser.parsePlayerNum(metadata);
 		players.clear();
 		planets.clear();
 		ships.clear();
-		// update players info
 		for (int i = 0; i < numberOfPlayers; ++i) {
 			currentShips.clear();
 			Map<Integer, Ship> currentPlayerShips = new TreeMap<Integer, Ship>();

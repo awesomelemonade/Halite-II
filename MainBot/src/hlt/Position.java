@@ -14,22 +14,21 @@ public class Position {
 		return yPos;
 	}
 	public double getDistanceTo(Position target) {
-		double dx = xPos - target.getXPos();
-		double dy = yPos - target.getYPos();
-		return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-	}
-	public int orientTowardsInDeg(Position target) {
-		return Util.angleRadToDegClipped(orientTowardsInRad(target));
-	}
-	public double orientTowardsInRad(Position target) {
 		double dx = target.getXPos() - xPos;
 		double dy = target.getYPos() - yPos;
-
+		return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+	}
+	public double getDirectionTowards(Position target) {
+		double dx = target.getXPos() - xPos;
+		double dy = target.getYPos() - yPos;
 		return Math.atan2(dy, dx) + 2 * Math.PI;
 	}
 	public Position getClosestPoint(Entity target) {
-		double radius = target.getRadius() + Constants.MIN_DISTANCE;
-		double angleRad = target.getPosition().orientTowardsInRad(this);
+		return this.getClosestPoint(target, 0);
+	}
+	public Position getClosestPoint(Entity target, double buffer) {
+		double radius = target.getRadius() + buffer;
+		double angleRad = target.getPosition().getDirectionTowards(this);
 		double dx = target.getPosition().getXPos() + radius * Math.cos(angleRad);
 		double dy = target.getPosition().getYPos() + radius * Math.sin(angleRad);
 		return new Position(dx, dy);

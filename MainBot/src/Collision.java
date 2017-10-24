@@ -1,4 +1,7 @@
-package hlt;
+
+
+import hlt.Entity;
+import hlt.Position;
 
 public class Collision {
 	/**
@@ -29,9 +32,9 @@ public class Collision {
 		double dx = endX - startX;
 		double dy = endY - startY;
 
-		double a = square(dx) + square(dy);
+		double a = dx*dx + dy*dy;
 
-		double b = -2 * (square(startX) - (startX * endX) - (startX * centerX) + (endX * centerX) + square(startY)
+		double b = -2 * (startX*startX - (startX * endX) - (startX * centerX) + (endX * centerX) + startY*startY
 				- (startY * endY) - (startY * centerY) + (endY * centerY));
 
 		if (a == 0.0) {
@@ -50,9 +53,5 @@ public class Collision {
 		double closestDistance = new Position(closestX, closestY).getDistanceTo(circle.getPosition());
 
 		return closestDistance <= circleRadius + fudge;
-	}
-
-	public static double square(double num) {
-		return num * num;
 	}
 }

@@ -25,7 +25,7 @@ public class MyBot {
 				gameMap.updateMap(Networking.readLineIntoMetadata());
 				
 				for (Ship ship : gameMap.getMyPlayer().getShips().values()) {
-					if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
+					/*if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
 						continue;
 					}
 					for (Planet planet : gameMap.getPlanets()) {
@@ -42,7 +42,9 @@ public class MyBot {
 							moveList.add(newThrustMove);
 						}
 						break;
-					}
+					}*/
+					ThrustMove thrustMove = new ThrustMove(ship, 45, 7);
+					moveList.add(thrustMove);
 				}
 				Networking.sendMoves(moveList);
 			}
