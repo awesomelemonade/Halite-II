@@ -1,8 +1,5 @@
 package hlt;
 
-import java.io.FileWriter;
-import java.io.IOException;
-
 public class Networking {
 	private static final char UNDOCK_KEY = 'u';
 	private static final char DOCK_KEY = 'd';
@@ -33,8 +30,7 @@ public class Networking {
 		try {
 			StringBuilder builder = new StringBuilder();
 			int buffer;
-
-			for (; (buffer = System.in.read()) >= 0;) {
+			while ((buffer = System.in.read()) >= 0) {
 				if (buffer == '\n') {
 					break;
 				}
@@ -53,25 +49,18 @@ public class Networking {
 	public static Metadata readLineIntoMetadata() {
 		return new Metadata(readLine().trim().split(" "));
 	}
-	public GameMap initialize(String botName) {
+	public static GameMap initialize() {
 		int myId = Integer.parseInt(readLine());
-		try {
-			DebugLog.initialize(new FileWriter(String.format("%d - %s.log", myId, botName)));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
+		DebugLog.initialize(String.format("logs/log-%d-%d.log", myId, System.currentTimeMillis()));
 		Metadata inputStringMapSize = readLineIntoMetadata();
 		int width = Integer.parseInt(inputStringMapSize.pop());
 		int height = Integer.parseInt(inputStringMapSize.pop());
 		GameMap gameMap = new GameMap(width, height, myId);
-
-		// Associate bot name
-		System.out.println(botName);
-
 		Metadata inputStringMetadata = readLineIntoMetadata();
 		gameMap.updateMap(inputStringMetadata);
-
 		return gameMap;
+	}
+	public static void finalizeInitialization(String botName) {
+		System.out.println(botName);
 	}
 }

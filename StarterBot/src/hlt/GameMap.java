@@ -89,7 +89,7 @@ public class GameMap {
 		return entityByDistance;
 	}
 	public GameMap updateMap(Metadata mapMetadata) {
-		DebugLog.addLog("--- NEW TURN ---");
+		DebugLog.log("GameMap[--- NEW TURN ---]");
 		int numberOfPlayers = MetadataParser.parsePlayerNum(mapMetadata);
 		players.clear();
 		planets.clear();

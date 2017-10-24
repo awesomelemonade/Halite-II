@@ -5,14 +5,18 @@ import java.util.List;
 
 public class MyBot {
 	public static void main(String[] args) {
-		Networking networking = new Networking();
-		GameMap gameMap = networking.initialize("Lemon");
-
+		GameMap gameMap = Networking.initialize();
+		
+		DebugLog.log("Initialization");
+		
+		Networking.finalizeInitialization("Lemon");
+		
+		
 		List<Move> moveList = new ArrayList<Move>();
 		while (true) {
 			moveList.clear();
 			gameMap.updateMap(Networking.readLineIntoMetadata());
-
+			
 			for (Ship ship : gameMap.getMyPlayer().getShips().values()) {
 				if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
 					continue;
