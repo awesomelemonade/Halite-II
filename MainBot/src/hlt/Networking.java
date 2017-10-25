@@ -24,9 +24,11 @@ public class Networking {
 						.append(((DockMove) move).getDestinationId()).append(' ');
 				break;
 			case Thrust:
-				moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
-						.append(((ThrustMove) move).getThrust()).append(' ')
-						.append((int) Math.round(Math.toDegrees(((ThrustMove) move).getAngle()))).append(' ');
+				if(((ThrustMove)move).getThrust()!=0){
+					moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
+							.append(((ThrustMove) move).getThrust()).append(' ')
+							.append((int) Math.round(Math.toDegrees(((ThrustMove) move).getAngle()))).append(' ');
+				}
 				break;
 			}
 		}

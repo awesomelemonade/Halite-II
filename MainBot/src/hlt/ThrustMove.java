@@ -11,6 +11,9 @@ public class ThrustMove extends Move {
 	public double getAngle() {
 		return angle;
 	}
+	public double getRoundedAngle() {
+		return Math.toRadians(Math.round(Math.toDegrees(angle)));
+	}
 	public int getThrust() {
 		return thrust;
 	}

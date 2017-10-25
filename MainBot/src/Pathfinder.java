@@ -10,48 +10,14 @@ public class Pathfinder {
 	public static void setGameMap(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
 	}
-	
-	public static ThrustMove patrol(Ship ship, Position position, Position center, double buffer) {
-		double direction = calculateTangent(position, center, buffer);
-		return new ThrustMove(ship, 3, direction);
-	}
-	public static double calculateTangent(Position position, Position center, double radius) {
-		/*                                         
-                       -.        /--------- Radius
-                      `y        /                 
-                      y. -///:///-`               
-                     +oo+-    /  -+o:             
-                    -N+      /      :y`           
-                   `m+`    <-        `h`          
-                   y+so///-           -o          
-                  /m+:    ./s/ <-------s---- Center          
-                 .y:+      +/         :+          
-                 y` y-   :o`         .h`          
-                o-   oo.o:          +s`           
-               :o     oyo/.     `:oo-             
-              `y    .o-  `://://:.                
-              y.   +/                             
-             +:  -o`  <--------- Distance     
-            -y++o: <----------- Angle you're solving for
-           `y /o`                                 
-           s:o-                                   
-          /d+                                     
-          s.         
-		 */
-		
-		double distance = position.getDistanceTo(center);
-		DebugLog.log(distance+" - "+radius);
-		if(distance<radius) { //No Tangent, you're in the circle
-			return center.getDirectionTowards(position)-(Math.PI/2)*(distance/radius); //Return direction away from center
-																					//scales based off distance
-		}
-		return position.getDirectionTowards(center)+Math.asin(radius/distance);
-	}
 	public static ThrustMove pathfind(Position start, Position end, double startBuffer, double endBuffer) {
 		return pathfind(start, end.addPolar(endBuffer, end.getDirectionTowards(start)), startBuffer);
 	}
 	public static ThrustMove pathfind(Position start, Position end, double buffer) {
 		return null;
+	}
+	public static double segmentLineDistance(Position start, Position end, Position point) {
+		
 	}
 	//Segment - Circle
 	public static double segmentCircleIntersect(Position start, Position end, Position center, double radius) {

@@ -15,20 +15,33 @@ public class MyBot {
 			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
 			Pathfinder.setGameMap(gameMap);
+			MovePlan movePlan = new MovePlan(gameMap);
+			List<Move> moveList = new ArrayList<Move>();
 			
 			Networking.finalizeInitialization("Lemon");
 			
-			
-			List<Move> moveList = new ArrayList<Move>();
 			while (true) {
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
 				moveList.clear();
 				gameMap.updateMap(Networking.readLineIntoMetadata());
+				movePlan.update();
+				
+				for(MovePlan.Priority priority: MovePlan.Priority.values()) {
+					for(int shipId: movePlan.getPrioritiesMap().get(priority)) {
+						Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
+						if(ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
+							movePlan.allocateSpace(ship);
+							continue;
+						}
+						
+					}
+				}
 				
 				for (Ship ship : gameMap.getMyPlayer().getShips()) {
-					/*if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
+					if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
 						continue;
 					}
+					/*
 					for (Planet planet : gameMap.getPlanets()) {
 						if (planet.isOwned()) {
 							continue;
