@@ -14,6 +14,7 @@ public class MyBot {
 			GameMap gameMap = Networking.initialize();
 			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
+			Pathfinder.setGameMap(gameMap);
 			
 			Networking.finalizeInitialization("Lemon");
 			
@@ -24,7 +25,7 @@ public class MyBot {
 				moveList.clear();
 				gameMap.updateMap(Networking.readLineIntoMetadata());
 				
-				for (Ship ship : gameMap.getMyPlayer().getShips().values()) {
+				for (Ship ship : gameMap.getMyPlayer().getShips()) {
 					/*if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
 						continue;
 					}
@@ -43,13 +44,26 @@ public class MyBot {
 						}
 						break;
 					}*/
-					ThrustMove thrustMove = new ThrustMove(ship, 45, 7);
-					moveList.add(thrustMove);
+					Planet planet = getClosestPlanet(gameMap, ship.getPosition());
+					moveList.add(Pathfinder.patrol(ship, ship.getPosition(), planet.getPosition(),
+							planet.getRadius()+ship.getRadius()*2+Constants.BUFFER_CONSTANT));
 				}
 				Networking.sendMoves(moveList);
 			}
 		}catch(Exception ex) {
 			DebugLog.log(ex);
 		}
+	}
+	public static Planet getClosestPlanet(GameMap gameMap, Position position) {
+		Planet closestPlanet = null;
+		double closestDistance = Double.MAX_VALUE;
+		for(Planet planet: gameMap.getPlanets()) {
+			double distance = position.getDistanceSquared(planet.getPosition());
+			if(closestDistance>distance) {
+				closestDistance = distance;
+				closestPlanet = planet;
+			}
+		}
+		return closestPlanet;
 	}
 }
