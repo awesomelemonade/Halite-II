@@ -72,4 +72,23 @@ public class Pathfinder {
 		return -b / (2*a); // Time along segment when closest to the circle (vertex of the quadratic
 	}
 	//Arc - Circle
+	//Segment - Point Distance
+	public static double test(Position start, Position end, Position point){
+		//Standard form of the line ax+by+c = 0
+		double a = start.getY()-end.getY();
+		double b = end.getX()-start.getX();
+		double c = (start.getX()-end.getX())*start.getY()+(end.getY()-start.getY())*start.getX();
+		//Calculate closest to point on the line above
+		double x = (b*(b*point.getX()-a*point.getY())-a*c)/(a*a+b*b);
+		double y = (a*(-b*point.getX()+a*point.getY())-b*c)/(a*a+b*b);
+		//Check if (x, y) is between start and end
+		if(((start.getX()<=x&&x<=end.getX())||(start.getX()>=x&&x>=end.getX()))&&
+				((start.getY()<=y&&y<=end.getY())||(start.getY()>=y&&y>=end.getY()))){
+			return Math.sqrt((point.getX()-x)*(point.getX()-x)+(point.getY()-y)*(point.getY()-y));
+		}else{
+			double i = point.getDistanceSquared(start);
+			double j = point.getDistanceSquared(end);
+			return i<j?Math.sqrt(i):Math.sqrt(j);
+		}
+	}
 }
