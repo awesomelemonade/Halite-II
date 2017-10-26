@@ -14,20 +14,20 @@ public class Networking {
 		StringBuilder moveString = new StringBuilder();
 		for (Move move : moves) {
 			switch (move.getType()) {
-			case Noop:
+			case NOOP:
 				continue;
-			case Undock:
+			case UNDOCK:
 				moveString.append(UNDOCK_KEY).append(' ').append(move.getShip().getId()).append(' ');
 				break;
-			case Dock:
+			case DOCK:
 				moveString.append(DOCK_KEY).append(' ').append(move.getShip().getId()).append(' ')
 						.append(((DockMove) move).getDestinationId()).append(' ');
 				break;
-			case Thrust:
+			case THRUST:
 				if(((ThrustMove)move).getThrust()!=0){
 					moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
 							.append(((ThrustMove) move).getThrust()).append(' ')
-							.append((int) Math.round(Math.toDegrees(((ThrustMove) move).getAngle()))).append(' ');
+							.append(((ThrustMove) move).getRoundedAngle()).append(' ');
 				}
 				break;
 			}

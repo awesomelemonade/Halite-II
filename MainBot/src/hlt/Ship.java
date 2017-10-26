@@ -2,7 +2,7 @@ package hlt;
 
 public class Ship extends Entity {
 	public enum DockingStatus {
-		Undocked, Docking, Docked, Undocking
+		UNDOCKED, DOCKING, DOCKED, UNDOCKING;
 	}
 	private DockingStatus dockingStatus;
 	private int dockedPlanet;

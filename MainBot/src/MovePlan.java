@@ -74,9 +74,9 @@ public class MovePlan {
 		}
 		if(checkPlanets) {
 			for(Planet planet: gameMap.getPlanets()) {
-				if(Pathfinder.segmentCircleIntersect(move.getShip().getPosition(),
+				if(Pathfinder.segmentPointDistance(move.getShip().getPosition(),
 						move.getShip().getPosition().addPolar(move.getThrust(), move.getRoundedAngle()),
-						planet.getPosition(), planet.getRadius())) {
+						planet.getPosition(), planet.getRadius()+GameConstants.SHIP_RADIUS)) {
 					
 				}
 			}
@@ -90,14 +90,11 @@ public class MovePlan {
 	private boolean intersect(ThrustMove moveA, ThrustMove moveB) {
 		Position endA = moveA.getShip().getPosition().addPolar(moveA.getThrust(), moveA.getRoundedAngle());
 		Position endB = moveB.getShip().getPosition().addPolar(moveB.getThrust(), moveB.getRoundedAngle());
-		double a = Pathfinder.segmentLineDistance(moveA.getShip().getPosition(), endA, moveB.getShip().getPosition());
-		double b = Pathfinder.segmentLineDistance(moveA.getShip().getPosition(), endA, endB);
-		double c = Pathfinder.segmentLineDistance(moveB.getShip().getPosition(), endB, moveA.getShip().getPosition());
-		double d = Pathfinder.segmentLineDistance(moveB.getShip().getPosition(), endB, endA);
+		double a = Pathfinder.segmentPointDistance(moveA.getShip().getPosition(), endA, moveB.getShip().getPosition());
+		double b = Pathfinder.segmentPointDistance(moveA.getShip().getPosition(), endA, endB);
+		double c = Pathfinder.segmentPointDistance(moveB.getShip().getPosition(), endB, moveA.getShip().getPosition());
+		double d = Pathfinder.segmentPointDistance(moveB.getShip().getPosition(), endB, endA);
 		return Math.min(Math.min(a, b), Math.min(c, d))<=2*GameConstants.SHIP_RADIUS;
-	}
-	public void allocateSpace(Ship ship) {
-		tryMove(new ThrustMove(ship, 0, 0)); // Empty ThrustMove - gets ignored in Networking
 	}
 	public List<ThrustMove> getMoves(){
 		return moves;

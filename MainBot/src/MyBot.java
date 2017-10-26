@@ -29,7 +29,7 @@ public class MyBot {
 				for(MovePlan.Priority priority: MovePlan.Priority.values()) {
 					for(int shipId: movePlan.getPrioritiesMap().get(priority)) {
 						Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
-						if(ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
+						if(ship.getDockingStatus() != Ship.DockingStatus.UNDOCKED) {
 							movePlan.allocateSpace(ship);
 							continue;
 						}
@@ -38,7 +38,7 @@ public class MyBot {
 				}
 				
 				for (Ship ship : gameMap.getMyPlayer().getShips()) {
-					if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
+					if (ship.getDockingStatus() != Ship.DockingStatus.UNDOCKED) {
 						continue;
 					}
 					/*
