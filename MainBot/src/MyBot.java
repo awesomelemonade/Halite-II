@@ -34,6 +34,7 @@ public class MyBot {
 				gameMap.updateMap(Networking.readLineIntoMetadata());
 				shipPriorities.update();
 				handledShips.clear();
+				DebugLog.log("Processing Ships");
 				for(ShipPriorities.Priority priority: ShipPriorities.Priority.values()) {
 					for(int shipId: shipPriorities.getPrioritiesMap().get(priority)) {
 						if(handledShips.contains(shipId)){ //Already handled ship from a request
@@ -51,27 +52,16 @@ public class MyBot {
 									throw new IllegalStateException(String.format("Already Handled Ship: %d", request));
 								}
 								handleStack.push(request);
-								handledShips.add(shipId);
+								handledShips.add(request);
 							}
 						}
 					}
 				}
 				moveQueue.flush();
+				DebugLog.log("Flushed Moves");
 			}
 		}catch(Exception ex) {
 			DebugLog.log(ex);
 		}
-	}
-	public static Planet getClosestPlanet(GameMap gameMap, Position position) {
-		Planet closestPlanet = null;
-		double closestDistance = Double.MAX_VALUE;
-		for(Planet planet: gameMap.getPlanets()) {
-			double distance = position.getDistanceSquared(planet.getPosition());
-			if(closestDistance>distance) {
-				closestDistance = distance;
-				closestPlanet = planet;
-			}
-		}
-		return closestPlanet;
 	}
 }

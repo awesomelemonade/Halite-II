@@ -10,6 +10,9 @@ public class ThrustMove extends Move {
 		this.angle = angle;
 		this.roundPolicy = roundPolicy;
 	}
+	public void setThrust(int thrust) {
+		this.thrust = thrust;
+	}
 	public double getRoundedAngle() {
 		return roundPolicy.apply(angle);
 	}

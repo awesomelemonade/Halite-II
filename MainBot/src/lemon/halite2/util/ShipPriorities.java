@@ -1,7 +1,9 @@
 package lemon.halite2.util;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -36,12 +38,17 @@ public class ShipPriorities {
 			prioritiesMap.get(priority).add(id);
 		}
 		//Remove Old (Dead) Ships
-		for(Priority priority: prioritiesMap.keySet()) {
-			for(int id: prioritiesMap.get(priority)) {
+		List<Integer> toRemove = new ArrayList<Integer>(); // Prevents ConcurrentModificationException
+		for(Set<Integer> ids: prioritiesMap.values()) {
+			toRemove.clear();
+			for(int id: ids) {
 				if(gameMap.getMyPlayer().getShip(id)==null) {
-					prioritiesMap.get(priority).remove(id);
+					toRemove.add(id);
 					shipMap.remove(id);
 				}
+			}
+			for(int i: toRemove) {
+				ids.remove(i);
 			}
 		}
 		//Add New Ships to least priority

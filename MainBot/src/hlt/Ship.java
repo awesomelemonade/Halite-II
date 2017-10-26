@@ -30,7 +30,8 @@ public class Ship extends Entity {
 		return dockedPlanet;
 	}
 	public boolean canDock(Planet planet) {
-		return this.getPosition().getDistanceTo(planet.getPosition()) <= GameConstants.DOCK_RADIUS + planet.getRadius();
+		return this.getPosition().getDistanceTo(planet.getPosition()) <= GameConstants.DOCK_RADIUS + planet.getRadius() &&
+				(!planet.isFull()) && ((!planet.isOwned())||planet.getOwner()==this.getOwner());
 	}
 	@Override
 	public String toString() {
