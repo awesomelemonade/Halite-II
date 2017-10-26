@@ -19,7 +19,6 @@ public class MoveQueue {
 		totalMoves = new ArrayList<Move>();
 		thrustMoves = new ArrayList<ThrustMove>();
 	}
-	//returns blame?
 	public int addMove(Move move){
 		if(!(move instanceof ThrustMove)){
 			totalMoves.add(move);
@@ -37,7 +36,7 @@ public class MoveQueue {
 			}
 			Position start = thrustMove.getShip().getPosition();
 			Position end = start.addPolar(thrustMove.getThrust(), thrustMove.getRoundedAngle());
-			if(Pathfinder.segmentCircleIntersection(start, end, ship.getPosition(), 2*GameConstants.SHIP_RADIUS)){
+			if(Geometry.segmentCircleIntersection(start, end, ship.getPosition(), 2*GameConstants.SHIP_RADIUS)){
 				return ship.getId();
 			}
 		}
@@ -46,13 +45,11 @@ public class MoveQueue {
 		return -1;
 	}
 	private boolean intersects(ThrustMove moveA, ThrustMove moveB) {
+		Position a = moveA.getShip().getPosition();
+		Position b = moveB.getShip().getPosition();
 		Position endA = moveA.getShip().getPosition().addPolar(moveA.getThrust(), moveA.getRoundedAngle());
 		Position endB = moveB.getShip().getPosition().addPolar(moveB.getThrust(), moveB.getRoundedAngle());
-		double a = Pathfinder.segmentPointDistance(moveA.getShip().getPosition(), endA, moveB.getShip().getPosition());
-		double b = Pathfinder.segmentPointDistance(moveA.getShip().getPosition(), endA, endB);
-		double c = Pathfinder.segmentPointDistance(moveB.getShip().getPosition(), endB, moveA.getShip().getPosition());
-		double d = Pathfinder.segmentPointDistance(moveB.getShip().getPosition(), endB, endA);
-		return Math.min(Math.min(a, b), Math.min(c, d))<=2*GameConstants.SHIP_RADIUS;
+		return Geometry.segmentSegmentDistance(a, endA, b, endB)<=2*GameConstants.SHIP_RADIUS;
 	}
 	public void flush(){
 		Networking.sendMoves(totalMoves);

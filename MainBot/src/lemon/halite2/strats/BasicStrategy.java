@@ -2,7 +2,6 @@ package lemon.halite2.strats;
 
 import java.util.List;
 
-import hlt.DebugLog;
 import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
@@ -74,14 +73,8 @@ public class BasicStrategy {
 			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), GameConstants.SHIP_RADIUS, currentPlanet.getRadius());
 			int request = moveQueue.addMove(move);
 			while(request!=-1&&handledShips.contains(request)) {
-				if(move.getThrust()==0) {
-					DebugLog.log("Uhh.. loop?");
-				}
 				move.setThrust(Math.min(move.getThrust()-1, 0));
 				request = moveQueue.addMove(move);
-			}
-			if(move.getThrust()==0) {
-				DebugLog.log("Not Moving: "+ship.getId());
 			}
 			return request;
 		}

@@ -40,7 +40,7 @@ public class Pathfinder {
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		//Target Vector to travel: (targetDistance, targetDirection) @ targetPosition
 		for (Planet planet : gameMap.getPlanets()) {
-			if(segmentCircleIntersection(start, targetPosition, planet.getPosition(), planet.getRadius()+GameConstants.SHIP_RADIUS)) {
+			if(Geometry.segmentCircleIntersection(start, targetPosition, planet.getPosition(), planet.getRadius()+GameConstants.SHIP_RADIUS)) {
 				double distance = start.getDistanceTo(planet.getPosition());
 				if(distance<=planet.getRadius()+GameConstants.SHIP_RADIUS){
 					//you're in the planet :(
@@ -63,28 +63,5 @@ public class Pathfinder {
 			}
 		}
 		return new ThrustMove(ship, (int)Math.min(targetDistance, 7), targetDirection, RoundPolicy.NONE);
-	}
-	// Arc - Circle
-	// Segment - Point Distance
-	public static double segmentPointDistance(Position start, Position end, Position point) {
-		// Standard form of the line ax+by+c = 0
-		double a = start.getY() - end.getY();
-		double b = end.getX() - start.getX();
-		double c = (start.getX() - end.getX()) * start.getY() + (end.getY() - start.getY()) * start.getX();
-		// Calculate closest to point on the line above
-		double x = (b * (b * point.getX() - a * point.getY()) - a * c) / (a * a + b * b);
-		double y = (a * (-b * point.getX() + a * point.getY()) - b * c) / (a * a + b * b);
-		// Check if (x, y) is between start and end
-		if (((start.getX() <= x && x <= end.getX()) || (start.getX() >= x && x >= end.getX()))
-				&& ((start.getY() <= y && y <= end.getY()) || (start.getY() >= y && y >= end.getY()))) {
-			return Math.sqrt((point.getX() - x) * (point.getX() - x) + (point.getY() - y) * (point.getY() - y));
-		} else {
-			double i = point.getDistanceSquared(start);
-			double j = point.getDistanceSquared(end);
-			return i < j ? Math.sqrt(i) : Math.sqrt(j);
-		}
-	}
-	public static boolean segmentCircleIntersection(Position a, Position b, Position center, double buffer) {
-		return segmentPointDistance(a, b, center)<=buffer;
 	}
 }
