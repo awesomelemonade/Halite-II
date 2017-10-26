@@ -1,4 +1,5 @@
 package lemon.halite2.util;
+
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Planet;
@@ -16,8 +17,8 @@ public class Pathfinder {
 		Pathfinder.gameMap = gameMap;
 	}
 	// Ignores Ships, but takes into account planets
-	public static ThrustMove pathfind(Ship ship, Position start, Position end, double startBuffer, double endBuffer) {
-		return pathfind(ship, start, end.addPolar(endBuffer, end.getDirectionTowards(start)), startBuffer, RoundPolicy.ROUND);
+	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer) {
+		return pathfind(ship, start, end, buffer, RoundPolicy.ROUND);
 	}
 	//Offset Policy: -1 = OFFSET NEGATIVE DIR; 1 = OFFSET POSITIVE DIR; 0 = NO PREFERENCE
 	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer, RoundPolicy offsetPolicy) {
@@ -29,15 +30,16 @@ public class Pathfinder {
 		//Solves Law of Sines
 		double offsetDirection = Math.abs(targetDirection-realDirection);
 		double realDistance = start.getDistanceTo(end);
-		//Round Buffer
-		buffer = Math.max(buffer, realDistance*Math.sin(offsetDirection));
+		
 		//Continue Law of Sines if buffer not equal to 0
 		double targetDistance = 0;
-		if(buffer>0){
+		if(buffer>realDistance*Math.sin(offsetDirection)){ //Ensures triangle to be solvable
 			double lawOfSinesValue = Math.sin(offsetDirection)/buffer; //Divide by 0 error if buffer = 0
-			targetDistance = Math.sin(Math.PI-Math.asin(realDistance*lawOfSinesValue)-offsetDirection)/lawOfSinesValue;
+			double sineInverse = Math.PI-Math.asin(realDistance*lawOfSinesValue); //It's the one that is greater than Math.PI/2 radians
+			targetDistance = Math.sin(Math.PI-sineInverse-offsetDirection)/lawOfSinesValue;
+			//targetDistance = Math.sin(Math.asin(realDistance*lawOfSinesValue)-offsetDirection)/lawOfSinesValue;
 		}else{
-			targetDistance = realDistance*Math.cos(offsetDirection);
+			targetDistance = realDistance*Math.cos(offsetDirection); //Not even sure if this ever happens
 		}
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		//Target Vector to travel: (targetDistance, targetDirection) @ targetPosition

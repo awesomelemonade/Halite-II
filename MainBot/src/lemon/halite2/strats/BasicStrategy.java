@@ -2,6 +2,7 @@ package lemon.halite2.strats;
 
 import java.util.List;
 
+import hlt.DebugLog;
 import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
@@ -50,7 +51,8 @@ public class BasicStrategy {
 	}
 	public int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
 		Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
-		if(gameMap.getPlanet(currentPlanetId).isFull()) {
+		Planet currentPlanet = gameMap.getPlanet(currentPlanetId);
+		if(currentPlanet==null||currentPlanet.getOwner()==gameMap.getMyPlayerId()&&currentPlanet.isFull()) {
 			Planet closestPlanet = null;
 			double closestDistance = Double.MAX_VALUE;
 			for(Planet planet: gameMap.getPlanets()) {
@@ -64,14 +66,15 @@ public class BasicStrategy {
 				}
 			}
 			currentPlanetId = closestPlanet.getId();
+			currentPlanet = gameMap.getPlanet(currentPlanetId);
 		}
-		Planet currentPlanet = gameMap.getPlanet(currentPlanetId);
 		Planet closestPlanet = getClosestPlanet(ship.getPosition());
 		
 		if(ship.canDock(closestPlanet)) {
+			DebugLog.log("Docking Ship: "+ship.getId());
 			return moveQueue.addMove(new DockMove(ship, closestPlanet));
 		} else {
-			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), GameConstants.SHIP_RADIUS, currentPlanet.getRadius());
+			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), GameConstants.SHIP_RADIUS+currentPlanet.getRadius()+0.01f);
 			int request = moveQueue.addMove(move);
 			while(request!=-1&&handledShips.contains(request)) {
 				move.setThrust(Math.min(move.getThrust()-1, 0));
