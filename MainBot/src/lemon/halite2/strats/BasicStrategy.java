@@ -54,7 +54,7 @@ public class BasicStrategy {
 			Planet closestPlanet = null;
 			double closestDistance = Double.MAX_VALUE;
 			for(Planet planet: gameMap.getPlanets()) {
-				if(planet.isFull()) {
+				if(planet.getOwner()==gameMap.getMyPlayerId()&&planet.isFull()) {
 					continue;
 				}
 				double distance = basePosition.getDistanceSquared(planet.getPosition());
@@ -66,9 +66,10 @@ public class BasicStrategy {
 			currentPlanetId = closestPlanet.getId();
 		}
 		Planet currentPlanet = gameMap.getPlanet(currentPlanetId);
+		Planet closestPlanet = getClosestPlanet(ship.getPosition());
 		
-		if(ship.canDock(currentPlanet)) {
-			return moveQueue.addMove(new DockMove(ship, currentPlanet));
+		if(ship.canDock(closestPlanet)) {
+			return moveQueue.addMove(new DockMove(ship, closestPlanet));
 		} else {
 			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), GameConstants.SHIP_RADIUS, currentPlanet.getRadius());
 			int request = moveQueue.addMove(move);

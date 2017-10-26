@@ -9,7 +9,9 @@ import hlt.ThrustMove.RoundPolicy;
 
 public class Pathfinder {
 	private static GameMap gameMap;
-
+	
+	private static final double FUDGE_FACTOR = 0.01f;
+	
 	public static void setGameMap(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
 	}
@@ -40,14 +42,15 @@ public class Pathfinder {
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		//Target Vector to travel: (targetDistance, targetDirection) @ targetPosition
 		for (Planet planet : gameMap.getPlanets()) {
-			if(Geometry.segmentCircleIntersection(start, targetPosition, planet.getPosition(), planet.getRadius()+GameConstants.SHIP_RADIUS)) {
+			double calculatedBuffer = planet.getRadius()+GameConstants.SHIP_RADIUS+FUDGE_FACTOR;
+			if(Geometry.segmentCircleIntersection(start, targetPosition, planet.getPosition(), calculatedBuffer)) {
 				double distance = start.getDistanceTo(planet.getPosition());
-				if(distance<=planet.getRadius()+GameConstants.SHIP_RADIUS){
+				if(distance<=calculatedBuffer){
 					//you're in the planet :(
-					return new ThrustMove(ship, (int)Math.min(planet.getRadius()+GameConstants.SHIP_RADIUS-distance, 7),
+					return new ThrustMove(ship, (int)Math.min(calculatedBuffer-distance, 7),
 							planet.getPosition().getDirectionTowards(start), RoundPolicy.ROUND);
 				}
-				double tangentValue = Math.asin((planet.getRadius()+GameConstants.SHIP_RADIUS)/distance);
+				double tangentValue = Math.asin(calculatedBuffer/distance);
 				double magnitude = Math.sqrt(start.getDistanceSquared(planet.getPosition())-planet.getRadius()*planet.getRadius());
 				double direction = start.getDirectionTowards(planet.getPosition());
 				RoundPolicy newOffsetPolicy = RoundPolicy.NONE;
