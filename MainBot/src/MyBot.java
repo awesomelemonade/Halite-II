@@ -1,4 +1,5 @@
 import hlt.*;
+import lemon.halite2.strats.BasicStrategy;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.Pathfinder;
 import lemon.halite2.util.ShipPriorities;
@@ -23,6 +24,7 @@ public class MyBot {
 			MoveQueue moveQueue = new MoveQueue(gameMap);
 			List<Integer> handledShips = new ArrayList<Integer>();
 			
+			BasicStrategy strategy = new BasicStrategy(gameMap);
 			//Rate Planets
 			
 			Networking.finalizeInitialization("Lemon");
@@ -34,11 +36,14 @@ public class MyBot {
 				handledShips.clear();
 				for(ShipPriorities.Priority priority: ShipPriorities.Priority.values()) {
 					for(int shipId: shipPriorities.getPrioritiesMap().get(priority)) {
+						if(handledShips.contains(shipId)){ //Already handled ship from a request
+							continue;
+						}
 						ArrayDeque<Integer> handleStack = new ArrayDeque<Integer>();
 						handleStack.push(shipId);
 						handledShips.add(shipId);
 						while(!handleStack.isEmpty()){
-							int request = handleShip(handledShips, handleStack.peek(), moveQueue);
+							int request = strategy.handleShip(handledShips, handleStack.peek(), moveQueue);
 							if(request==-1){
 								handleStack.pop();
 							}else{
@@ -56,10 +61,6 @@ public class MyBot {
 		}catch(Exception ex) {
 			DebugLog.log(ex);
 		}
-	}
-	public static int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
-		
-		return -1;
 	}
 	public static Planet getClosestPlanet(GameMap gameMap, Position position) {
 		Planet closestPlanet = null;

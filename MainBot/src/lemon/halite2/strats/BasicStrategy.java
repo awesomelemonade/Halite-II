@@ -10,7 +10,7 @@ public class BasicStrategy {
 	public BasicStrategy(GameMap gameMap){
 		this.gameMap = gameMap;
 	}
-	public static int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
+	public int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
 		
 		return -1;
 	}
