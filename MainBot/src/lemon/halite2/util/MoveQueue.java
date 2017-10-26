@@ -1,8 +1,8 @@
 package lemon.halite2.util;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import hlt.DebugLog;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -25,14 +25,12 @@ public class MoveQueue {
 			totalMoves.add(move);
 			return -1;
 		}
-		DebugLog.log("Ship: "+move.getShip().getId());
 		ThrustMove thrustMove = (ThrustMove)move;
 		for(ThrustMove otherMove: thrustMoves){
 			if(intersects(thrustMove, otherMove)){
 				return otherMove.getShip().getId();
 			}
 		}
-		DebugLog.log("\tDoesn't intersect with other ship movements");
 		for(Ship ship: gameMap.getMyPlayer().getShips()){
 			if(ship.getId()==thrustMove.getShip().getId()){
 				continue;
@@ -43,8 +41,6 @@ public class MoveQueue {
 				return ship.getId();
 			}
 		}
-		DebugLog.log("\tDoesn't intersect with ships themselves");
-		DebugLog.log("\tThrustMove["+thrustMove.getThrust()+" - "+thrustMove.getRoundedAngle()+"]");
 		totalMoves.add(thrustMove);
 		thrustMoves.add(thrustMove);
 		return -1;

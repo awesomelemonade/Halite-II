@@ -73,7 +73,16 @@ public class BasicStrategy {
 		if(ship.canDock(closestPlanet)) {
 			DebugLog.log("Docking Ship: "+ship.getId());
 			return moveQueue.addMove(new DockMove(ship, closestPlanet));
-		} else {
+		}else if(ship.getPosition().getDistanceSquared(currentPlanet.getPosition())<GameConstants.DOCK_RADIUS*GameConstants.DOCK_RADIUS){
+			Ship enemyShip = findEnemyShip(currentPlanet.getPosition());
+			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), 2*GameConstants.SHIP_RADIUS+0.01f);
+			int request = moveQueue.addMove(move);
+			while(request!=-1&&handledShips.contains(request)) {
+				move.setThrust(Math.min(move.getThrust()-1, 0));
+				request = moveQueue.addMove(move);
+			}
+			return request;
+		}else{
 			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), GameConstants.SHIP_RADIUS+currentPlanet.getRadius()+0.01f);
 			int request = moveQueue.addMove(move);
 			while(request!=-1&&handledShips.contains(request)) {
@@ -82,6 +91,21 @@ public class BasicStrategy {
 			}
 			return request;
 		}
+	}
+	public Ship findEnemyShip(Position position) {
+		Ship closestShip = null;
+		double closestDistance = Double.MAX_VALUE;
+		for(Ship ship: gameMap.getShips()) {
+			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+				continue;
+			}
+			double distance = position.getDistanceSquared(ship.getPosition());
+			if(closestDistance>distance) {
+				closestDistance = distance;
+				closestShip = ship;
+			}
+		}
+		return closestShip;
 	}
 	public Planet getClosestPlanet(Position position) {
 		Planet closestPlanet = null;
