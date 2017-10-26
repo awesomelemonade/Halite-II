@@ -1,4 +1,7 @@
 import hlt.*;
+import lemon.halite2.util.MoveQueue;
+import lemon.halite2.util.Pathfinder;
+import lemon.halite2.util.ShipPriorities;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;

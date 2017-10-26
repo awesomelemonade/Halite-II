@@ -1,3 +1,4 @@
+package lemon.halite2.util;
 
 public class Constants {
 	// Accounts for the fact that you cannot have fractional degrees

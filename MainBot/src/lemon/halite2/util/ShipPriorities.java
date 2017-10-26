@@ -1,3 +1,4 @@
+package lemon.halite2.util;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;

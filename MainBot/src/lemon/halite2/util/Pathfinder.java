@@ -1,3 +1,4 @@
+package lemon.halite2.util;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Planet;
