@@ -1,9 +1,13 @@
 import hlt.*;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 public class MyBot {
 	public static final SimpleDateFormat READABLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
@@ -15,54 +19,38 @@ public class MyBot {
 			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
 			Pathfinder.setGameMap(gameMap);
-			MovePlan movePlan = new MovePlan(gameMap);
-			List<Move> moveList = new ArrayList<Move>();
+			ShipPriorities shipPriorities = new ShipPriorities(gameMap);
+			MoveQueue moveQueue = new MoveQueue();
 			
 			Networking.finalizeInitialization("Lemon");
 			
+			List<Integer> handledShips = new ArrayList<Integer>();
+			
 			while (true) {
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
-				moveList.clear();
 				gameMap.updateMap(Networking.readLineIntoMetadata());
-				movePlan.update();
-				
-				for(MovePlan.Priority priority: MovePlan.Priority.values()) {
-					for(int shipId: movePlan.getPrioritiesMap().get(priority)) {
-						Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
-						if(ship.getDockingStatus() != Ship.DockingStatus.UNDOCKED) {
-							//Allocate Space?
-							continue;
+				shipPriorities.update();
+				handledShips.clear();
+				for(ShipPriorities.Priority priority: ShipPriorities.Priority.values()) {
+					for(int shipId: shipPriorities.getPrioritiesMap().get(priority)) {
+						ArrayDeque<Integer> handleStack = new ArrayDeque<Integer>();
+						handleStack.push(shipId);
+						handledShips.add(shipId);
+						while(!handleStack.isEmpty()){
+							int request = handleShip(handledShips, handleStack.peek(), moveQueue);
+							if(request==-1){
+								handleStack.pop();
+							}else{
+								if(handledShips.contains(request)){
+									throw new IllegalStateException(String.format("Already Handled Ship: %d", request));
+								}
+								handleStack.push(request);
+								handledShips.add(shipId);
+							}
 						}
-						
 					}
 				}
-				
-				for (Ship ship : gameMap.getMyPlayer().getShips()) {
-					if (ship.getDockingStatus() != Ship.DockingStatus.UNDOCKED) {
-						continue;
-					}
-					/*
-					for (Planet planet : gameMap.getPlanets()) {
-						if (planet.isOwned()) {
-							continue;
-						}
-						if (ship.canDock(planet)) {
-							moveList.add(new DockMove(ship, planet));
-							break;
-						}
-						ThrustMove newThrustMove = Navigation.navigateShipToDock(gameMap, ship, planet,
-								Constants.MAX_SPEED / 2);
-						if (newThrustMove != null) {
-							moveList.add(newThrustMove);
-						}
-						break;
-					}*/
-					Planet planet = getClosestPlanet(gameMap, ship.getPosition());
-					moveList.add(Pathfinder.pathfind(ship, ship.getPosition(), planet.getPosition(), GameConstants.SHIP_RADIUS, planet.getRadius()+GameConstants.DOCK_RADIUS/2));
-					//moveList.add(Pathfinder.patrol(ship, ship.getPosition(), planet.getPosition(),
-					//		planet.getRadius()+ship.getRadius()*2+Constants.BUFFER_CONSTANT));
-				}
-				Networking.sendMoves(moveList);
+				moveQueue.flush();
 			}
 		}catch(Exception ex) {
 			DebugLog.log(ex);

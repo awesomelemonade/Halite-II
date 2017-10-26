@@ -15,7 +15,6 @@ public class Pathfinder {
 	}
 	public static double calculateTangent(Position position, Position center, double radius) {
 		double distance = position.getDistanceTo(center);
-		DebugLog.log(distance + " - " + radius);
 		if (distance < radius) { // No Tangent, you're in the circle
 			//Return direction away from center; scales based off distance
 			return RoundPolicy.FLOOR.apply(center.getDirectionTowards(position) - (Math.PI / 2) * (distance / radius));
