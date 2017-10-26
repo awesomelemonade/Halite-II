@@ -65,6 +65,9 @@ public class BasicStrategy {
 					closestPlanet = planet;
 				}
 			}
+			if(closestPlanet==null) { //We've taken all the planets!
+				return -1;
+			}
 			currentPlanetId = closestPlanet.getId();
 			currentPlanet = gameMap.getPlanet(currentPlanetId);
 		}

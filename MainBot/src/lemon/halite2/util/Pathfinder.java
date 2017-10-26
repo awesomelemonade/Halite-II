@@ -44,29 +44,44 @@ public class Pathfinder {
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		//Target Vector to travel: (targetDistance, targetDirection) @ targetPosition
 		for (Planet planet : gameMap.getPlanets()) {
-			double calculatedBuffer = planet.getRadius()+GameConstants.SHIP_RADIUS+FUDGE_FACTOR;
-			if(Geometry.segmentCircleIntersection(start, targetPosition, planet.getPosition(), calculatedBuffer)) {
-				double distance = start.getDistanceTo(planet.getPosition());
-				if(distance<=calculatedBuffer){
-					//you're in the planet :(
-					return new ThrustMove(ship, (int)Math.min(calculatedBuffer-distance, 7),
-							planet.getPosition().getDirectionTowards(start), RoundPolicy.ROUND);
-				}
-				double tangentValue = Math.asin(calculatedBuffer/distance);
-				double magnitude = Math.sqrt(start.getDistanceSquared(planet.getPosition())-planet.getRadius()*planet.getRadius());
-				double direction = start.getDirectionTowards(planet.getPosition());
-				RoundPolicy newOffsetPolicy = RoundPolicy.NONE;
-				if(Math.abs((direction-tangentValue)-targetDirection)<Math.abs((direction+tangentValue)-targetDirection)){
-					direction+=tangentValue;
-					newOffsetPolicy = RoundPolicy.CEIL;
-				}else{
-					direction-=tangentValue;
-					newOffsetPolicy = RoundPolicy.FLOOR;
-				}
-				Position endPoint = start.addPolar(magnitude, direction);
-				return pathfind(ship, start, endPoint, 0, newOffsetPolicy);
+			ThrustMove move = testCollision(ship, start, targetPosition, targetDirection, planet.getPosition(), planet.getRadius());
+			if(move!=null) {
+				return move;
 			}
 		}
+		/*for (Ship otherShip: gameMap.getShips()) {
+			if(otherShip.getOwner()==gameMap.getMyPlayerId()&&otherShip.getId()!=ship.getId()) {
+				ThrustMove move = testCollision(ship, start, targetPosition, targetDirection, otherShip.getPosition(), otherShip.getRadius());
+				if(move!=null) {
+					return move;
+				}
+			}
+		}*/
 		return new ThrustMove(ship, (int)Math.min(targetDistance, 7), targetDirection, RoundPolicy.NONE);
+	}
+	public static ThrustMove testCollision(Ship ship, Position start, Position targetPosition, double targetDirection, Position position, double radius) {
+		double calculatedBuffer = radius+GameConstants.SHIP_RADIUS+FUDGE_FACTOR;
+		if(Geometry.segmentCircleIntersection(start, targetPosition, position, calculatedBuffer)) {
+			double distance = start.getDistanceTo(position);
+			if(distance<=calculatedBuffer){
+				//you're in the planet :(
+				return new ThrustMove(ship, (int)Math.min(calculatedBuffer-distance, 7),
+						position.getDirectionTowards(start), RoundPolicy.ROUND);
+			}
+			double tangentValue = Math.asin(calculatedBuffer/distance);
+			double magnitude = Math.sqrt(start.getDistanceSquared(position)-radius*radius);
+			double direction = start.getDirectionTowards(position);
+			RoundPolicy newOffsetPolicy = RoundPolicy.NONE;
+			if(Math.abs((direction-tangentValue)-targetDirection)<Math.abs((direction+tangentValue)-targetDirection)){
+				direction+=tangentValue;
+				newOffsetPolicy = RoundPolicy.CEIL;
+			}else{
+				direction-=tangentValue;
+				newOffsetPolicy = RoundPolicy.FLOOR;
+			}
+			Position endPoint = start.addPolar(magnitude, direction);
+			return pathfind(ship, start, endPoint, 0, newOffsetPolicy);
+		}
+		return null;
 	}
 }
