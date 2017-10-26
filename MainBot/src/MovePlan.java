@@ -72,7 +72,7 @@ public class MovePlan {
 			moves.add(move);
 			return 0;
 		}
-		if(checkPlanets) {
+		/*if(checkPlanets) {
 			for(Planet planet: gameMap.getPlanets()) {
 				if(Pathfinder.segmentPointDistance(move.getShip().getPosition(),
 						move.getShip().getPosition().addPolar(move.getThrust(), move.getRoundedAngle()),
@@ -83,7 +83,7 @@ public class MovePlan {
 		}
 		for(ThrustMove otherMoves: moves) {
 			if(Pathfinder.intersect())
-		}
+		}*/
 		moves.add(move);
 		return 0;
 	}

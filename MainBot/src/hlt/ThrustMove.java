@@ -11,13 +11,13 @@ public class ThrustMove extends Move {
 		this.roundPolicy = roundPolicy;
 	}
 	public double getRoundedAngle() {
-		return Math.toRadians(RoundPolicy.apply(Math.toDegrees(angle), roundPolicy));
+		return roundPolicy.apply(angle);
 	}
 	public int getThrust() {
 		return thrust;
 	}
 	public enum RoundPolicy {
-		FLOOR, CEIL, ROUND;
+		FLOOR, CEIL, ROUND, NONE;
 		public static double apply(double num, RoundPolicy policy) {
 			switch(policy) {
 			case FLOOR:
@@ -26,9 +26,14 @@ public class ThrustMove extends Move {
 				return Math.ceil(num);
 			case ROUND:
 				return Math.round(num);
+			case NONE:
+				return num;
 			default:
 				throw new NullPointerException(String.format("RoundPolicy is null: %f", num));
 			}
+		}
+		public double apply(double num){
+			return Math.toRadians(RoundPolicy.apply(Math.toDegrees(num), this));
 		}
 	}
 }

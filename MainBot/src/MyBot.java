@@ -30,7 +30,7 @@ public class MyBot {
 					for(int shipId: movePlan.getPrioritiesMap().get(priority)) {
 						Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
 						if(ship.getDockingStatus() != Ship.DockingStatus.UNDOCKED) {
-							movePlan.allocateSpace(ship);
+							//Allocate Space?
 							continue;
 						}
 						
@@ -58,8 +58,9 @@ public class MyBot {
 						break;
 					}*/
 					Planet planet = getClosestPlanet(gameMap, ship.getPosition());
-					moveList.add(Pathfinder.patrol(ship, ship.getPosition(), planet.getPosition(),
-							planet.getRadius()+ship.getRadius()*2+Constants.BUFFER_CONSTANT));
+					moveList.add(Pathfinder.pathfind(ship, ship.getPosition(), planet.getPosition(), GameConstants.SHIP_RADIUS, planet.getRadius()+GameConstants.DOCK_RADIUS/2));
+					//moveList.add(Pathfinder.patrol(ship, ship.getPosition(), planet.getPosition(),
+					//		planet.getRadius()+ship.getRadius()*2+Constants.BUFFER_CONSTANT));
 				}
 				Networking.sendMoves(moveList);
 			}

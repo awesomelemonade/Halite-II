@@ -27,7 +27,7 @@ public class Networking {
 				if(((ThrustMove)move).getThrust()!=0){
 					moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
 							.append(((ThrustMove) move).getThrust()).append(' ')
-							.append(((ThrustMove) move).getRoundedAngle()).append(' ');
+							.append((int)Math.toDegrees(((ThrustMove) move).getRoundedAngle())).append(' ');
 				}
 				break;
 			}
