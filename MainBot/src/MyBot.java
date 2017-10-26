@@ -4,10 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Stack;
 
 public class MyBot {
 	public static final SimpleDateFormat READABLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
@@ -20,11 +17,12 @@ public class MyBot {
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
 			Pathfinder.setGameMap(gameMap);
 			ShipPriorities shipPriorities = new ShipPriorities(gameMap);
-			MoveQueue moveQueue = new MoveQueue();
+			MoveQueue moveQueue = new MoveQueue(gameMap);
+			List<Integer> handledShips = new ArrayList<Integer>();
+			
+			//Rate Planets
 			
 			Networking.finalizeInitialization("Lemon");
-			
-			List<Integer> handledShips = new ArrayList<Integer>();
 			
 			while (true) {
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
@@ -55,6 +53,10 @@ public class MyBot {
 		}catch(Exception ex) {
 			DebugLog.log(ex);
 		}
+	}
+	public static int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
+		
+		return -1;
 	}
 	public static Planet getClosestPlanet(GameMap gameMap, Position position) {
 		Planet closestPlanet = null;

@@ -1,4 +1,3 @@
-import hlt.DebugLog;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Planet;
@@ -13,21 +12,17 @@ public class Pathfinder {
 	public static void setGameMap(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
 	}
-	public static double calculateTangent(Position position, Position center, double radius) {
-		double distance = position.getDistanceTo(center);
-		if (distance < radius) { // No Tangent, you're in the circle
-			//Return direction away from center; scales based off distance
-			return RoundPolicy.FLOOR.apply(center.getDirectionTowards(position) - (Math.PI / 2) * (distance / radius));
-		}
-		return RoundPolicy.CEIL.apply(position.getDirectionTowards(center) + Math.asin(radius / distance));
-	}
 	// Ignores Ships, but takes into account planets
 	public static ThrustMove pathfind(Ship ship, Position start, Position end, double startBuffer, double endBuffer) {
-		return pathfind(ship, start, end.addPolar(endBuffer, end.getDirectionTowards(start)), startBuffer);
+		return pathfind(ship, start, end.addPolar(endBuffer, end.getDirectionTowards(start)), startBuffer, RoundPolicy.ROUND);
 	}
-	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer) {
+	//Offset Policy: -1 = OFFSET NEGATIVE DIR; 1 = OFFSET POSITIVE DIR; 0 = NO PREFERENCE
+	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer, RoundPolicy offsetPolicy) {
+		if(offsetPolicy==RoundPolicy.NONE){
+			throw new IllegalArgumentException("OffsetPolicy cannot be NONE");
+		}
 		double realDirection = start.getDirectionTowards(end);
-		double targetDirection = RoundPolicy.ROUND.apply(realDirection);
+		double targetDirection = offsetPolicy.apply(realDirection);
 		//Solves Law of Sines
 		double offsetDirection = Math.abs(targetDirection-realDirection);
 		double realDistance = start.getDistanceTo(end);
@@ -45,9 +40,25 @@ public class Pathfinder {
 		//Target Vector to travel: (targetDistance, targetDirection) @ targetPosition
 		for (Planet planet : gameMap.getPlanets()) {
 			if(segmentCircleIntersection(start, targetPosition, planet.getPosition(), planet.getRadius()+GameConstants.SHIP_RADIUS)) {
-				return pathfind(ship, start,
-						start.addPolar(Math.sqrt(start.getDistanceSquared(planet.getPosition())-planet.getRadius()*planet.getRadius()),
-								calculateTangent(start, planet.getPosition(), planet.getRadius()+GameConstants.SHIP_RADIUS)), 0);
+				double distance = start.getDistanceTo(planet.getPosition());
+				if(distance<=planet.getRadius()+GameConstants.SHIP_RADIUS){
+					//you're in the planet :(
+					return new ThrustMove(ship, (int)Math.min(planet.getRadius()+GameConstants.SHIP_RADIUS-distance, 7),
+							planet.getPosition().getDirectionTowards(start), RoundPolicy.ROUND);
+				}
+				double tangentValue = Math.asin((planet.getRadius()+GameConstants.SHIP_RADIUS)/distance);
+				double magnitude = Math.sqrt(start.getDistanceSquared(planet.getPosition())-planet.getRadius()*planet.getRadius());
+				double direction = start.getDirectionTowards(planet.getPosition());
+				RoundPolicy newOffsetPolicy = RoundPolicy.NONE;
+				if(Math.abs((direction-tangentValue)-targetDirection)<Math.abs((direction+tangentValue)-targetDirection)){
+					direction+=tangentValue;
+					newOffsetPolicy = RoundPolicy.CEIL;
+				}else{
+					direction-=tangentValue;
+					newOffsetPolicy = RoundPolicy.FLOOR;
+				}
+				Position endPoint = start.addPolar(magnitude, direction);
+				return pathfind(ship, start, endPoint, 0, newOffsetPolicy);
 			}
 		}
 		return new ThrustMove(ship, (int)Math.min(targetDistance, 7), targetDirection, RoundPolicy.NONE);
