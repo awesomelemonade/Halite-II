@@ -76,7 +76,7 @@ public class BasicStrategy {
 		if(ship.canDock(closestPlanet)) {
 			DebugLog.log("Docking Ship: "+ship.getId());
 			return moveQueue.addMove(new DockMove(ship, closestPlanet));
-		}else if(ship.getPosition().getDistanceSquared(currentPlanet.getPosition())<GameConstants.DOCK_RADIUS*GameConstants.DOCK_RADIUS){
+		}else if(ship.getPosition().getDistanceSquared(currentPlanet.getPosition())<(GameConstants.DOCK_RADIUS+currentPlanet.getRadius())*(GameConstants.DOCK_RADIUS+currentPlanet.getRadius())){
 			Ship enemyShip = findEnemyShip(currentPlanet.getPosition());
 			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), 2*GameConstants.SHIP_RADIUS+0.01f);
 			int request = moveQueue.addMove(move);
