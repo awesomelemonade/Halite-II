@@ -39,15 +39,18 @@ public class BasicStrategy {
 		Position averageStart = new Position(averageX, averageY);
 		
 		double biggestRadius = 0;
+		double closestDistance = Double.MAX_VALUE;
 		int basePlanetId = -1;
 		
 		for(Planet planet: gameMap.getPlanets()) {
-			if(planet.getPosition().getDistanceSquared(averageStart)>4900) {
+			double distanceSquared = planet.getPosition().getDistanceSquared(averageStart);
+			if(distanceSquared>4900) {
 				continue;
 			}
-			if(planet.getRadius()>biggestRadius) {
+			if(planet.getRadius()>biggestRadius||(planet.getRadius()==biggestRadius&&distanceSquared<closestDistance)) {
 				biggestRadius = planet.getRadius();
 				basePlanetId = planet.getId();
+				closestDistance = distanceSquared;
 			}
 		}
 		if(basePlanetId==-1) {
@@ -55,48 +58,69 @@ public class BasicStrategy {
 		}
 		Position basePosition = gameMap.getPlanet(basePlanetId).getPosition();
 		closestPlanetIds = new ArrayList<Integer>();
+		calcClosestPlanetIds(basePosition);
+		shipToPlanet = new HashMap<Integer, Integer>();
+		shipDraft = new ArrayList<Ship>();
+	}
+	public void calcClosestPlanetIds(Position position) {
+		closestPlanetIds.clear();
 		List<Planet> planets = new ArrayList<Planet>();
 		planets.addAll(gameMap.getPlanets());
 		Collections.sort(planets, new Comparator<Planet>() {
 			@Override
 			public int compare(Planet a, Planet b) {
-				return Double.compare(a.getPosition().getDistanceSquared(basePosition),
-						b.getPosition().getDistanceSquared(basePosition));
+				return Double.compare(a.getPosition().getDistanceSquared(position),
+						b.getPosition().getDistanceSquared(position));
 			}
 		});
 		for(Planet planet: planets) {
 			closestPlanetIds.add(planet.getId());
 		}
-		shipToPlanet = new HashMap<Integer, Integer>();
-		shipDraft = new ArrayList<Ship>();
 	}
 	private static List<Ship> shipDraft;
-	private static final double FACTOR = 1.2f;
+	private static double FACTOR = 1.0;
 	public void newTurn() {
+		if(gameMap.getTurnNumber()>=50) {
+			FACTOR = 1.5;
+		}
 		shipDraft.clear();
 		for(Ship ship: gameMap.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) { //Only add ships that are undocked
 				shipDraft.add(ship);
 			}
 		}
-		//check if any planets exploded
-		List<Integer> toRemove = new ArrayList<Integer>(); //Prevents ConcurrentModificationException
-		for(int planetId: closestPlanetIds) {
-			if(gameMap.getPlanet(planetId)==null) { //Planet exploded :(
-				toRemove.add(planetId);
+		//update closestPlanetIds to based off the current planets you own
+		//also removes the planets that have exploded because it recalculates the entire list
+		double averageX = 0;
+		double averageY = 0;
+		int count = 0;
+		for(Planet planet: gameMap.getPlanets()) {
+			if(planet.getOwner()==gameMap.getMyPlayerId()) {
+				averageX+=planet.getPosition().getX();
+				averageY+=planet.getPosition().getY();
+				count++;
 			}
 		}
-		for(int i: toRemove) {
-			closestPlanetIds.remove((Object)i);
+		if(count>0) {
+			averageX/=count;
+			averageY/=count;
+			calcClosestPlanetIds(new Position(averageX, averageY));
 		}
-		//assign ships; TODO: DEFENSE - detect enemy ships nearby our planets and target
+		//assign ships
 		for(int planetId: closestPlanetIds) {
 			Planet planet = gameMap.getPlanet(planetId);
 			int spacesLeft = planet.getDockingSpots();
 			if(planet.getOwner()==gameMap.getMyPlayerId()) {
-				spacesLeft-=planet.getDockedShips().size();
+				int enemyShips = countEnemyShips(planet.getPosition(), planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.WEAPON_RADIUS);
+				if(enemyShips==0) {
+					spacesLeft-=planet.getDockedShips().size();
+					assignShips(planet, spacesLeft);
+				}else{
+					assignShips(planet, (int)(enemyShips*FACTOR));
+				}
+			}else{
+				assignShips(planet, (int)(spacesLeft*FACTOR));
 			}
-			assignShips(planet, (int)(spacesLeft*FACTOR));
 		}
 		//assign leftover ships
 		if(shipDraft.size()>0) {
@@ -180,6 +204,20 @@ public class BasicStrategy {
 			return request;
 		}
 	}
+	public int countEnemyShips(Position position, double buffer) {
+		buffer = buffer*buffer; //compares against distanceSquared
+		int count = 0;
+		for(Ship ship: gameMap.getShips()) {
+			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+				continue;
+			}
+			double distanceSquared = ship.getPosition().getDistanceSquared(position);
+			if(distanceSquared<buffer) {
+				count++;
+			}
+		}
+		return count;
+	}
 	public boolean isSafeToDock(Position position, Planet planet) {
 		for(Ship ship: gameMap.getShips()) {
 			if(ship.getOwner()==gameMap.getMyPlayerId()) {
@@ -190,7 +228,7 @@ public class BasicStrategy {
 				return false;
 			}
 			//Check if there are any enemy ships nearby planet
-			if(ship.getPosition().getDistanceSquared(planet.getPosition())<(planet.getRadius()+GameConstants.DOCK_RADIUS)*(planet.getRadius()+GameConstants.DOCK_RADIUS)) {
+			if(ship.getPosition().getDistanceSquared(planet.getPosition())<(planet.getRadius()+GameConstants.DOCK_RADIUS*2)*(planet.getRadius()+GameConstants.DOCK_RADIUS*2)) {
 				return false;
 			}
 		}
