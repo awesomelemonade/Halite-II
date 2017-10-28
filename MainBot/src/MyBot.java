@@ -34,6 +34,7 @@ public class MyBot {
 				gameMap.updateMap(Networking.readLineIntoMetadata());
 				shipPriorities.update();
 				handledShips.clear();
+				strategy.newTurn();
 				DebugLog.log("Processing Ships");
 				for(ShipPriorities.Priority priority: ShipPriorities.Priority.values()) {
 					for(int shipId: shipPriorities.getPrioritiesMap().get(priority)) {
