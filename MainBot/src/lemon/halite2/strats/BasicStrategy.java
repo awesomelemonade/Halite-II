@@ -14,6 +14,7 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
+import hlt.Ship.DockingStatus;
 import hlt.ThrustMove;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.Pathfinder;
@@ -73,7 +74,11 @@ public class BasicStrategy {
 	private static final double FACTOR = 1.2f;
 	public void newTurn() {
 		shipDraft.clear();
-		shipDraft.addAll(gameMap.getMyPlayer().getShips());
+		for(Ship ship: gameMap.getMyPlayer().getShips()) {
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) { //Only add ships that are undocked
+				shipDraft.add(ship);
+			}
+		}
 		//check if any planets exploded
 		List<Integer> toRemove = new ArrayList<Integer>(); //Prevents ConcurrentModificationException
 		for(int planetId: closestPlanetIds) {
@@ -145,10 +150,15 @@ public class BasicStrategy {
 	}
 	public int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
 		Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
+		
+		if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) { //Checks if ship is undocked
+			return -1;
+		}
+		
 		Planet currentPlanet = gameMap.getPlanet(shipToPlanet.get(shipId));
 		Planet closestPlanet = getClosestPlanet(ship.getPosition());
 		
-		if(ship.canDock(closestPlanet)) { //TODO: Do not immediately dock if there are enemy ships
+		if(isSafeToDock(ship.getPosition(), closestPlanet)&&ship.canDock(closestPlanet)) {
 			DebugLog.log("Docking Ship: "+ship.getId());
 			return moveQueue.addMove(new DockMove(ship, closestPlanet));
 		}else if(ship.getPosition().getDistanceSquared(currentPlanet.getPosition())<(GameConstants.DOCK_RADIUS+currentPlanet.getRadius())*(GameConstants.DOCK_RADIUS+currentPlanet.getRadius())){
@@ -169,6 +179,22 @@ public class BasicStrategy {
 			}
 			return request;
 		}
+	}
+	public boolean isSafeToDock(Position position, Planet planet) {
+		for(Ship ship: gameMap.getShips()) {
+			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+				continue;
+			}
+			//Check if there are any enemy ships nearby position
+			if(ship.getPosition().getDistanceSquared(position)<10*10) {
+				return false;
+			}
+			//Check if there are any enemy ships nearby planet
+			if(ship.getPosition().getDistanceSquared(planet.getPosition())<(planet.getRadius()+GameConstants.DOCK_RADIUS)*(planet.getRadius()+GameConstants.DOCK_RADIUS)) {
+				return false;
+			}
+		}
+		return true;
 	}
 	public Ship findEnemyShip(Position position) {
 		Ship closestShip = null;
