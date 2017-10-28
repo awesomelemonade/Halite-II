@@ -38,7 +38,7 @@ public class BasicStrategy {
 		averageY/=gameMap.getMyPlayer().getShips().size();
 		Position averageStart = new Position(averageX, averageY);
 		
-		double biggestRadius = 0;
+		double mostDockingSpots = 0;
 		double closestDistance = Double.MAX_VALUE;
 		int basePlanetId = -1;
 		
@@ -47,8 +47,8 @@ public class BasicStrategy {
 			if(distanceSquared>4900) {
 				continue;
 			}
-			if(planet.getRadius()>biggestRadius||(planet.getRadius()==biggestRadius&&distanceSquared<closestDistance)) {
-				biggestRadius = planet.getRadius();
+			if(planet.getDockingSpots()>mostDockingSpots||(planet.getDockingSpots()==mostDockingSpots&&distanceSquared<closestDistance)) {
+				mostDockingSpots = planet.getDockingSpots();
 				basePlanetId = planet.getId();
 				closestDistance = distanceSquared;
 			}
