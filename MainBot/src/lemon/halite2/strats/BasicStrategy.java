@@ -60,7 +60,7 @@ public class BasicStrategy {
 		Collections.sort(planets, new Comparator<Planet>() {
 			@Override
 			public int compare(Planet a, Planet b) {
-				return Double.compare(a.getPosition().getDistanceSquared(averageStart),
+				return Double.compare(a.getPosition().getDistanceSquared(basePosition),
 						b.getPosition().getDistanceSquared(basePosition));
 			}
 		});
