@@ -27,6 +27,7 @@ public class BasicStrategy {
 	}
 	private List<Integer> closestPlanetIds;
 	private Map<Integer, Integer> shipToPlanet;
+	private Position basePosition;
 	public void init() {
 		double averageX = 0;
 		double averageY = 0;
@@ -56,7 +57,7 @@ public class BasicStrategy {
 		if(basePlanetId==-1) {
 			basePlanetId = getClosestPlanet(averageStart).getId();
 		}
-		Position basePosition = gameMap.getPlanet(basePlanetId).getPosition();
+		basePosition = gameMap.getPlanet(basePlanetId).getPosition();
 		closestPlanetIds = new ArrayList<Integer>();
 		calcClosestPlanetIds(basePosition);
 		shipToPlanet = new HashMap<Integer, Integer>();
@@ -80,8 +81,8 @@ public class BasicStrategy {
 	private static List<Ship> shipDraft;
 	private static double FACTOR = 1.0;
 	public void newTurn() {
-		if(gameMap.getTurnNumber()>=50) {
-			FACTOR = 1.5;
+		if(gameMap.getTurnNumber()>=40) {
+			FACTOR = 1.2;
 		}
 		shipDraft.clear();
 		for(Ship ship: gameMap.getMyPlayer().getShips()) {
@@ -89,7 +90,7 @@ public class BasicStrategy {
 				shipDraft.add(ship);
 			}
 		}
-		//Removes Planets that have exploded
+		/*//Removes Planets that have exploded
 		List<Integer> toRemove = new ArrayList<Integer>(); //Prevents ConcurrentModificationException
 		for(int i: closestPlanetIds) {
 			if(gameMap.getPlanet(i)==null) {
@@ -98,8 +99,8 @@ public class BasicStrategy {
 		}
 		for(int i: toRemove) {
 			closestPlanetIds.remove((Object)i);
-		}
-		/*//update closestPlanetIds to based off the current planets you own
+		}*/
+		//update closestPlanetIds to based off the current planets you own
 		//also removes the planets that have exploded because it recalculates the entire list
 		double averageX = 0;
 		double averageY = 0;
@@ -114,8 +115,12 @@ public class BasicStrategy {
 		if(count>0) {
 			averageX/=count;
 			averageY/=count;
-			calcClosestPlanetIds(new Position(averageX, averageY));
-		}*/
+			Position newPosition = new Position(averageX, averageY);
+			basePosition = basePosition.addPolar(basePosition.getDistanceTo(newPosition)/10, basePosition.getDirectionTowards(newPosition));
+			calcClosestPlanetIds(basePosition);
+		}
+		//ships choose closest planet TODO
+		//if that planet is full (or does not need more ships), planets draft ships
 		//assign ships
 		for(int planetId: closestPlanetIds) {
 			Planet planet = gameMap.getPlanet(planetId);
@@ -281,6 +286,9 @@ public class BasicStrategy {
 		double closestDistance = Double.MAX_VALUE;
 		for(Planet planet: gameMap.getPlanets()) {
 			double distance = position.getDistanceSquared(planet.getPosition());
+			if(!planet.isOwned()) { //Favor neutral planets
+				distance*=0.6;
+			}
 			if(closestDistance>distance) {
 				closestDistance = distance;
 				closestPlanet = planet;
