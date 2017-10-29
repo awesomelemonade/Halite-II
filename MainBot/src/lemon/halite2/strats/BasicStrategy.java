@@ -89,7 +89,17 @@ public class BasicStrategy {
 				shipDraft.add(ship);
 			}
 		}
-		//update closestPlanetIds to based off the current planets you own
+		//Removes Planets that have exploded
+		List<Integer> toRemove = new ArrayList<Integer>(); //Prevents ConcurrentModificationException
+		for(int i: closestPlanetIds) {
+			if(gameMap.getPlanet(i)==null) {
+				toRemove.add(i);
+			}
+		}
+		for(int i: toRemove) {
+			closestPlanetIds.remove((Object)i);
+		}
+		/*//update closestPlanetIds to based off the current planets you own
 		//also removes the planets that have exploded because it recalculates the entire list
 		double averageX = 0;
 		double averageY = 0;
@@ -105,7 +115,7 @@ public class BasicStrategy {
 			averageX/=count;
 			averageY/=count;
 			calcClosestPlanetIds(new Position(averageX, averageY));
-		}
+		}*/
 		//assign ships
 		for(int planetId: closestPlanetIds) {
 			Planet planet = gameMap.getPlanet(planetId);
@@ -185,17 +195,19 @@ public class BasicStrategy {
 		if(isSafeToDock(ship.getPosition(), closestPlanet)&&ship.canDock(closestPlanet)) {
 			DebugLog.log("Docking Ship: "+ship.getId());
 			return moveQueue.addMove(new DockMove(ship, closestPlanet));
-		}else if(ship.getPosition().getDistanceSquared(currentPlanet.getPosition())<(GameConstants.DOCK_RADIUS+currentPlanet.getRadius())*(GameConstants.DOCK_RADIUS+currentPlanet.getRadius())){
-			Ship enemyShip = findEnemyShip(currentPlanet.getPosition());
-			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), 2*GameConstants.SHIP_RADIUS+0.01f);
-			int request = moveQueue.addMove(move);
-			while(request!=-1&&handledShips.contains(request)) {
-				move.setThrust(Math.min(move.getThrust()-1, 0));
-				request = moveQueue.addMove(move);
-			}
-			return request;
 		}else{
-			ThrustMove move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), GameConstants.SHIP_RADIUS+currentPlanet.getRadius()+0.01f);
+			Ship enemyShip = findEnemyShip(currentPlanet, ship.getPosition());
+			ThrustMove move;
+			if(enemyShip==null) {
+				move = Pathfinder.pathfind(ship, ship.getPosition(), currentPlanet.getPosition(), currentPlanet.getRadius()+GameConstants.DOCK_RADIUS);
+			}else {
+				if(enemyShip.getDockingStatus()==DockingStatus.UNDOCKED&&enemyShip.getHealth()>ship.getHealth()) {
+					//try to crash into enemy ship
+					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition());
+				}else {
+					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
+				}
+			}
 			int request = moveQueue.addMove(move);
 			while(request!=-1&&handledShips.contains(request)) {
 				move.setThrust(Math.min(move.getThrust()-1, 0));
@@ -234,20 +246,35 @@ public class BasicStrategy {
 		}
 		return true;
 	}
-	public Ship findEnemyShip(Position position) {
-		Ship closestShip = null;
-		double closestDistance = Double.MAX_VALUE;
+	public Ship findEnemyShip(Planet planet, Position position) {
+		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
+		bufferSquared = bufferSquared*bufferSquared;
+		
+		double startDirection = planet.getPosition().getDirectionTowards(position);
+		double angleBuffer = 2*Math.asin(4/Math.sqrt(bufferSquared)); //8 degrees of buffer; you can calculate this in init time to make it faster
+		double shortestDirection = Double.MAX_VALUE;
+		Ship shortestShip = null;
+		
 		for(Ship ship: gameMap.getShips()) {
 			if(ship.getOwner()==gameMap.getMyPlayerId()) {
 				continue;
 			}
-			double distance = position.getDistanceSquared(ship.getPosition());
-			if(closestDistance>distance) {
-				closestDistance = distance;
-				closestShip = ship;
+			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {
+				double targetDirection = planet.getPosition().getDirectionTowards(ship.getPosition());
+				if(Math.abs(targetDirection-startDirection)<angleBuffer) {
+					return ship;
+				}
+				double deltaDirection = (targetDirection-startDirection)%(2*Math.PI);
+				if(deltaDirection<0) {
+					deltaDirection+=(2*Math.PI);
+				}
+				if(shortestDirection>deltaDirection) {
+					shortestDirection = deltaDirection;
+					shortestShip = ship;
+				}
 			}
 		}
-		return closestShip;
+		return shortestShip;
 	}
 	public Planet getClosestPlanet(Position position) {
 		Planet closestPlanet = null;

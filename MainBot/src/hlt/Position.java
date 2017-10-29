@@ -24,7 +24,11 @@ public class Position {
 	public double getDirectionTowards(Position target) {
 		double dx = target.getX() - x;
 		double dy = target.getY() - y;
-		return Math.atan2(dy, dx) + 2 * Math.PI;
+		double direction = Math.atan2(dy, dx);
+		if(direction<0) {
+			direction+=2*Math.PI;
+		}
+		return direction;
 	}
 	public Position add(double x, double y) {
 		return new Position(this.x+x, this.y+y);

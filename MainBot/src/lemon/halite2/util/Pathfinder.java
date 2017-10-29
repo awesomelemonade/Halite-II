@@ -20,14 +20,19 @@ public class Pathfinder {
 	public static void setGameMap(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
 	}
-	// Ignores Ships, but takes into account planets
+	public static ThrustMove pathfind(Ship ship, Position start, Position end) {
+		return pathfind(ship, start, end, 0);
+	}
 	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer) {
-		return pathfind(ship, start, end, buffer, RoundPolicy.ROUND);
+		if(start.getDistanceSquared(end)<buffer*buffer) { //already there
+			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
+		}
+		return pathfind(ship, start, end.addPolar(buffer, end.getDirectionTowards(start)), RoundPolicy.ROUND);
 	}
 	private static int lastShipId = -1;
 	private static List<Entity> entitiesPathfinded = new ArrayList<Entity>();
 	//Offset Policy: -1 = OFFSET NEGATIVE DIR; 1 = OFFSET POSITIVE DIR; 0 = NO PREFERENCE
-	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer, RoundPolicy offsetPolicy) {
+	public static ThrustMove pathfind(Ship ship, Position start, Position end, RoundPolicy offsetPolicy) {
 		if(lastShipId!=ship.getId()) {
 			lastShipId = ship.getId();
 			entitiesPathfinded.clear();
@@ -95,7 +100,7 @@ public class Pathfinder {
 			//}
 			Position endPoint = start.addPolar(magnitude, direction);
 			entitiesPathfinded.add(entity);
-			return pathfind(ship, start, endPoint, 0, newOffsetPolicy);
+			return pathfind(ship, start, endPoint, newOffsetPolicy);
 		}
 		return null;
 	}
