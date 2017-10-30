@@ -1,5 +1,7 @@
 import hlt.*;
 import lemon.halite2.strats.BasicStrategy;
+import lemon.halite2.strats.BasicStrategy2;
+import lemon.halite2.strats.Strategy;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.Pathfinder;
 import lemon.halite2.util.ShipPriorities;
@@ -24,7 +26,8 @@ public class MyBot {
 			MoveQueue moveQueue = new MoveQueue(gameMap);
 			List<Integer> handledShips = new ArrayList<Integer>();
 			
-			BasicStrategy strategy = new BasicStrategy(gameMap);
+			Strategy strategy = new BasicStrategy2(gameMap);
+			strategy.init();
 			//Rate Planets
 			
 			Networking.finalizeInitialization("Lemon");

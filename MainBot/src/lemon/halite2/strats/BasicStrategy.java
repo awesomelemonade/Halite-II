@@ -19,11 +19,10 @@ import hlt.ThrustMove;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.Pathfinder;
 
-public class BasicStrategy {
+public class BasicStrategy implements Strategy {
 	private GameMap gameMap;
 	public BasicStrategy(GameMap gameMap){
 		this.gameMap = gameMap;
-		init();
 	}
 	private List<Integer> closestPlanetIds;
 	private Map<Integer, Integer> shipToPlanet;
@@ -63,7 +62,7 @@ public class BasicStrategy {
 		shipToPlanet = new HashMap<Integer, Integer>();
 		shipDraft = new ArrayList<Ship>();
 	}
-	public void calcClosestPlanetIds(Position position) {
+	public void calcClosestPlanetIds(final Position position) {
 		closestPlanetIds.clear();
 		List<Planet> planets = new ArrayList<Planet>();
 		planets.addAll(gameMap.getPlanets());
