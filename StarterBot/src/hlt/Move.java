@@ -2,7 +2,7 @@ package hlt;
 
 public class Move {
 	public enum MoveType {
-		Noop, Thrust, Dock, Undock
+		NOOP, THRUST, DOCK, UNDOCK;
 	}
 	private MoveType type;
 	private Ship ship;

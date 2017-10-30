@@ -1,6 +1,6 @@
 package hlt;
 
-public class Constants {
+public class GameConstants {
 
     ////////////////////////////////////////////////////////////////////////
     // Implementation-independent language-agnostic constants
@@ -43,13 +43,4 @@ public class Constants {
 
     /** Distance from the planets edge at which new ships are created */
     public static final double SPAWN_RADIUS = 2.0;
-
-    ////////////////////////////////////////////////////////////////////////
-    // Implementation-specific constants
-
-    public static final double FORECAST_FUDGE_FACTOR = SHIP_RADIUS + 0.1;
-    public static final int MAX_NAVIGATION_CORRECTIONS = 90;
-
-    /** Used in Position.getClosestPoint() */
-    public static final int MIN_DISTANCE = 3;
 }

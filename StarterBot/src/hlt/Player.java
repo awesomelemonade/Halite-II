@@ -1,5 +1,6 @@
 package hlt;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -10,8 +11,8 @@ public class Player {
 		this.id = id;
 		this.ships = Collections.unmodifiableMap(ships);
 	}
-	public Map<Integer, Ship> getShips() {
-		return ships;
+	public Collection<Ship> getShips() {
+		return ships.values();
 	}
 	public Ship getShip(int entityId) {
 		return ships.get(entityId);

@@ -24,8 +24,8 @@ public class MyBot {
 				moveList.clear();
 				gameMap.updateMap(Networking.readLineIntoMetadata());
 				
-				for (Ship ship : gameMap.getMyPlayer().getShips().values()) {
-					if (ship.getDockingStatus() != Ship.DockingStatus.Undocked) {
+				for (Ship ship : gameMap.getMyPlayer().getShips()) {
+					if (ship.getDockingStatus() != Ship.DockingStatus.UNDOCKED) {
 						continue;
 					}
 					for (Planet planet : gameMap.getPlanets()) {

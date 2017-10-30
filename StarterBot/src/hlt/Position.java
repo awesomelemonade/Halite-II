@@ -1,38 +1,40 @@
 package hlt;
 
 public class Position {
-	private double xPos;
-	private double yPos;
-	public Position(double xPos, double yPos) {
-		this.xPos = xPos;
-		this.yPos = yPos;
+	private double x;
+	private double y;
+	public Position(double x, double y) {
+		this.x = x;
+		this.y = y;
 	}
-	public double getXPos() {
-		return xPos;
+	public double getX() {
+		return x;
 	}
-	public double getYPos() {
-		return yPos;
+	public double getY() {
+		return y;
 	}
 	public double getDistanceTo(Position target) {
-		double dx = xPos - target.getXPos();
-		double dy = yPos - target.getYPos();
-		return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+		return Math.sqrt(this.getDistanceSquared(target));
 	}
-	public int orientTowardsInDeg(Position target) {
-		return Util.angleRadToDegClipped(orientTowardsInRad(target));
+	public double getDistanceSquared(Position target) {
+		double dx = target.getX() - x;
+		double dy = target.getY() - y;
+		return dx*dx+dy*dy;
 	}
-	public double orientTowardsInRad(Position target) {
-		double dx = target.getXPos() - xPos;
-		double dy = target.getYPos() - yPos;
-
-		return Math.atan2(dy, dx) + 2 * Math.PI;
+	public double getDirectionTowards(Position target) {
+		double dx = target.getX() - x;
+		double dy = target.getY() - y;
+		double direction = Math.atan2(dy, dx);
+		if(direction<0) {
+			direction+=2*Math.PI;
+		}
+		return direction;
 	}
-	public Position getClosestPoint(Entity target) {
-		double radius = target.getRadius() + Constants.MIN_DISTANCE;
-		double angleRad = target.getPosition().orientTowardsInRad(this);
-		double dx = target.getPosition().getXPos() + radius * Math.cos(angleRad);
-		double dy = target.getPosition().getYPos() + radius * Math.sin(angleRad);
-		return new Position(dx, dy);
+	public Position add(double x, double y) {
+		return new Position(this.x+x, this.y+y);
+	}
+	public Position addPolar(double magnitude, double direction) {
+		return new Position(x+Math.cos(direction)*magnitude, y+Math.sin(direction)*magnitude);
 	}
 	@Override
 	public boolean equals(Object o) {
@@ -43,20 +45,20 @@ public class Position {
 			return false;
 		}
 		Position position = (Position) o;
-		return (Double.compare(position.xPos, xPos) == 0) && (Double.compare(position.yPos, yPos) == 0);
+		return (Double.compare(position.getX(), x) == 0) && (Double.compare(position.getY(), y) == 0);
 	}
 	@Override
 	public int hashCode() {
 		int result;
 		long temp;
-		temp = Double.doubleToLongBits(xPos);
+		temp = Double.doubleToLongBits(x);
 		result = (int) (temp ^ (temp >>> 32));
-		temp = Double.doubleToLongBits(yPos);
+		temp = Double.doubleToLongBits(y);
 		result = 31 * result + (int) (temp ^ (temp >>> 32));
 		return result;
 	}
 	@Override
 	public String toString() {
-		return "Position(" + xPos + ", " + yPos + ")";
+		return "Position(" + x + ", " + y + ")";
 	}
 }
