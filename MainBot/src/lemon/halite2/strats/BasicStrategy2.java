@@ -114,9 +114,10 @@ public class BasicStrategy2 implements Strategy {
 				for(int shipId: parentPlanets.keySet()){
 					if(parentPlanets.get(shipId)==planetId){
 						parentPlanets.put(shipId,
-								getClosestPlanet(gameMap.getShip(gameMap.getMyPlayerId(), shipId).getPosition()).getId()); //reset parent planet
+								getClosestPlanet(gameMap.getMyPlayer().getShip(shipId).getPosition()).getId()); //reset parent planet
 					}
 				}
+				closestPlanetIds.remove(planetId);
 			}
 		}
 		//calculate # of requests for each planet
