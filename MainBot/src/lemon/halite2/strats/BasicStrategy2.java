@@ -92,10 +92,33 @@ public class BasicStrategy2 implements Strategy {
 		return planets;
 	}
 	public void newTurn() {
-		//Do we need to conserve memory and remove all "dead" ships from parentPlanets?
-		
-		//Remove planets that have exploded from closestPlanetIds & Reassign the children of that exploded planet TODO
-		
+		//Remove all dead ships
+		List<Integer> deadShips = new ArrayList<Integer>(); //Prevents ConcurrentModificationException
+		for(int shipId: parentPlanets.keySet()){
+			if(gameMap.getMyPlayer().getShip(shipId)==null){
+				deadShips.add(shipId);
+			}
+		}
+		for(int shipId: deadShips){
+			parentPlanets.remove(shipId);
+		}
+		//Remove planets that have exploded from closestPlanetIds & Reassign the children of that exploded planet
+		if(closestPlanetIds.size()>gameMap.getPlanets().size()){ //Detect whether planets have exploded
+			List<Integer> deadPlanets = new ArrayList<Integer>(); //Prevents ConcurrentModificationException
+			for(int planetId: closestPlanetIds.keySet()){
+				if(gameMap.getPlanet(planetId)==null){
+					deadPlanets.add(planetId);
+				}
+			}
+			for(int planetId: deadPlanets){
+				for(int shipId: parentPlanets.keySet()){
+					if(parentPlanets.get(shipId)==planetId){
+						parentPlanets.put(shipId,
+								getClosestPlanet(gameMap.getShip(gameMap.getMyPlayerId(), shipId).getPosition()).getId()); //reset parent planet
+					}
+				}
+			}
+		}
 		//calculate # of requests for each planet
 		Map<Integer, Integer> planetRequests = new HashMap<Integer, Integer>();
 		for(Planet planet: gameMap.getPlanets()){
