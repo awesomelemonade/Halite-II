@@ -66,6 +66,7 @@ public class MyBot {
 			}
 		}catch(Exception ex) {
 			DebugLog.log(ex);
+			System.out.println(ex.getMessage());
 		}
 	}
 }

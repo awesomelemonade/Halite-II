@@ -43,11 +43,11 @@ public class BasicStrategy2 implements Strategy {
 		averageY/=gameMap.getMyPlayer().getShips().size();
 		Position averageStart = new Position(averageX, averageY);
 		
-		int basePlanet = calcBasePlanetId(averageStart);
+		int basePlanetId = calcBasePlanetId(averageStart);
 		
 		//Set all spawn ships to be children of basePlanet
 		for(Ship ship: gameMap.getMyPlayer().getShips()){
-			parentPlanets.put(ship.getId(), basePlanet);
+			parentPlanets.put(ship.getId(), basePlanetId);
 		}
 		//Calculate closestPlanetIds
 		for(Planet planet: gameMap.getPlanets()){
@@ -170,7 +170,7 @@ public class BasicStrategy2 implements Strategy {
 		if(!unassigned.isEmpty()){
 			int totalShips = unassigned.size();
 			for(Planet planet: gameMap.getPlanets()){
-				int split = (int)Math.ceil(((double)totalShips)/((double)closestPlanetIds.size()));
+				int split = (int)Math.ceil(((double)totalShips)/((double)gameMap.getPlanets().size()));
 				if(unassigned.size()>=split){
 					for(int i=0;i<split;++i){
 						shipToPlanet.put(unassigned.get(0).getId(), planet.getId());
@@ -184,8 +184,8 @@ public class BasicStrategy2 implements Strategy {
 				}
 			}
 		}
-		if(unassigned.isEmpty()){
-			throw new IllegalStateException("How do we still have unassigned ships..."); //Fail Fast
+		if(!unassigned.isEmpty()){
+			throw new IllegalStateException("How do we still have unassigned ships: "+unassigned.size()); //Fail Fast
 		}
 	}
 	public int countEnemyShips(Position position, double buffer) {
