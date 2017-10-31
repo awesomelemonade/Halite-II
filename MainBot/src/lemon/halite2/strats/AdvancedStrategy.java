@@ -30,25 +30,70 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void init() {
+		//Initialize Data Structures
 		shipToPlanet = new HashMap<Integer, Integer>();
 		parentPlanets = new HashMap<Integer, Integer>();
 		planetOrder = new HashMap<Integer, List<Integer>>();
+		//Calculate Starting Plan
+		double averageX = 0;
+		double averageY = 0;
+		for(Ship ship: gameMap.getMyPlayer().getShips()) {
+			averageX+=ship.getPosition().getX();
+			averageY+=ship.getPosition().getY();
+		}
+		averageX/=gameMap.getMyPlayer().getShips().size();
+		averageY/=gameMap.getMyPlayer().getShips().size();
+		Position averageStart = new Position(averageX, averageY);
+		
+		int basePlanetId = calcBasePlanetId(averageStart);
+		
+		//Set all spawn ships to be children of basePlanet
+		for(Ship ship: gameMap.getMyPlayer().getShips()){
+			parentPlanets.put(ship.getId(), basePlanetId);
+		}
+		//Calculate planetOrder
 		for(Planet planet: gameMap.getPlanets()) {
 			Position spawnPoint = planet.getPosition().addPolar(planet.getRadius(),
 					planet.getPosition().getDirectionTowards(gameMap.getCenterPosition()));
 			planetOrder.put(planet.getId(), getClosestPlanets(spawnPoint));
 		}
 	}
+	public int calcBasePlanetId(Position averageStart){
+		double mostDockingSpots = 0;
+		double closestDistance = Double.MAX_VALUE;
+		int basePlanetId = -1;
+		DebugLog.log("Calculating Base Planet");
+		for(Planet planet: gameMap.getPlanets()) {
+			double distance = planet.getPosition().getDistanceTo(averageStart)-planet.getRadius();
+			distance-=0.5*(planet.getPosition().getDistanceTo(gameMap.getCenterPosition())-planet.getRadius()); //Prefer to be not near center
+			DebugLog.log("Evaluating Planet "+planet.getId()+": "+planet.getDockingSpots()+distance);
+			if(distance>70) {
+				continue;
+			}
+			if(planet.getDockingSpots()>mostDockingSpots||(planet.getDockingSpots()==mostDockingSpots&&distance<closestDistance)) {
+				mostDockingSpots = planet.getDockingSpots();
+				basePlanetId = planet.getId();
+				closestDistance = distance;
+			}
+		}
+		if(basePlanetId==-1) {
+			basePlanetId = getClosestPlanet(averageStart).getId();
+			DebugLog.log("Using Closest Planet: "+basePlanetId);
+		}
+		DebugLog.log("Base Planet Picked: "+basePlanetId);
+		return basePlanetId;
+	}
 	public List<Integer> getClosestPlanets(Position position){
 		List<Integer> planets = new ArrayList<Integer>();
+		Map<Integer, Double> distances = new HashMap<Integer, Double>();
 		for(Planet planet: gameMap.getPlanets()) {
 			planets.add(planet.getId());
+			distances.put(planet.getId(), position.getDistanceTo(planet.getPosition())-planet.getRadius());
 		}
 		Collections.sort(planets, new Comparator<Integer>() {
 			@Override
 			public int compare(Integer a, Integer b) {
-				return Double.compare(gameMap.getPlanet(a).getPosition().getDistanceSquared(position),
-						gameMap.getPlanet(b).getPosition().getDistanceSquared(position));
+				return Double.compare(distances.get(a), distances.get(b));
 			}
 		});
 		return planets;
@@ -123,9 +168,12 @@ public class AdvancedStrategy implements Strategy {
 		List<Integer> freeAgents = new ArrayList<Integer>();
 		//Initialize shipToDistance map
 		Map<Integer, Double> shipToDistance = new HashMap<Integer, Double>(); //Maps ShipId to Distance to planet specified by planetIndex
-		for(Ship ship: gameMap.getShips()) {
+		for(Ship ship: gameMap.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				continue;
+			}
+			if(!parentPlanets.containsKey(ship.getId())) { //Ship has just spawned
+				parentPlanets.put(ship.getId(), getClosestPlanet(ship.getPosition()).getId()); //Set parent planet
 			}
 			int parentPlanet = parentPlanets.get(ship.getId());
 			int index = planetIndex.get(parentPlanet);
@@ -148,15 +196,19 @@ public class AdvancedStrategy implements Strategy {
 		for(int shipId: shipToDistance.keySet()) {
 			queue.add(shipId);
 		}
+		DebugLog.log("Processing Queue");
 		//Assign Ships
 		while(!queue.isEmpty()) {
 			int popped = queue.poll();
 			int parentPlanet = parentPlanets.get(popped);
 			int targetPlanetId = planetOrder.get(parentPlanet).get(planetIndex.get(parentPlanet));
+			DebugLog.log("Processing Ship ID="+popped+";target="+targetPlanetId+";parent="+parentPlanet);
 			if(planetRequests.get(targetPlanetId)>0) {
+				DebugLog.log("\tAssigned with "+planetRequests.get(targetPlanetId)+" requests");
 				shipToPlanet.put(popped, targetPlanetId);
 				planetRequests.put(targetPlanetId, planetRequests.get(targetPlanetId)-1);
 			}else {
+				DebugLog.log("\tFufilled Requests! Calculating");
 				//Update Planet Index
 				int index = planetIndex.get(parentPlanet);
 				while(planetRequests.get(planetOrder.get(parentPlanet).get(index))<=0) {
@@ -175,22 +227,26 @@ public class AdvancedStrategy implements Strategy {
 					}
 				}
 				if(index==-1) {
+					DebugLog.log("\tNo more planets - adding to FreeAgents");
 					for(int shipId: sharedParents) {
 						queue.remove(shipId);
 						shipToDistance.remove(shipId);
 						freeAgents.add(shipId);
 					}
-					continue;
 				}else {
 					int newPlanetId = planetOrder.get(parentPlanet).get(index);
+					DebugLog.log("\tRecalculated order: "+newPlanetId);
 					Planet newPlanet = gameMap.getPlanet(newPlanetId);
 					for(int shipId: sharedParents) {
-						queue.remove(shipId);
-						double distance = gameMap.getMyPlayer().getShip(shipId).getPosition()
-								.getDistanceTo(newPlanet.getPosition())-newPlanet.getRadius();
-						shipToDistance.put(shipId, distance); //Recalculate 
-						queue.add(shipId);
+						if(queue.contains(shipId)) {
+							double distance = gameMap.getMyPlayer().getShip(shipId).getPosition()
+									.getDistanceTo(newPlanet.getPosition())-newPlanet.getRadius();
+							shipToDistance.put(shipId, distance); //Recalculate Distance
+							queue.remove(shipId);
+							queue.add(shipId); //Update PriorityQueue
+						}
 					}
+					queue.add(popped); //Re-add popped ship
 				}
 			}
 		}

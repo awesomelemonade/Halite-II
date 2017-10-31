@@ -1,4 +1,5 @@
 import hlt.*;
+import lemon.halite2.strats.AdvancedStrategy;
 import lemon.halite2.strats.BasicStrategy;
 import lemon.halite2.strats.BasicStrategy2;
 import lemon.halite2.strats.Strategy;
@@ -26,7 +27,7 @@ public class MyBot {
 			MoveQueue moveQueue = new MoveQueue(gameMap);
 			List<Integer> handledShips = new ArrayList<Integer>();
 			
-			Strategy strategy = new BasicStrategy2(gameMap);
+			Strategy strategy = new AdvancedStrategy(gameMap);
 			strategy.init();
 			//Rate Planets
 			
