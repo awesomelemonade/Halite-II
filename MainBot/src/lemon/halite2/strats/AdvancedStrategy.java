@@ -87,7 +87,7 @@ public class AdvancedStrategy implements Strategy {
 	}
 	public List<Integer> getClosestPlanets(Position position){
 		List<Integer> planets = new ArrayList<Integer>();
-		Map<Integer, Double> distances = new HashMap<Integer, Double>();
+		final Map<Integer, Double> distances = new HashMap<Integer, Double>();
 		for(Planet planet: gameMap.getPlanets()) {
 			planets.add(planet.getId());
 			distances.put(planet.getId(), position.getDistanceTo(planet.getPosition())-planet.getRadius());
@@ -169,7 +169,7 @@ public class AdvancedStrategy implements Strategy {
 		//Free Agents
 		List<Integer> freeAgents = new ArrayList<Integer>();
 		//Initialize shipToDistance map
-		Map<Integer, Double> shipToDistance = new HashMap<Integer, Double>(); //Maps ShipId to Distance to planet specified by planetIndex
+		final Map<Integer, Double> shipToDistance = new HashMap<Integer, Double>(); //Maps ShipId to Distance to planet specified by planetIndex
 		for(Ship ship: gameMap.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				continue;
