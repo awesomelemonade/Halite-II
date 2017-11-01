@@ -1,6 +1,7 @@
 package lemon.halite2.strats;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -65,11 +66,12 @@ public class AdvancedStrategy implements Strategy {
 		DebugLog.log("Calculating Base Planet");
 		for(Planet planet: gameMap.getPlanets()) {
 			double distance = planet.getPosition().getDistanceTo(averageStart)-planet.getRadius();
-			distance-=0.5*(planet.getPosition().getDistanceTo(gameMap.getCenterPosition())-planet.getRadius()); //Prefer to be not near center
-			DebugLog.log("Evaluating Planet "+planet.getId()+": "+planet.getDockingSpots()+distance);
-			if(distance>70) {
+			double actualDistance = distance;
+			if(distance>50) {
 				continue;
 			}
+			distance-=0.25*(planet.getPosition().getDistanceTo(gameMap.getCenterPosition())-planet.getRadius()); //Prefer to be not near center
+			DebugLog.log("Evaluating Planet "+planet.getId()+": "+planet.getDockingSpots()+" - "+actualDistance+" - "+distance);
 			if(planet.getDockingSpots()>mostDockingSpots||(planet.getDockingSpots()==mostDockingSpots&&distance<closestDistance)) {
 				mostDockingSpots = planet.getDockingSpots();
 				basePlanetId = planet.getId();
@@ -229,10 +231,14 @@ public class AdvancedStrategy implements Strategy {
 				if(index==-1) {
 					DebugLog.log("\tNo more planets - adding to FreeAgents");
 					for(int shipId: sharedParents) {
-						queue.remove(shipId);
-						shipToDistance.remove(shipId);
-						freeAgents.add(shipId);
+						if(queue.contains(shipId)) {
+							queue.remove(shipId);
+							shipToDistance.remove(shipId);
+							freeAgents.add(shipId);
+						}
 					}
+					freeAgents.add(popped);
+					shipToDistance.remove(popped);
 				}else {
 					int newPlanetId = planetOrder.get(parentPlanet).get(index);
 					DebugLog.log("\tRecalculated order: "+newPlanetId);
@@ -250,6 +256,7 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}
+		DebugLog.log("Free Agents: "+Arrays.toString(freeAgents.toArray()));
 		//Assign Free Agents - Target planet that is not ours
 		if(!freeAgents.isEmpty()) {
 			for(Planet planet: gameMap.getPlanets()) {
