@@ -6,7 +6,7 @@ public class MathUtil {
 		if(between>Math.PI){
 			between-=2*Math.PI;
 		}
-		if(between<Math.PI){
+		if(between<-Math.PI){
 			between+=2*Math.PI;
 		}
 		return Math.abs(between);

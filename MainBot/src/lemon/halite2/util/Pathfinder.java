@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import hlt.DebugLog;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Planet;
@@ -14,15 +15,25 @@ import hlt.ThrustMove.RoundPolicy;
 
 public class Pathfinder {
 	private static GameMap gameMap;
+	private static Map<Position, Double> obstacles;
 	
-	public static void setGameMap(GameMap gameMap) {
+	public static void init(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
+		obstacles = new HashMap<Position, Double>();
+	}
+	public static void update() {
+		obstacles.clear();
+		for(Planet planet: gameMap.getPlanets()){
+			obstacles.put(planet.getPosition(), planet.getRadius());
+		}
+		for(Ship otherShip: gameMap.getMyPlayer().getShips()){
+			obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
+		}
 	}
 	public static ThrustMove pathfind(Ship ship, Position start, Position end) {
-		return pathfind(ship, start, end, 0);
+		return pathfind(ship, start, end, 0, 0);
 	}
-	//Offset Policy: -1 = OFFSET NEGATIVE DIR; 1 = OFFSET POSITIVE DIR; 0 = NO PREFERENCE
-	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer) {
+	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer, double endBuffer) {
 		if(start.getDistanceSquared(end)<buffer*buffer){
 			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
 		}
@@ -32,52 +43,65 @@ public class Pathfinder {
 		double offsetDirection = Math.abs(targetDirection-realDirection);
 		double realDistance = start.getDistanceTo(end);
 		double targetDistance = 0;
-		if(buffer>realDistance*Math.sin(offsetDirection)){ //Ensures triangle to be solvable
-			double lawOfSinesValue = Math.sin(offsetDirection)/buffer; //Divide by 0 error if buffer = 0
+		if(offsetDirection>0&&(buffer+endBuffer)>=realDistance*Math.sin(offsetDirection)){ //Ensures triangle to be solvable
+			DebugLog.log("Solving Law of Sines");
+			double lawOfSinesValue = Math.sin(offsetDirection)/(buffer+endBuffer); //Divide by 0 error if buffer = 0
 			double sineInverse = Math.PI-Math.asin(realDistance*lawOfSinesValue); //It's the one that is greater than Math.PI/2 radians
 			targetDistance = Math.sin(Math.PI-sineInverse-offsetDirection)/lawOfSinesValue;
 			//targetDistance = Math.sin(Math.asin(realDistance*lawOfSinesValue)-offsetDirection)/lawOfSinesValue;
 		}else{
-			targetDistance = realDistance*Math.cos(offsetDirection);
-		}
-		Position targetPosition = start.addPolar(targetDistance, targetDirection);
-		//Target Vector to travel: (targetDistance, targetDirection) @ targetPosition
-		Map<Position, Double> obstacles = new HashMap<Position, Double>();
-		for(Planet planet: gameMap.getPlanets()){
-			obstacles.put(planet.getPosition(), planet.getRadius());
-		}
-		for(Ship otherShip: gameMap.getMyPlayer().getShips()){
-			if(otherShip.getId()==ship.getId()){
-				continue;
+			if(offsetDirection==0||buffer+endBuffer>realDistance) {
+				targetDistance = Math.max(0, realDistance-(buffer+endBuffer));
+			}else {
+				targetDistance = realDistance*Math.cos(offsetDirection);
 			}
-			obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
 		}
-		double leftMargin = 0; //Deviating from targetDirection
-		double rightMargin = 0; //Deviating from targetDirection
-		for(Entry<Position, Double> entry: obstacles.entrySet()){
+		DebugLog.log("\tTargetDistance - "+targetDistance);
+		Position targetPosition = start.addPolar(targetDistance, targetDirection);
+		double left = calcPlan(start, targetPosition, buffer, -1, Math.PI, obstacles);
+		double right = calcPlan(start, targetPosition, buffer, 1, Math.PI, obstacles);
+		DebugLog.log("\tleft="+left+"; right="+right);
+		if(left==0&&right==0) {
+			return new ThrustMove(ship, (int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
+		}
+		if(left==-1&&right==-1) { //No Valid Directions
+			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
+		}
+		if(left==-1||left<right) {
+			return new ThrustMove(ship, 7, targetDirection+right, RoundPolicy.NONE);
+		}else {
+			return new ThrustMove(ship, 7, targetDirection-left, RoundPolicy.NONE);
+		}
+	}
+	//Feed in degree-workable start and end
+	private static double calcPlan(Position start, Position end, double buffer, int sign, double amount, Map<Position, Double> obstacles) {
+		DebugLog.log("\t\t"+start+" - "+end+" - "+buffer+" - "+sign+" - "+amount);
+		double realDirection = start.getDirectionTowards(end);
+		for(Entry<Position, Double> entry: obstacles.entrySet()) {
 			Position position = entry.getKey();
 			double radius = entry.getValue()+buffer;
-			if(Geometry.segmentCircleIntersection(start, targetPosition, position, radius)){
+			if(Geometry.segmentCircleIntersection(start, end, position, radius)){
+				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
 				double distance = start.getDistanceTo(position);
 				if(distance<=radius){
-					//You're in the obstacle? whaaaaa
-					continue; //Skip the obstacle
+					continue; //You're in the obstacle? - Skip the obstacle
 				}
 				double tangentValue = Math.asin(radius/distance);
 				double direction = start.getDirectionTowards(position);
-				double directionA = RoundPolicy.CEIL.apply(MathUtil.angleBetween(targetDirection, direction-tangentValue));
-				double directionB = RoundPolicy.CEIL.apply(MathUtil.angleBetween(targetDirection, direction+tangentValue));
-				leftMargin = Math.min(Math.PI, directionA);
-				rightMargin = Math.min(Math.PI, directionB);
+				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(realDirection, direction+sign*tangentValue));
+				DebugLog.log("\t\t\t"+theta+" - "+realDirection+" - "+(direction+sign*tangentValue));
+				if(theta<=amount) {
+					Position newPosition = start.addPolar(7, realDirection+sign*theta);
+					double plan = calcPlan(start, newPosition, buffer, sign, amount-theta, obstacles);
+					if(plan==-1) {
+						return -1; //OH NOES
+					}
+					return theta+plan;
+				}else {
+					return -1; //OH NOES
+				}
 			}
 		}
-		if(leftMargin==0&&rightMargin==0){
-			return new ThrustMove(ship, (int)Math.min(targetDistance, 7), targetDirection, RoundPolicy.NONE);
-		}
-		if(leftMargin<rightMargin){
-			return new ThrustMove(ship, 7, targetDirection-leftMargin, RoundPolicy.NONE);
-		}else{
-			return new ThrustMove(ship, 7, targetDirection+rightMargin, RoundPolicy.NONE);
-		}
+		return 0;
 	}
 }

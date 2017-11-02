@@ -22,7 +22,7 @@ public class MyBot {
 			GameMap gameMap = Networking.initialize();
 			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
-			Pathfinder.setGameMap(gameMap);
+			Pathfinder.init(gameMap);
 			ShipPriorities shipPriorities = new ShipPriorities(gameMap);
 			MoveQueue moveQueue = new MoveQueue(gameMap);
 			List<Integer> handledShips = new ArrayList<Integer>();
@@ -36,6 +36,7 @@ public class MyBot {
 			while (true) {
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
 				gameMap.updateMap(Networking.readLineIntoMetadata());
+				Pathfinder.update();
 				shipPriorities.update();
 				handledShips.clear();
 				strategy.newTurn();

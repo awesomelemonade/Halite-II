@@ -1,5 +1,6 @@
 package lemon.halite2.util;
 
+import hlt.DebugLog;
 import hlt.Position;
 
 public class Geometry {
@@ -24,6 +25,7 @@ public class Geometry {
 		}
 	}
 	public static boolean segmentCircleIntersection(Position a, Position b, Position center, double buffer) {
+		DebugLog.log("\t\t\t\tDistance: "+segmentPointDistance(a, b, center)+" - "+buffer+" - "+(buffer-segmentPointDistance(a, b, center)));
 		return segmentPointDistance(a, b, center)<=buffer;
 	}
 	// Used in Segment-Segment Intersection; Intersection between segment a, b and point c
