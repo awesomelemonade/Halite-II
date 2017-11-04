@@ -53,6 +53,7 @@ public class Pathfinder {
 				targetDistance = realDistance*Math.cos(offsetDirection);
 			}
 		}
+		targetDistance = Math.max(0, targetDistance-CORRECTION);
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		double left = calcPlan(start, targetPosition, buffer, -1, Math.PI, obstacles);
 		double right = calcPlan(start, targetPosition, buffer, 1, Math.PI, obstacles);
@@ -73,13 +74,15 @@ public class Pathfinder {
 			return new ThrustMove(ship, 7, targetDirection+right, RoundPolicy.NONE);
 		}
 	}
+	private static final double DETECT = 0.001;
+	private static final double CORRECTION = 0.002;
 	//Feed in degree-workable start and end
 	private static double calcPlan(Position start, Position end, double buffer, int sign, double amount, Map<Position, Double> obstacles) {
 		DebugLog.log("\t\tCalcPlan: "+start+" - "+end+" - "+buffer+" - "+sign+" - "+amount);
 		double realDirection = start.getDirectionTowards(end);
 		for(Entry<Position, Double> entry: obstacles.entrySet()) {
 			Position position = entry.getKey();
-			double radius = entry.getValue()+buffer;
+			double radius = entry.getValue()+buffer+DETECT;
 			//DebugLog.log("Checking Parameters: "+start+" - "+end+" - "+position+" - "+radius);
 			//DebugLog.log("Checking Output: "+Geometry.segmentPointDistance(start, end, position)+" - "+Geometry.segmentCircleIntersection(start, end, position, radius));
 			if(Geometry.segmentCircleIntersection(start, end, position, radius)){
@@ -88,7 +91,7 @@ public class Pathfinder {
 					continue; //You're in the obstacle? - Skip the obstacle
 				}
 				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
-				double tangentValue = Math.asin(Math.min((radius+0.001)/distance, 1));
+				double tangentValue = Math.asin(Math.min((radius+CORRECTION)/distance, 1));
 				double direction = start.getDirectionTowards(position);
 				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(realDirection, direction+sign*tangentValue));
 				if(theta<=amount) {

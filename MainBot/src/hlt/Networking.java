@@ -27,13 +27,20 @@ public class Networking {
 				if(((ThrustMove)move).getThrust()!=0){
 					moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
 							.append(((ThrustMove) move).getThrust()).append(' ')
-							.append((int)Math.round(Math.toDegrees(((ThrustMove) move).getRoundedAngle()))).append(' ');
+							.append(getAngle(((ThrustMove) move).getRoundedAngle())).append(' ');
 				}
 				break;
 			}
 		}
 		writer.println(moveString);
 		writer.flush();
+	}
+	private static int getAngle(double angle) {
+		int degrees = (int)(Math.round(Math.toDegrees(angle))%360);
+		if(degrees<0) {
+			degrees+=360;
+		}
+		return degrees;
 	}
 	private static String readLine() {
 		try {
