@@ -43,8 +43,7 @@ public class Pathfinder {
 		double offsetDirection = Math.abs(targetDirection-realDirection);
 		double realDistance = start.getDistanceTo(end);
 		double targetDistance = 0;
-		if(offsetDirection>0&&(buffer+endBuffer)>=realDistance*Math.sin(offsetDirection)){ //Ensures triangle to be solvable
-			DebugLog.log("Solving Law of Sines");
+		if(offsetDirection>0&&(buffer+endBuffer)<realDistance&&(buffer+endBuffer)>=realDistance*Math.sin(offsetDirection)){ //Ensures triangle to be solvable
 			double lawOfSinesValue = Math.sin(offsetDirection)/(buffer+endBuffer); //Divide by 0 error if buffer = 0
 			double sineInverse = Math.PI-Math.asin(realDistance*lawOfSinesValue); //It's the one that is greater than Math.PI/2 radians
 			targetDistance = Math.sin(Math.PI-sineInverse-offsetDirection)/lawOfSinesValue;
@@ -56,21 +55,23 @@ public class Pathfinder {
 				targetDistance = realDistance*Math.cos(offsetDirection);
 			}
 		}
-		DebugLog.log("\tTargetDistance - "+targetDistance);
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		double left = calcPlan(start, targetPosition, buffer, -1, Math.PI, obstacles);
 		double right = calcPlan(start, targetPosition, buffer, 1, Math.PI, obstacles);
-		DebugLog.log("\tleft="+left+"; right="+right);
 		if(left==0&&right==0) {
 			return new ThrustMove(ship, (int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
 		}
 		if(left==-1&&right==-1) { //No Valid Directions
 			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
 		}
-		if(left==-1||left<right) {
+		if(left==-1) {
 			return new ThrustMove(ship, 7, targetDirection+right, RoundPolicy.NONE);
-		}else {
+		}else if(right==-1){
 			return new ThrustMove(ship, 7, targetDirection-left, RoundPolicy.NONE);
+		}else if(left<right) {
+			return new ThrustMove(ship, 7, targetDirection-left, RoundPolicy.NONE);
+		}else {
+			return new ThrustMove(ship, 7, targetDirection+right, RoundPolicy.NONE);
 		}
 	}
 	//Feed in degree-workable start and end
@@ -86,10 +87,9 @@ public class Pathfinder {
 				if(distance<=radius){
 					continue; //You're in the obstacle? - Skip the obstacle
 				}
-				double tangentValue = Math.asin(radius/distance);
+				double tangentValue = Math.asin((radius+0.001)/distance);
 				double direction = start.getDirectionTowards(position);
 				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(realDirection, direction+sign*tangentValue));
-				DebugLog.log("\t\t\t"+theta+" - "+realDirection+" - "+(direction+sign*tangentValue));
 				if(theta<=amount) {
 					Position newPosition = start.addPolar(7, realDirection+sign*theta);
 					double plan = calcPlan(start, newPosition, buffer, sign, amount-theta, obstacles);
