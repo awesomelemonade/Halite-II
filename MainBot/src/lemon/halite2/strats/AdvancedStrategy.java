@@ -330,20 +330,18 @@ public class AdvancedStrategy implements Strategy {
 		Planet closestPlanet = getClosestPlanet(ship.getPosition());
 		
 		if(isSafeToDock(ship.getPosition(), closestPlanet)&&ship.canDock(closestPlanet)) {
-			DebugLog.log("Docking Ship: "+ship.getId());
 			return moveQueue.addMove(new DockMove(ship, closestPlanet));
 		}else{
 			Ship enemyShip = findEnemyShip(targetPlanet, ship.getPosition());
 			ThrustMove move;
 			if(enemyShip==null) {
 				move = Pathfinder.pathfind(ship, ship.getPosition(), targetPlanet.getPosition(), GameConstants.SHIP_RADIUS, targetPlanet.getRadius());
-				DebugLog.log("Pathfinding to: "+targetPlanet.getPosition()+" - "+move.getThrust()+" - "+move.getRoundedAngle());
 			}else {
 				if(enemyShip.getDockingStatus()==DockingStatus.UNDOCKED&&enemyShip.getHealth()>ship.getHealth()) {
 					//try to crash into enemy ship
-					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition());
+					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, 0);
 				}else {
-					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.WEAPON_RADIUS);
+					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.WEAPON_RADIUS*0.5);
 				}
 			}
 			int request = moveQueue.addMove(move);

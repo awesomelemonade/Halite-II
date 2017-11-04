@@ -13,9 +13,11 @@ public class Geometry {
 		// Calculate closest to point on the line above
 		double x = (b * (b * point.getX() - a * point.getY()) - a * c) / (a * a + b * b);
 		double y = (a * (-b * point.getX() + a * point.getY()) - b * c) / (a * a + b * b);
+		boolean xTest = ((start.getX() <= x && x <= end.getX()) || (start.getX() >= x && x >= end.getX()));
+		boolean yTest = ((start.getY() <= y && y <= end.getY()) || (start.getY() >= y && y >= end.getY()));
 		// Check if (x, y) is between start and end
-		if (((start.getX() <= x && x <= end.getX()) || (start.getX() >= x && x >= end.getX()))
-				&& ((start.getY() <= y && y <= end.getY()) || (start.getY() >= y && y >= end.getY()))) {
+		if ((xTest||Math.abs(end.getX()-start.getX())<0.01)&&
+				(yTest||Math.abs(end.getY()-start.getY())<0.01)) {
 			return Math.sqrt((point.getX() - x) * (point.getX() - x) + (point.getY() - y) * (point.getY() - y));
 		} else {
 			double i = point.getDistanceSquared(start);

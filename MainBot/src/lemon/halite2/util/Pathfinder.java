@@ -30,10 +30,8 @@ public class Pathfinder {
 			obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
 		}
 	}
-	public static ThrustMove pathfind(Ship ship, Position start, Position end) {
-		return pathfind(ship, start, end, 0, 0);
-	}
 	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer, double endBuffer) {
+		DebugLog.log("\tPathfinding: "+ship.getId()+" - "+start+" - "+end+" - "+buffer+" - "+endBuffer);
 		if(start.getDistanceSquared(end)<buffer*buffer){
 			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
 		}
@@ -58,6 +56,7 @@ public class Pathfinder {
 		Position targetPosition = start.addPolar(targetDistance, targetDirection);
 		double left = calcPlan(start, targetPosition, buffer, -1, Math.PI, obstacles);
 		double right = calcPlan(start, targetPosition, buffer, 1, Math.PI, obstacles);
+		DebugLog.log("\t\t"+left+" - "+right+" - "+targetDistance+" - "+targetDirection);
 		if(left==0&&right==0) {
 			return new ThrustMove(ship, (int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
 		}
@@ -76,18 +75,20 @@ public class Pathfinder {
 	}
 	//Feed in degree-workable start and end
 	private static double calcPlan(Position start, Position end, double buffer, int sign, double amount, Map<Position, Double> obstacles) {
-		DebugLog.log("\t\t"+start+" - "+end+" - "+buffer+" - "+sign+" - "+amount);
+		DebugLog.log("\t\tCalcPlan: "+start+" - "+end+" - "+buffer+" - "+sign+" - "+amount);
 		double realDirection = start.getDirectionTowards(end);
 		for(Entry<Position, Double> entry: obstacles.entrySet()) {
 			Position position = entry.getKey();
 			double radius = entry.getValue()+buffer;
+			//DebugLog.log("Checking Parameters: "+start+" - "+end+" - "+position+" - "+radius);
+			//DebugLog.log("Checking Output: "+Geometry.segmentPointDistance(start, end, position)+" - "+Geometry.segmentCircleIntersection(start, end, position, radius));
 			if(Geometry.segmentCircleIntersection(start, end, position, radius)){
-				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
 				double distance = start.getDistanceTo(position);
 				if(distance<=radius){
 					continue; //You're in the obstacle? - Skip the obstacle
 				}
-				double tangentValue = Math.asin((radius+0.001)/distance);
+				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
+				double tangentValue = Math.asin(Math.min((radius+0.001)/distance, 1));
 				double direction = start.getDirectionTowards(position);
 				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(realDirection, direction+sign*tangentValue));
 				if(theta<=amount) {

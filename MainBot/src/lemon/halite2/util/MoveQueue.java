@@ -3,10 +3,12 @@ package lemon.halite2.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import hlt.DebugLog;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
 import hlt.Networking;
+import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
 import hlt.ThrustMove;
@@ -39,6 +41,16 @@ public class MoveQueue {
 			Position end = start.addPolar(thrustMove.getThrust(), thrustMove.getRoundedAngle());
 			if(Geometry.segmentCircleIntersection(start, end, ship.getPosition(), 2*GameConstants.SHIP_RADIUS)){
 				return ship.getId();
+			}
+		}
+		for(Planet planet: gameMap.getPlanets()){
+			Position start = thrustMove.getShip().getPosition();
+			Position end = start.addPolar(thrustMove.getThrust(), thrustMove.getRoundedAngle());
+			if(Geometry.segmentCircleIntersection(start, end, planet.getPosition(), GameConstants.SHIP_RADIUS+planet.getRadius())){
+				DebugLog.log("Parameters: "+start+" - "+end+" - "+planet.getPosition()+" - "+(planet.getRadius()+GameConstants.SHIP_RADIUS));
+				DebugLog.log("Output: "+Geometry.segmentPointDistance(start, end, planet.getPosition())+" - "+Geometry.segmentCircleIntersection(start, end, planet.getPosition(), GameConstants.SHIP_RADIUS+planet.getRadius()));
+				DebugLog.log("Crashing into planet? "+planet.getId()+" - "+thrustMove.getShip().getId());
+				//throw new RuntimeException("CRASH: "+planet.getId()+" - "+thrustMove.getShip().getId());
 			}
 		}
 		totalMoves.add(thrustMove);

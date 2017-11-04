@@ -283,9 +283,9 @@ public class BasicStrategy2 implements Strategy {
 			}else {
 				if(enemyShip.getDockingStatus()==DockingStatus.UNDOCKED&&enemyShip.getHealth()>ship.getHealth()) {
 					//try to crash into enemy ship
-					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition());
+					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, 0);
 				}else {
-					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.WEAPON_RADIUS);
+					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+0.5);
 				}
 			}
 			int request = moveQueue.addMove(move);
