@@ -23,11 +23,13 @@ public class MicroGame {
 		groupBuffers = new HashMap<Integer, Double>();
 	}
 	public void moveGroup(int group, Position target, double targetBuffer, MoveQueue moveQueue) {
+		/*
 		PathfindPlan plan = Pathfinder.pathfind(ship, start, target, buffer, targetBuffer);
 		for(int shipId: groups.get(group)) {
 			Ship ship = gameMap.getMyPlayer().getShip(shipId);
 			moveQueue.addMove(new ThrustMove(ship, plan));
 		}
+		*/
 	}
 	//https://math.stackexchange.com/questions/1932858/how-to-find-the-smallest-enclosing-circle-over-a-set-of-circles
 	public void calcEnclosingCircle(int group) {
