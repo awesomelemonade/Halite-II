@@ -3,9 +3,7 @@ package lemon.halite2.util;
 import hlt.Position;
 
 public class Geometry {
-	// Arc - Circle
-	// Segment - Point Distance
-	public static double segmentPointDistance(Position start, Position end, Position point) {
+	public static Position projectPointToLine(Position start, Position end, Position point) {
 		// Standard form of the line ax+by+c = 0
 		double a = start.getY() - end.getY();
 		double b = end.getX() - start.getX();
@@ -13,12 +11,19 @@ public class Geometry {
 		// Calculate closest to point on the line above
 		double x = (b * (b * point.getX() - a * point.getY()) - a * c) / (a * a + b * b);
 		double y = (a * (-b * point.getX() + a * point.getY()) - b * c) / (a * a + b * b);
-		boolean xTest = ((start.getX() <= x && x <= end.getX()) || (start.getX() >= x && x >= end.getX()));
-		boolean yTest = ((start.getY() <= y && y <= end.getY()) || (start.getY() >= y && y >= end.getY()));
+		return new Position(x, y);
+	}
+	// Segment - Point Distance
+	public static double segmentPointDistance(Position start, Position end, Position point) {
+		Position projection = projectPointToLine(start, end, point);
+		boolean xTest = ((start.getX() <= projection.getX() && projection.getX() <= end.getX()) ||
+				(start.getX() >= projection.getX() && projection.getX() >= end.getX()));
+		boolean yTest = ((start.getY() <= projection.getY() && projection.getY() <= end.getY()) ||
+				(start.getY() >= projection.getY() && projection.getY() >= end.getY()));
 		// Check if (x, y) is between start and end
 		if ((xTest||Math.abs(end.getX()-start.getX())<0.01)&&
 				(yTest||Math.abs(end.getY()-start.getY())<0.01)) {
-			return Math.sqrt((point.getX() - x) * (point.getX() - x) + (point.getY() - y) * (point.getY() - y));
+			return projection.getDistanceTo(point);
 		} else {
 			double i = point.getDistanceSquared(start);
 			double j = point.getDistanceSquared(end);
