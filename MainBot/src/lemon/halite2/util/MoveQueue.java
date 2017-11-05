@@ -65,9 +65,7 @@ public class MoveQueue {
 		return checkCollisions(a, b, velocityA, velocityB, 2*GameConstants.SHIP_RADIUS);
 	}
 	public void flush(){
-		DebugLog.log("Sending Moves");
 		Networking.sendMoves(totalMoves);
-		DebugLog.log("Done Sending Moves");
 		totalMoves.clear();
 		thrustMoves.clear();
 	}
@@ -84,8 +82,8 @@ public class MoveQueue {
 				(deltaVelocityX*deltaVelocityX+deltaVelocityY*deltaVelocityY);
 	}
 	public double getDistanceSquared(Position a, Position b, Position velocityA, Position velocityB, double time) {
-		double deltaX = (a.getX()+velocityA.getX()*time)-(b.getX()-velocityB.getX()*time);
-		double deltaY = (a.getY()+velocityA.getY()*time)-(b.getY()-velocityB.getY()*time);
+		double deltaX = (a.getX()+velocityA.getX()*time)-(b.getX()+velocityB.getX()*time);
+		double deltaY = (a.getY()+velocityA.getY()*time)-(b.getY()+velocityB.getY()*time);
 		return deltaX*deltaX+deltaY*deltaY;
 	}
 }
