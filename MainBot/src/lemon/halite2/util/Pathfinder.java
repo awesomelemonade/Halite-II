@@ -10,7 +10,6 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
-import hlt.ThrustMove;
 import hlt.ThrustMove.RoundPolicy;
 
 public class Pathfinder {
@@ -30,10 +29,10 @@ public class Pathfinder {
 			obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
 		}
 	}
-	public static ThrustMove pathfind(Ship ship, Position start, Position end, double buffer, double endBuffer) {
-		DebugLog.log("\tPathfinding: "+ship.getId()+" - "+start+" - "+end+" - "+buffer+" - "+endBuffer);
+	public static PathfindPlan pathfind(Position start, Position end, double buffer, double endBuffer) {
+		DebugLog.log("\tPathfinding: "+start+" - "+end+" - "+buffer+" - "+endBuffer);
 		if(start.getDistanceSquared(end)<buffer*buffer){
-			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
+			return new PathfindPlan(0, 0, RoundPolicy.NONE);
 		}
 		double realDirection = start.getDirectionTowards(end);
 		double targetDirection = RoundPolicy.ROUND.apply(realDirection);
@@ -59,19 +58,19 @@ public class Pathfinder {
 		double right = calcPlan(start, targetPosition, buffer, 1, Math.PI, obstacles);
 		DebugLog.log("\t\t"+left+" - "+right+" - "+targetDistance+" - "+targetDirection);
 		if(left==0&&right==0) {
-			return new ThrustMove(ship, (int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
+			return new PathfindPlan((int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
 		}
 		if(left==-1&&right==-1) { //No Valid Directions
-			return new ThrustMove(ship, 0, 0, RoundPolicy.NONE);
+			return new PathfindPlan(0, 0, RoundPolicy.NONE);
 		}
 		if(left==-1) {
-			return new ThrustMove(ship, 7, targetDirection+right, RoundPolicy.NONE);
+			return new PathfindPlan(7, targetDirection+right, RoundPolicy.NONE);
 		}else if(right==-1){
-			return new ThrustMove(ship, 7, targetDirection-left, RoundPolicy.NONE);
+			return new PathfindPlan(7, targetDirection-left, RoundPolicy.NONE);
 		}else if(left<right) {
-			return new ThrustMove(ship, 7, targetDirection-left, RoundPolicy.NONE);
+			return new PathfindPlan(7, targetDirection-left, RoundPolicy.NONE);
 		}else {
-			return new ThrustMove(ship, 7, targetDirection+right, RoundPolicy.NONE);
+			return new PathfindPlan(7, targetDirection+right, RoundPolicy.NONE);
 		}
 	}
 	private static final double DETECT = 0.001;

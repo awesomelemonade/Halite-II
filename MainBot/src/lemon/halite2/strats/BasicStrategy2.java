@@ -279,13 +279,13 @@ public class BasicStrategy2 implements Strategy {
 			Ship enemyShip = findEnemyShip(targetPlanet, ship.getPosition());
 			ThrustMove move;
 			if(enemyShip==null) {
-				move = Pathfinder.pathfind(ship, ship.getPosition(), targetPlanet.getPosition(), GameConstants.SHIP_RADIUS, targetPlanet.getRadius());
+				move = Pathfinder.pathfind(ship.getPosition(), targetPlanet.getPosition(), GameConstants.SHIP_RADIUS, targetPlanet.getRadius()).apply(ship);
 			}else {
 				if(enemyShip.getDockingStatus()==DockingStatus.UNDOCKED&&enemyShip.getHealth()>ship.getHealth()) {
 					//try to crash into enemy ship
-					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, 0);
+					move = Pathfinder.pathfind(ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, 0).apply(ship);
 				}else {
-					move = Pathfinder.pathfind(ship, ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+0.5);
+					move = Pathfinder.pathfind(ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+0.5).apply(ship);
 				}
 			}
 			int request = moveQueue.addMove(move);

@@ -22,6 +22,12 @@ public class MoveQueue {
 		totalMoves = new ArrayList<Move>();
 		thrustMoves = new ArrayList<ThrustMove>();
 	}
+	public void forceMove(Move move) {
+		if(move instanceof ThrustMove) {
+			thrustMoves.add((ThrustMove)move);
+		}
+		totalMoves.add(move);
+	}
 	public int addMove(Move move){
 		if(!(move instanceof ThrustMove)){
 			totalMoves.add(move);

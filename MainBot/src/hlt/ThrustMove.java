@@ -36,7 +36,7 @@ public class ThrustMove extends Move {
 			}
 		}
 		public double apply(double num){
-			return Math.toRadians(RoundPolicy.apply(Math.toDegrees(num), this));
+			return Math.toRadians(RoundPolicy.apply((Math.toDegrees(num)%360+360)%360, this));
 		}
 	}
 }
