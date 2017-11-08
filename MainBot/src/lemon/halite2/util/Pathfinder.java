@@ -10,6 +10,7 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
+import hlt.Ship.DockingStatus;
 import hlt.ThrustMove.RoundPolicy;
 
 public class Pathfinder {
@@ -26,7 +27,9 @@ public class Pathfinder {
 			obstacles.put(planet.getPosition(), planet.getRadius());
 		}
 		for(Ship otherShip: gameMap.getMyPlayer().getShips()){
-			obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
+			if(otherShip.getDockingStatus()!=DockingStatus.UNDOCKED){
+				obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
+			}
 		}
 	}
 	public static PathfindPlan pathfind(Position start, Position end, double buffer, double endBuffer) {

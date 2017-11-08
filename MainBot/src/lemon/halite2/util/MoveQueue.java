@@ -76,20 +76,8 @@ public class MoveQueue {
 		thrustMoves.clear();
 	}
 	public boolean checkCollisions(Position a, Position b, Position velocityA, Position velocityB, double buffer) {
-		double time = getMinTime(a, b, velocityA, velocityB);
+		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
 		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
-		return buffer*buffer>=getDistanceSquared(a, b, velocityA, velocityB, time);
-	}
-	//https://gamedev.stackexchange.com/questions/97337/detect-if-two-objects-are-going-to-collide
-	public double getMinTime(Position a, Position b, Position velocityA, Position velocityB) {
-		double deltaVelocityX = velocityA.getX()-velocityB.getX();
-		double deltaVelocityY = velocityA.getY()-velocityB.getY();
-		return -(deltaVelocityX*(a.getX()-b.getX())+deltaVelocityY*(a.getY()-b.getY()))/
-				(deltaVelocityX*deltaVelocityX+deltaVelocityY*deltaVelocityY);
-	}
-	public double getDistanceSquared(Position a, Position b, Position velocityA, Position velocityB, double time) {
-		double deltaX = (a.getX()+velocityA.getX()*time)-(b.getX()+velocityB.getX()*time);
-		double deltaY = (a.getY()+velocityA.getY()*time)-(b.getY()+velocityB.getY()*time);
-		return deltaX*deltaX+deltaY*deltaY;
+		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 }
