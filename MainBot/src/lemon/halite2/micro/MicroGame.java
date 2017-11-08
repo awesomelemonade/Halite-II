@@ -10,7 +10,9 @@ import java.util.Set;
 
 import hlt.GameMap;
 import hlt.Position;
+import hlt.Ship;
 import hlt.ThrustMove.RoundPolicy;
+import lemon.halite2.util.DisjointSet;
 import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
@@ -20,10 +22,29 @@ import lemon.halite2.util.Pathfinder;
 public class MicroGame {
 	private static final int[] MAGNITUDES = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
 	private GameMap gameMap;
-	private Set<Group> groups;
+	private Map<Group, PathfindPlan> groups;
 	public MicroGame(GameMap gameMap) {
 		this.gameMap = gameMap;
 		groups = new HashSet<Group>();
+	}
+	public Group getGroup(Ship ship) {
+		for(Group group: groups) {
+			if(group.getShips().containsKey(ship.getId())) {
+				return group;
+			}
+		}
+		return new Group(ship);
+	}
+	public void setPathfindPlan(Group group, PathfindPlan pathfindPlan) {
+		groups.put(group, pathfindPlan);
+	}
+	public PathfindPlan getPathfindPlan(int shipId) {
+		for(Group group: groups) {
+			if(group.getShips().containsKey(shipId)) {
+				return groups.get(group);
+			}
+		}
+		return null;
 	}
 	public Group combineGroups(Group a, Group b, Position target, MoveQueue moveQueue) {
 		//check if close enough
@@ -108,10 +129,13 @@ public class MicroGame {
 		*/
 	}
 	public void update() {
-		for(Group group: groups) {
+		for(Group group: groups.keySet()) {
 			group.update(gameMap);
 		}
 		//do stuff
 		
+	}
+	public Set<Group> getGroups(){
+		return groups.keySet();
 	}
 }

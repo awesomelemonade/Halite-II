@@ -18,6 +18,9 @@ public class Group {
 	public Group(Ship ship) {
 		ships = new HashMap<Integer, Position>();
 		ships.put(ship.getId(), ship.getPosition());
+		Circle circle = EncloseCircle.create(ships.values());
+		circle.setRadius(circle.getRadius()+GameConstants.SHIP_RADIUS);
+		this.circle = circle;
 	}
 	public Group(Map<Integer, Position> ships) {
 		this.ships = ships;
