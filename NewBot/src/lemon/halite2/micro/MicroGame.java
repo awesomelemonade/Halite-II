@@ -1,9 +1,7 @@
 package lemon.halite2.micro;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -11,13 +9,12 @@ import java.util.Set;
 import hlt.GameMap;
 import hlt.Position;
 import hlt.Ship;
+import hlt.Ship.DockingStatus;
 import hlt.ThrustMove.RoundPolicy;
-import lemon.halite2.util.DisjointSet;
 import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.PathfindPlan;
-import lemon.halite2.util.Pathfinder;
 
 public class MicroGame {
 	private static final int[] MAGNITUDES = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
@@ -106,7 +103,13 @@ public class MicroGame {
 	}
 	public void update() {
 		for(Ship ship: gameMap.getMyPlayer().getShips()){
-			if(getGroup(ship)==null){
+			Group group = getGroup(ship);
+			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED&&group!=null){
+				groups.remove(group);
+			}
+		}
+		for(Ship ship: gameMap.getMyPlayer().getShips()){
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKED&&getGroup(ship)==null){
 				groups.add(new Group(ship));
 			}
 		}

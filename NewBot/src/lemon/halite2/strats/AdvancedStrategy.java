@@ -1,15 +1,19 @@
 package lemon.halite2.strats;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import hlt.DebugLog;
 import hlt.DockMove;
@@ -27,7 +31,7 @@ import lemon.halite2.util.Pathfinder;
 
 public class AdvancedStrategy implements Strategy {
 	private GameMap gameMap;
-	private Map<Integer, List<Group>> targetPlanets;
+	private Map<Integer, TreeMap<Group, Boolean>> targetPlanets;
 	private MicroGame micro;
 	public AdvancedStrategy(GameMap gameMap) {
 		this.gameMap = gameMap;
@@ -35,7 +39,7 @@ public class AdvancedStrategy implements Strategy {
 	@Override
 	public void init() {
 		//Initialize Data Structures
-		targetPlanets = new HashMap<Integer, List<Group>>();
+		targetPlanets = new HashMap<Integer, TreeMap<Group, Boolean>>();
 		//Initialize MicroGame
 		micro = new MicroGame(gameMap);
 	}
@@ -85,7 +89,7 @@ public class AdvancedStrategy implements Strategy {
 		micro.update();
 		targetPlanets.clear();
 		for(Planet planet: gameMap.getPlanets()){
-			targetPlanets.put(planet.getId(), new ArrayList<Group>());
+			targetPlanets.put(planet.getId(), new TreeMap<Group, Boolean>());
 		}
 		//Calculate Planet Requests
 		Map<Integer, Integer> planetRequests = new HashMap<Integer, Integer>();
@@ -103,7 +107,7 @@ public class AdvancedStrategy implements Strategy {
 			}
 		}
 		//Free Agents
-		Set<Group> freeAgents = new HashSet<Group>();
+		Deque<Group> freeAgents = new ArrayDeque<Group>();
 		//Initialize groupToDistance map
 		final Map<Group, Double> groupToDistance = new HashMap<Group, Double>(); //Maps Group to distance of target planet
 		//Initialize PriorityQueue with custom comparator
@@ -131,7 +135,7 @@ public class AdvancedStrategy implements Strategy {
 			int targetPlanetId = groupToPlanetOrder.get(popped).get(groupToPlanetOrderIndex.get(popped));
 			if(planetRequests.get(targetPlanetId)>0){
 				DebugLog.log("\tAssigned "+popped.getSize()+" ships with "+planetRequests.get(targetPlanetId)+" requests");
-				targetPlanets.get(targetPlanetId).add(popped);
+				targetPlanets.get(targetPlanetId).put(popped, false);
 				planetRequests.put(targetPlanetId, planetRequests.get(targetPlanetId)-popped.getSize());
 			}else{
 				DebugLog.log("\tFufilled Requests! Recalculating");
@@ -154,9 +158,8 @@ public class AdvancedStrategy implements Strategy {
 		if(!freeAgents.isEmpty()) {
 			for(Planet planet: gameMap.getPlanets()) {
 				if(planet.getOwner()!=gameMap.getMyPlayerId()) {
-					for(int shipId: freeAgents){
-						Group group = micro.getGroup(gameMap.getMyPlayer().getShip(shipId));
-						targetPlanets.get(planet.getId()).add(group);
+					for(Group group: freeAgents){
+						targetPlanets.get(planet.getId()).put(group, false);
 					}
 					freeAgents.clear();
 					break;
@@ -170,12 +173,12 @@ public class AdvancedStrategy implements Strategy {
 				int split = (int)Math.ceil(((double)totalShips)/((double)gameMap.getPlanets().size()));
 				if(freeAgents.size()>=split){
 					for(int i=0;i<split;++i){
-						targetPlanets.get(planet.getId()).add(freeAgents.get(0));
+						targetPlanets.get(planet.getId()).put(freeAgents.pop(), false);
 						freeAgents.remove(0);
 					}
 				}else{
-					for(int shipId: freeAgents){
-						targetPlanets.get(planet.getId()).add(shipId);
+					for(Group group: freeAgents){
+						targetPlanets.get(planet.getId()).put(group, false);
 					}
 					freeAgents.clear();
 				}
@@ -186,8 +189,37 @@ public class AdvancedStrategy implements Strategy {
 		}
 		Set<Integer> handledShips = new HashSet<Integer>();
 		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
-			for(int shipId: handledShips){
-				
+			Set<Group> oldGroups = new HashSet<Group>();
+			Set<Group> newGroups = new HashSet<Group>();
+			Planet targetPlanet = gameMap.getPlanet(planetId);
+			//Check for docking - separate if docking
+			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()){
+				for(Group group: targetPlanets.get(planetId).keySet()){
+					
+				}
+				for(Group group: targetPlanets.get(planetId).keySet()){
+					if(group.getSize()>1&&group.getCircle().getPosition().getDistanceTo(targetPlanet.getPosition())<=10+targetPlanet.getRadius()){
+						
+					}
+				}
+				for(Group group: targetPlanets.get(planetId).keySet()){
+					if(group.getSize()==1&&!targetPlanets.get(planetId).get(group)){
+						for(int shipId: group.getShips().keySet()){
+							Ship ship = gameMap.getMyPlayer().getShip(shipId);
+							if(ship.canDock(targetPlanet)){
+								moveQueue.addMove(new DockMove(ship, targetPlanet));
+							}
+						}
+					}
+				}
+			}
+			//Handle Merging - merge only if enemy planet
+			
+			//Pathfind remaining groups
+			for(Group group: targetPlanets.get(planetId).keySet()){
+				if(!targetPlanets.get(planetId).get(group)){
+					
+				}
 			}
 		}
 	}
@@ -252,14 +284,10 @@ public class AdvancedStrategy implements Strategy {
 			return request;
 		}
 	}
-	public boolean isSafeToDock(Position position, Planet planet) {
+	public boolean isSafeToDock(Planet planet) {
 		for(Ship ship: gameMap.getShips()) {
 			if(ship.getOwner()==gameMap.getMyPlayerId()) {
 				continue;
-			}
-			//Check if there are any enemy ships nearby position
-			if(ship.getPosition().getDistanceSquared(position)<10*10) {
-				return false;
 			}
 			//Check if there are any enemy ships nearby planet
 			if(ship.getPosition().getDistanceSquared(planet.getPosition())<(planet.getRadius()+GameConstants.DOCK_RADIUS*2)*(planet.getRadius()+GameConstants.DOCK_RADIUS*2)) {

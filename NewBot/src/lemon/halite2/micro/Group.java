@@ -12,7 +12,7 @@ import hlt.Ship;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.PathfindPlan;
 
-public class Group {
+public class Group implements Comparable<Group> {
 	private Map<Integer, Position> ships; //Maps shipId to Position
 	private Circle circle;
 	public Group(Ship ship) {
@@ -57,5 +57,9 @@ public class Group {
 	}
 	public int getSize(){
 		return ships.size();
+	}
+	@Override
+	public int compareTo(Group group) {
+		return group.getSize()-this.getSize(); //Sort from biggest to smallest
 	}
 }
