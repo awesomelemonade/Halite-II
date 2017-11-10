@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import hlt.DebugLog;
 import hlt.DockMove;
@@ -22,11 +21,10 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
-import hlt.ThrustMove;
-import hlt.Ship.DockingStatus;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
 import lemon.halite2.util.MoveQueue;
+import lemon.halite2.util.PathfindPlan;
 import lemon.halite2.util.Pathfinder;
 
 public class AdvancedStrategy implements Strategy {
@@ -174,7 +172,6 @@ public class AdvancedStrategy implements Strategy {
 				if(freeAgents.size()>=split){
 					for(int i=0;i<split;++i){
 						targetPlanets.get(planet.getId()).put(freeAgents.pop(), false);
-						freeAgents.remove(0);
 					}
 				}else{
 					for(Group group: freeAgents){
@@ -187,28 +184,37 @@ public class AdvancedStrategy implements Strategy {
 		if(!freeAgents.isEmpty()){
 			throw new IllegalStateException("How do we still have unassigned ships: "+freeAgents.size()); //Fail Fast
 		}
-		Set<Integer> handledShips = new HashSet<Integer>();
 		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
-			Set<Group> oldGroups = new HashSet<Group>();
-			Set<Group> newGroups = new HashSet<Group>();
 			Planet targetPlanet = gameMap.getPlanet(planetId);
+			boolean docking = isSafeToDock(targetPlanet)&&!targetPlanet.isFull();
 			//Check for docking - separate if docking
-			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()){
+			if(docking){
+				Set<Group> oldGroups = new HashSet<Group>();
+				Set<Group> newGroups = new HashSet<Group>();
 				for(Group group: targetPlanets.get(planetId).keySet()){
-					
-				}
-				for(Group group: targetPlanets.get(planetId).keySet()){
-					if(group.getSize()>1&&group.getCircle().getPosition().getDistanceTo(targetPlanet.getPosition())<=10+targetPlanet.getRadius()){
-						
+					if(group.getSize()>1) {
+						oldGroups.add(group);
+						for(int shipId: group.getShips().keySet()) {
+							newGroups.add(new Group(gameMap.getMyPlayer().getShip(shipId)));
+						}
 					}
 				}
-				for(Group group: targetPlanets.get(planetId).keySet()){
-					if(group.getSize()==1&&!targetPlanets.get(planetId).get(group)){
-						for(int shipId: group.getShips().keySet()){
-							Ship ship = gameMap.getMyPlayer().getShip(shipId);
-							if(ship.canDock(targetPlanet)){
-								moveQueue.addMove(new DockMove(ship, targetPlanet));
+				for(Group group: oldGroups) {
+					targetPlanets.get(planetId).remove(group);
+					micro.getGroups().remove(group);
+				}
+				for(Group group: newGroups) {
+					targetPlanets.get(planetId).put(group, false);
+					micro.getGroups().add(group);
+				}
+				for(Group group: targetPlanets.get(planetId).keySet()) {
+					if(!targetPlanets.get(planetId).get(group)) {
+						for(int shipId: group.getShips().keySet()) {
+							if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
+								moveQueue.forceMove(new DockMove(gameMap.getMyPlayer().getShip(shipId), targetPlanet));
+								targetPlanets.get(planetId).put(group, true);
 							}
+							break; //There's only supposed to be one ship per group
 						}
 					}
 				}
@@ -218,7 +224,15 @@ public class AdvancedStrategy implements Strategy {
 			//Pathfind remaining groups
 			for(Group group: targetPlanets.get(planetId).keySet()){
 				if(!targetPlanets.get(planetId).get(group)){
-					
+					PathfindPlan plan = Pathfinder.pathfind(group.getCircle().getPosition(), targetPlanet.getPosition(),
+							group.getCircle().getRadius(), targetPlanet.getRadius());
+					if(plan==null) {
+						DebugLog.log("Can't move");
+						Pathfinder.addStaticObstacle(group.getCircle());
+					}else {
+						group.move(gameMap, moveQueue, plan);
+						Pathfinder.addDynamicObstacle(group.getCircle(), plan.toVelocity());
+					}
 				}
 			}
 		}
@@ -248,41 +262,6 @@ public class AdvancedStrategy implements Strategy {
 			}
 		}
 		return closestPlanet;
-	}
-	@Override
-	//Handles each individual ship based off the given target
-	public int handleShip(List<Integer> handledShips, int shipId, MoveQueue moveQueue){
-		Ship ship = gameMap.getShip(gameMap.getMyPlayerId(), shipId);
-		
-		if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) { //Checks if ship is undocked
-			return -1;
-		}
-		
-		Planet targetPlanet = gameMap.getPlanet(shipToPlanet.get(shipId));
-		Planet closestPlanet = getClosestPlanet(ship.getPosition());
-		
-		if(isSafeToDock(ship.getPosition(), closestPlanet)&&ship.canDock(closestPlanet)) {
-			return moveQueue.addMove(new DockMove(ship, closestPlanet));
-		}else{
-			Ship enemyShip = findEnemyShip(targetPlanet, ship.getPosition());
-			ThrustMove move;
-			if(enemyShip==null) {
-				move = Pathfinder.pathfind(ship.getPosition(), targetPlanet.getPosition(), GameConstants.SHIP_RADIUS, targetPlanet.getRadius()).apply(ship);
-			}else {
-				if(enemyShip.getDockingStatus()==DockingStatus.UNDOCKED&&enemyShip.getHealth()>ship.getHealth()) {
-					//try to crash into enemy ship
-					move = Pathfinder.pathfind(ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, 0).apply(ship);
-				}else {
-					move = Pathfinder.pathfind(ship.getPosition(), enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.WEAPON_RADIUS*0.5).apply(ship);
-				}
-			}
-			int request = moveQueue.addMove(move);
-			while(request!=-1&&handledShips.contains(request)) {
-				move.setThrust(Math.min(move.getThrust()-1, 0));
-				request = moveQueue.addMove(move);
-			}
-			return request;
-		}
 	}
 	public boolean isSafeToDock(Planet planet) {
 		for(Ship ship: gameMap.getShips()) {

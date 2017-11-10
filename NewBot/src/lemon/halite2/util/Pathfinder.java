@@ -26,6 +26,12 @@ public class Pathfinder {
 		staticObstacles = new ArrayList<Circle>();
 		dynamicObstacles = new HashMap<Circle, Position>();
 	}
+	public static void addStaticObstacle(Circle circle) {
+		staticObstacles.add(circle);
+	}
+	public static void addDynamicObstacle(Circle circle, Position velocity) {
+		dynamicObstacles.put(circle, velocity);
+	}
 	public static void update() {
 		staticObstacles.clear();
 		for(Planet planet: gameMap.getPlanets()){
@@ -40,9 +46,6 @@ public class Pathfinder {
 	}
 	public static PathfindPlan pathfind(Position start, Position end, double buffer, double endBuffer) {
 		DebugLog.log("\tPathfinding: "+start+" - "+end+" - "+buffer+" - "+endBuffer);
-		if(start.getDistanceSquared(end)<buffer*buffer){
-			return new PathfindPlan(0, 0, RoundPolicy.NONE);
-		}
 		double realDirection = start.getDirectionTowards(end);
 		double targetDirection = RoundPolicy.ROUND.apply(realDirection);
 		//Solves Law of Sines
@@ -69,7 +72,7 @@ public class Pathfinder {
 			return new PathfindPlan((int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
 		}
 		if(left==-1&&right==-1) { //No Valid Directions
-			return new PathfindPlan(0, 0, RoundPolicy.NONE);
+			return null;
 		}
 		if(left==-1) {
 			return new PathfindPlan(7, targetDirection+right, RoundPolicy.NONE);

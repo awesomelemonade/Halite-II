@@ -29,7 +29,7 @@ public class Group implements Comparable<Group> {
 		circle.setRadius(circle.getRadius()+GameConstants.SHIP_RADIUS);
 		this.circle = circle;
 	}
-	public void update(GameMap gameMap) {
+	public boolean update(GameMap gameMap) {
 		List<Integer> deadShips = new ArrayList<Integer>();
 		//Remove all dead ships
 		for(int shipId: ships.keySet()) {
@@ -40,9 +40,13 @@ public class Group implements Comparable<Group> {
 		for(int shipId: deadShips) {
 			ships.remove(shipId);
 		}
+		if(ships.isEmpty()) {
+			return false;
+		}
 		Circle circle = EncloseCircle.create(ships.values());
 		circle.setRadius(circle.getRadius()+GameConstants.SHIP_RADIUS);
 		this.circle = circle;
+		return true;
 	}
 	public void move(GameMap gameMap, MoveQueue moveQueue, PathfindPlan plan) {
 		//pathfind using circle

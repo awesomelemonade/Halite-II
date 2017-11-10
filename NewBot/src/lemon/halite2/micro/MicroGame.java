@@ -1,7 +1,9 @@
 package lemon.halite2.micro;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -113,8 +115,14 @@ public class MicroGame {
 				groups.add(new Group(ship));
 			}
 		}
+		List<Group> deadGroups = new ArrayList<Group>();
 		for(Group group: groups) {
-			group.update(gameMap);
+			if(!group.update(gameMap)) {
+				deadGroups.add(group);
+			}
+		}
+		for(Group dead: deadGroups) {
+			groups.remove(dead);
 		}
 	}
 	public Set<Group> getGroups(){
