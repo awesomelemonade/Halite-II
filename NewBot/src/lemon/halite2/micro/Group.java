@@ -9,6 +9,7 @@ import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Position;
 import hlt.Ship;
+import lemon.halite2.util.Circle;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.PathfindPlan;
 

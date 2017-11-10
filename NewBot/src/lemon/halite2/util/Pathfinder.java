@@ -1,6 +1,8 @@
 package lemon.halite2.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -14,23 +16,27 @@ import hlt.Ship.DockingStatus;
 import hlt.ThrustMove.RoundPolicy;
 
 public class Pathfinder {
+	private static final double ONE_DEGREE = Math.toRadians(1);
 	private static GameMap gameMap;
-	private static Map<Position, Double> obstacles;
+	private static List<Circle> staticObstacles;
+	private static Map<Circle, Position> dynamicObstacles;
 	
 	public static void init(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
-		obstacles = new HashMap<Position, Double>();
+		staticObstacles = new ArrayList<Circle>();
+		dynamicObstacles = new HashMap<Circle, Position>();
 	}
 	public static void update() {
-		obstacles.clear();
+		staticObstacles.clear();
 		for(Planet planet: gameMap.getPlanets()){
-			obstacles.put(planet.getPosition(), planet.getRadius());
+			staticObstacles.add(new Circle(planet.getPosition(), planet.getRadius()));
 		}
-		for(Ship otherShip: gameMap.getMyPlayer().getShips()){
-			if(otherShip.getDockingStatus()!=DockingStatus.UNDOCKED){
-				obstacles.put(otherShip.getPosition(), GameConstants.SHIP_RADIUS);
+		for(Ship ship: gameMap.getMyPlayer().getShips()){
+			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
+				staticObstacles.add(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS));
 			}
 		}
+		dynamicObstacles.clear();
 	}
 	public static PathfindPlan pathfind(Position start, Position end, double buffer, double endBuffer) {
 		DebugLog.log("\tPathfinding: "+start+" - "+end+" - "+buffer+" - "+endBuffer);
@@ -56,9 +62,8 @@ public class Pathfinder {
 			}
 		}
 		targetDistance = Math.max(0, targetDistance-CORRECTION);
-		Position targetPosition = start.addPolar(targetDistance, targetDirection);
-		double left = calcPlan(start, targetPosition, buffer, -1, Math.PI, obstacles);
-		double right = calcPlan(start, targetPosition, buffer, 1, Math.PI, obstacles);
+		double left = calcPlan(start, targetDistance, targetDirection, buffer, -1, Math.PI);
+		double right = calcPlan(start, targetDistance, targetDirection, buffer, 1, Math.PI);
 		DebugLog.log("\t\t"+left+" - "+right+" - "+targetDistance+" - "+targetDirection);
 		if(left==0&&right==0) {
 			return new PathfindPlan((int)Math.min(7, targetDistance), targetDirection, RoundPolicy.NONE);
@@ -79,12 +84,12 @@ public class Pathfinder {
 	private static final double DETECT = 0.001;
 	private static final double CORRECTION = 0.002;
 	//Feed in degree-workable start and end
-	private static double calcPlan(Position start, Position end, double buffer, int sign, double amount, Map<Position, Double> obstacles) {
-		DebugLog.log("\t\tCalcPlan: "+start+" - "+end+" - "+buffer+" - "+sign+" - "+amount);
-		double realDirection = start.getDirectionTowards(end);
-		for(Entry<Position, Double> entry: obstacles.entrySet()) {
-			Position position = entry.getKey();
-			double radius = entry.getValue()+buffer+DETECT;
+	private static double calcPlan(Position start, double magnitude, double direction, double buffer, int sign, double amount) {
+		DebugLog.log("\t\tCalcPlan: "+start+" - "+magnitude+" - "+direction+" - "+buffer+" - "+sign+" - "+amount);
+		Position end = start.addPolar(magnitude, direction);
+		for(Circle circle: staticObstacles) {
+			Position position = circle.getPosition();
+			double radius = circle.getRadius()+buffer+DETECT;
 			//DebugLog.log("Checking Parameters: "+start+" - "+end+" - "+position+" - "+radius);
 			//DebugLog.log("Checking Output: "+Geometry.segmentPointDistance(start, end, position)+" - "+Geometry.segmentCircleIntersection(start, end, position, radius));
 			if(Geometry.segmentCircleIntersection(start, end, position, radius)){
@@ -94,11 +99,10 @@ public class Pathfinder {
 				}
 				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
 				double tangentValue = Math.asin(Math.min((radius+CORRECTION)/distance, 1));
-				double direction = start.getDirectionTowards(position);
-				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(realDirection, direction+sign*tangentValue));
+				double refDirection = start.getDirectionTowards(position);
+				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(direction, refDirection+sign*tangentValue));
 				if(theta<=amount) {
-					Position newPosition = start.addPolar(7, realDirection+sign*theta);
-					double plan = calcPlan(start, newPosition, buffer, sign, amount-theta, obstacles);
+					double plan = calcPlan(start, 7, direction+sign*theta, buffer, sign, amount-theta);
 					if(plan==-1) {
 						return -1; //OH NOES
 					}
@@ -108,6 +112,25 @@ public class Pathfinder {
 				}
 			}
 		}
+		Position velocity = new Position(magnitude*Math.cos(direction), magnitude*Math.sin(direction));
+		for(Entry<Circle, Position> entry: dynamicObstacles.entrySet()) {
+			if(checkCollisions(start, entry.getKey().getPosition(), velocity, entry.getValue(), buffer+entry.getKey().getRadius())) {
+				if(ONE_DEGREE<amount) {
+					double plan = calcPlan(start, 7, direction+sign*ONE_DEGREE, buffer, sign, amount-ONE_DEGREE);
+					if(plan==-1) {
+						return -1;
+					}
+					return ONE_DEGREE+plan;
+				}else {
+					return -1;
+				}
+			}
+		}
 		return 0;
+	}
+	public static boolean checkCollisions(Position a, Position b, Position velocityA, Position velocityB, double buffer) {
+		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
+		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
+		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 }

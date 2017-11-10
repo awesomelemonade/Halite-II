@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import hlt.Position;
+import lemon.halite2.util.Circle;
 
 public class EncloseCircle {
 	//https://www.nayuki.io/res/smallest-enclosing-circle/SmallestEnclosingCircle.java

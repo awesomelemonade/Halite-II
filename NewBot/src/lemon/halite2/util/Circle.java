@@ -1,4 +1,4 @@
-package lemon.halite2.micro;
+package lemon.halite2.util;
 
 import hlt.Position;
 
