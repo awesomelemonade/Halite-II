@@ -22,62 +22,15 @@ public class MoveQueue {
 		totalMoves = new ArrayList<Move>();
 		thrustMoves = new ArrayList<ThrustMove>();
 	}
-	public void forceMove(Move move) {
+	public void move(Move move) {
 		if(move instanceof ThrustMove) {
 			thrustMoves.add((ThrustMove)move);
 		}
 		totalMoves.add(move);
 	}
-	public int addMove(Move move){
-		if(!(move instanceof ThrustMove)){
-			totalMoves.add(move);
-			return -1;
-		}
-		ThrustMove thrustMove = (ThrustMove)move;
-		for(ThrustMove otherMove: thrustMoves){
-			if(intersects(thrustMove, otherMove)){
-				return otherMove.getShip().getId();
-			}
-		}
-		for(Ship ship: gameMap.getMyPlayer().getShips()){
-			if(ship.getId()==thrustMove.getShip().getId()){
-				continue;
-			}
-			Position start = thrustMove.getShip().getPosition();
-			Position end = start.addPolar(thrustMove.getThrust(), thrustMove.getRoundedAngle());
-			if(Geometry.segmentCircleIntersection(start, end, ship.getPosition(), 2*GameConstants.SHIP_RADIUS)){
-				return ship.getId();
-			}
-		}
-		for(Planet planet: gameMap.getPlanets()){
-			Position start = thrustMove.getShip().getPosition();
-			Position end = start.addPolar(thrustMove.getThrust(), thrustMove.getRoundedAngle());
-			if(Geometry.segmentCircleIntersection(start, end, planet.getPosition(), GameConstants.SHIP_RADIUS+planet.getRadius())){
-				DebugLog.log("Parameters: "+start+" - "+end+" - "+planet.getPosition()+" - "+(planet.getRadius()+GameConstants.SHIP_RADIUS));
-				DebugLog.log("Output: "+Geometry.segmentPointDistance(start, end, planet.getPosition())+" - "+Geometry.segmentCircleIntersection(start, end, planet.getPosition(), GameConstants.SHIP_RADIUS+planet.getRadius()));
-				DebugLog.log("Crashing into planet? "+planet.getId()+" - "+thrustMove.getShip().getId());
-				//throw new RuntimeException("CRASH: "+planet.getId()+" - "+thrustMove.getShip().getId());
-			}
-		}
-		totalMoves.add(thrustMove);
-		thrustMoves.add(thrustMove);
-		return -1;
-	}
-	private boolean intersects(ThrustMove moveA, ThrustMove moveB) {
-		Position a = moveA.getShip().getPosition();
-		Position b = moveB.getShip().getPosition();
-		Position velocityA = new Position(moveA.getThrust()*Math.cos(moveA.getRoundedAngle()), moveA.getThrust()*Math.sin(moveA.getRoundedAngle()));
-		Position velocityB = new Position(moveB.getThrust()*Math.cos(moveB.getRoundedAngle()), moveB.getThrust()*Math.sin(moveB.getRoundedAngle()));
-		return checkCollisions(a, b, velocityA, velocityB, 2*GameConstants.SHIP_RADIUS);
-	}
 	public void flush(){
 		Networking.sendMoves(totalMoves);
 		totalMoves.clear();
 		thrustMoves.clear();
-	}
-	public boolean checkCollisions(Position a, Position b, Position velocityA, Position velocityB, double buffer) {
-		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
-		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
-		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 }

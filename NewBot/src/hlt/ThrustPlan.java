@@ -1,21 +1,22 @@
 package hlt;
 
+import lemon.halite2.util.MathUtil;
+
 public class ThrustPlan {
 	private int thrust;
-	private double angleRadians;
-	private int angleDegrees;
+	private int angle;
 	public ThrustPlan(int thrust, double angle, RoundPolicy roundPolicy) {
 		this.thrust = thrust;
-		this.angleRadians = roundPolicy.applyRadians(angle);
-		this.angleDegrees = roundPolicy.applyDegrees(angle);
+		this.angle = roundPolicy.applyDegrees(angle);
+	}
+	public ThrustPlan(int thrust, int angle) {
+		this.thrust = thrust;
+		this.angle = MathUtil.normalizeDegrees(angle);
 	}
 	public int getThrust() {
 		return thrust;
 	}
-	public double getAngleRadians() {
-		return angleRadians;
-	}
-	public int getAngleDegrees() {
-		return angleDegrees;
+	public int getAngle() {
+		return angle;
 	}
 }

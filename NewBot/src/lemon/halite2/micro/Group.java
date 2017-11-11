@@ -11,7 +11,6 @@ import hlt.Position;
 import hlt.Ship;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MoveQueue;
-import lemon.halite2.util.PathfindPlan;
 
 public class Group implements Comparable<Group> {
 	private Map<Integer, Position> ships; //Maps shipId to Position

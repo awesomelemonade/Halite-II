@@ -11,26 +11,119 @@ import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Planet;
 import hlt.Position;
+import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.Ship.DockingStatus;
-import hlt.ThrustMove.RoundPolicy;
+import hlt.ThrustPlan;
 
 public class Pathfinder {
-	private static final double ONE_DEGREE = Math.toRadians(1);
 	private static GameMap gameMap;
-	private static Set<Circle> staticObstacles;
-	private static Map<Circle, Position> dynamicObstacles;
+	
+	private Position start;
+	private Position end;
+	private double buffer;
+	private double endBuffer;
+	
+	private int magnitude;
+	private int directionDegrees;
+	private int offsetCounterClockwise;
+	private int offsetClockwise;
+	
+	private boolean[] staticDirections;
+	
+	public Pathfinder(Position start, Position end, double buffer, double endBuffer) {
+		this.start = start;
+		this.end = end;
+		this.buffer = buffer;
+		this.endBuffer = endBuffer;
+		this.magnitude = (int)Math.min(7, start.getDistanceTo(end)-buffer-endBuffer);
+		this.directionDegrees = RoundPolicy.ROUND.applyDegrees(start.getDirectionTowards(end));
+		this.offsetClockwise = 0;
+		this.offsetCounterClockwise = 0;
+		this.staticDirections = new boolean[360];
+	}
+	public int resolveConflicts() { //Returns conflicting obstacle?
+		//Resolve Uncertain Regions
+		for(Circle region: Obstacles.getUncertainRegions()) {
+			
+		}
+		return -1;
+	}
+	public void resolveStaticObstacles() {
+		//Resolve Static Obstacles
+		for(Circle obstacle: Obstacles.getStaticObstacles()) {
+			double distSquared = start.getDistanceSquared(obstacle.getPosition());
+			if(distSquared<(obstacle.getRadius()+magnitude)*(obstacle.getRadius()+magnitude)&&
+					!obstacle.contains(start)){
+				resolveStaticObstacle(obstacle, staticDirections);
+			}
+		}
+	}
+	public void resolveStaticObstacle(Circle circle, boolean[] directions) {
+		double direction = start.getDirectionTowards(circle.getPosition());
+		double theta = Math.asin((circle.getRadius()+buffer)/start.getDistanceTo(circle.getPosition()));
+		int start = RoundPolicy.COUNTER_CLOCKWISE.applyDegrees(direction-theta);
+		int end = RoundPolicy.CLOCKWISE.applyDegrees(direction+theta);
+		for(int i=start;i!=end;i=(i+1)%360) {
+			directions[i] = true;
+		}
+	}
+	public void resolveDynamicObstacle(Circle circle, ThrustPlan plan, boolean[] directions) {
+		Position velocity = new Position(plan.getThrust()*Math.cos(Math.toRadians(plan.getAngle())),
+				plan.getThrust()*Math.sin(Math.toRadians(plan.getAngle())));
+		Position endPosition = circle.getPosition().addPolar(plan.getThrust(), Math.toRadians(plan.getAngle()));
+		double direction = start.getDirectionTowards(circle.getPosition());
+		double direction2 = start.getDirectionTowards(endPosition);
+		double theta = Math.asin((circle.getRadius()+buffer)/start.getDistanceTo(circle.getPosition()));
+		double theta2 = Math.asin((circle.getRadius()+buffer)/start.getDistanceTo(endPosition));
+		int a = RoundPolicy.COUNTER_CLOCKWISE.applyDegrees(direction-theta);
+		int b = RoundPolicy.CLOCKWISE.applyDegrees(direction2+theta2);
+		int c = RoundPolicy.CLOCKWISE.applyDegrees(direction+theta);
+		int d = RoundPolicy.COUNTER_CLOCKWISE.applyDegrees(direction2-theta2);
+		int start, end;
+		if(MathUtil.angleBetweenDegrees(a, b)>MathUtil.angleBetweenDegrees(c, d)) {
+			if(MathUtil.normalizeDegrees(b-a)>MathUtil.PI_DEGREES) {
+				start = b;
+				end = a;
+			}else {
+				start = a;
+				end = b;
+			}
+		}else {
+			if(MathUtil.normalizeDegrees(d-c)>MathUtil.PI_DEGREES) {
+				start = d;
+				end = c;
+			}else {
+				start = c;
+				end = d;
+			}
+		}
+		for(int i=start;i!=end;i=(i+1)%360) {
+			Position velocity2 = new Position(magnitude*Math.cos(Math.toRadians(i)), magnitude*Math.sin(Math.toRadians(i)));
+			if(checkCollisions(circle.getPosition(), this.start, velocity, velocity2, buffer+circle.getRadius())) {
+				directions[i] = true;
+			}
+		}
+	}
+	public ThrustPlan getThrustPlan() {
+		if(offsetCounterClockwise==-1&&offsetClockwise==-1) {
+			return null;
+		}
+		if(offsetCounterClockwise==-1) {
+			return new ThrustPlan(magnitude, directionDegrees+offsetClockwise);
+		}
+		if(offsetClockwise==-1) {
+			return new ThrustPlan(magnitude, directionDegrees-offsetCounterClockwise);
+		}
+		if(offsetClockwise<offsetCounterClockwise) {
+			return new ThrustPlan(magnitude, directionDegrees+offsetClockwise);
+		}else {
+			return new ThrustPlan(magnitude, directionDegrees-offsetCounterClockwise);
+		}
+	}
 	
 	public static void init(GameMap gameMap) {
 		Pathfinder.gameMap = gameMap;
-		staticObstacles = new HashSet<Circle>();
-		dynamicObstacles = new HashMap<Circle, Position>();
-	}
-	public static void addStaticObstacle(Circle circle) {
-		DebugLog.log("Adding Static Obstacle: "+staticObstacles.add(circle)+" - "+circle.toString());
-	}
-	public static void addDynamicObstacle(Circle circle, Position velocity) {
-		dynamicObstacles.put(circle, velocity);
 	}
 	public static void update() {
 		staticObstacles.clear();
@@ -106,7 +199,7 @@ public class Pathfinder {
 				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
 				double tangentValue = Math.asin(Math.min((radius+CORRECTION)/distance, 1));
 				double refDirection = start.getDirectionTowards(position);
-				double theta = RoundPolicy.CEIL.apply(MathUtil.angleBetween(direction, refDirection+sign*tangentValue));
+				double theta = Math.ceil(MathUtil.angleBetween(direction, refDirection+sign*tangentValue));
 				if(theta<=amount) {
 					double plan = calcPlan(start, 7, direction+sign*theta, buffer, sign, amount-theta);
 					if(plan==-1) {

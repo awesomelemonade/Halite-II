@@ -4,17 +4,29 @@ import hlt.Position;
 
 public class MathUtil {
 	public static final double TAU = 2*Math.PI;
+	public static final int PI_DEGREES = 180;
 	public static final int TAU_DEGREES = 360;
+	public static final double ONE_DEGREE = Math.toRadians(1);
+	public static int normalizeDegrees(int degrees) {
+		return (degrees%TAU_DEGREES+TAU_DEGREES)%TAU_DEGREES;
+	}
 	public static double normalizeDegrees(double degrees) {
 		return (degrees%TAU_DEGREES+TAU_DEGREES)%TAU_DEGREES;
 	}
 	public static double normalizeRadians(double radians) {
 		return (radians%TAU+TAU)%TAU;
 	}
-	public static double angleBetween(double a, double b){
+	public static double angleBetweenRadians(double a, double b){
 		double between = normalizeRadians(b-a);
 		if(between>Math.PI){
-			between = 2*Math.PI-between;
+			between = TAU-between;
+		}
+		return between;
+	}
+	public static double angleBetweenDegrees(double a, double b) {
+		double between = normalizeDegrees(b-a);
+		if(between>PI_DEGREES) {
+			between = TAU_DEGREES-between;
 		}
 		return between;
 	}

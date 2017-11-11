@@ -19,7 +19,7 @@ public enum RoundPolicy {
 		default:
 			throw new NullPointerException(String.format("RoundPolicy is null: %f", radians));
 		}
-		return (int)Math.round(MathUtil.normalizeDegrees(degrees));
+		return MathUtil.normalizeDegrees((int)Math.round(degrees));
 	}
 	public static double applyRadians(double radians, RoundPolicy policy) {
 		return MathUtil.normalizeRadians(Math.toRadians(applyDegrees(radians, policy)));

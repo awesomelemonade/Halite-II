@@ -22,13 +22,7 @@ public class Position {
 		return dx*dx+dy*dy;
 	}
 	public double getDirectionTowards(Position target) {
-		double dx = target.getX() - x;
-		double dy = target.getY() - y;
-		double direction = Math.atan2(dy, dx);
-		if(direction<0) {
-			direction+=2*Math.PI;
-		}
-		return direction;
+		return Math.atan2(target.getY()-y, target.getX()-x);
 	}
 	public Position add(double x, double y) {
 		return new Position(this.x+x, this.y+y);

@@ -24,7 +24,6 @@ public class MyBot {
 			
 			Strategy strategy = new AdvancedStrategy(gameMap);
 			strategy.init();
-			//Rate Planets
 			
 			Networking.finalizeInitialization("Lemon");
 			

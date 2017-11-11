@@ -11,7 +11,6 @@ public class Ship extends Entity {
 	public Ship(int owner, int id, Position position, int health, DockingStatus dockingStatus, int dockedPlanet,
 			int dockingProgress, int weaponCooldown) {
 		super(owner, id, position, health, GameConstants.SHIP_RADIUS);
-
 		this.dockingStatus = dockingStatus;
 		this.dockedPlanet = dockedPlanet;
 		this.dockingProgress = dockingProgress;
