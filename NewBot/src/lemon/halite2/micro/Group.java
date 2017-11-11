@@ -43,6 +43,9 @@ public class Group implements Comparable<Group> {
 		if(ships.isEmpty()) {
 			return false;
 		}
+		for(int i: ships.keySet()) {
+			ships.put(i, gameMap.getMyPlayer().getShip(i).getPosition());
+		}
 		Circle circle = EncloseCircle.create(ships.values());
 		circle.setRadius(circle.getRadius()+GameConstants.SHIP_RADIUS);
 		this.circle = circle;
@@ -65,6 +68,29 @@ public class Group implements Comparable<Group> {
 	}
 	@Override
 	public int compareTo(Group group) {
-		return group.getSize()-this.getSize(); //Sort from biggest to smallest
+		int ret = group.getSize()-this.getSize();
+		if(ret==0) {
+			return group.hashCode()-this.hashCode();
+		}
+		return ret;
+	}
+	@Override
+	public String toString() {
+		return String.format("Group[Circle=%s, Size=%d]", circle.toString(), getSize());
+	}
+	@Override
+	public boolean equals(Object o) {
+		if(this==o) {
+			return true;
+		}
+		if(o==null||this.getClass()!=o.getClass()) {
+			return false;
+		}
+		Group group = (Group)o;
+		return circle.equals(group.getCircle());
+	}
+	@Override
+	public int hashCode() {
+		return circle.hashCode();
 	}
 }

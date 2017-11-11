@@ -25,4 +25,24 @@ public class Circle {
 	public double getRadius() {
 		return radius;
 	}
+	@Override
+	public boolean equals(Object o) {
+		if(this==o) {
+			return true;
+		}
+		if(o==null||this.getClass()!=o.getClass()) {
+			return false;
+		}
+		Circle circle = (Circle)o;
+		return circle.getPosition().equals(position)&&Double.compare(circle.getRadius(), radius)==0;
+	}
+	@Override
+	public int hashCode() {
+		long temp = Double.doubleToLongBits(radius);
+		return 31 * position.hashCode() + (int)(temp^(temp>>>32));
+	}
+	@Override
+	public String toString() {
+		return String.format("Circle[position=%s, radius=%f]", position.toString(), radius);
+	}
 }
