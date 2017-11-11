@@ -3,15 +3,20 @@ package lemon.halite2.util;
 import hlt.Position;
 
 public class MathUtil {
+	public static final double TAU = 2*Math.PI;
+	public static final int TAU_DEGREES = 360;
+	public static double normalizeDegrees(double degrees) {
+		return (degrees%TAU_DEGREES+TAU_DEGREES)%TAU_DEGREES;
+	}
+	public static double normalizeRadians(double radians) {
+		return (radians%TAU+TAU)%TAU;
+	}
 	public static double angleBetween(double a, double b){
-		double between = (b-a)%(2*Math.PI);
+		double between = normalizeRadians(b-a);
 		if(between>Math.PI){
-			between-=2*Math.PI;
+			between = 2*Math.PI-between;
 		}
-		if(between<-Math.PI){
-			between+=2*Math.PI;
-		}
-		return Math.abs(between);
+		return between;
 	}
 	//https://gamedev.stackexchange.com/questions/97337/detect-if-two-objects-are-going-to-collide
 	public static double getMinTime(Position a, Position b, Position velocityA, Position velocityB) {

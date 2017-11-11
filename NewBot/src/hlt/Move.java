@@ -2,18 +2,18 @@ package hlt;
 
 public class Move {
 	public enum MoveType {
-		NOOP, THRUST, DOCK, UNDOCK;
+		THRUST, DOCK, UNDOCK;
 	}
 	private MoveType type;
-	private Ship ship;
-	public Move(MoveType type, Ship ship) {
+	private int shipId;
+	public Move(MoveType type, int shipId) {
 		this.type = type;
-		this.ship = ship;
+		this.shipId = shipId;
 	}
 	public MoveType getType() {
 		return type;
 	}
-	public Ship getShip() {
-		return ship;
+	public int getShipId() {
+		return shipId;
 	}
 }

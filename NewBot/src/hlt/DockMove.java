@@ -1,12 +1,12 @@
 package hlt;
 
 public class DockMove extends Move {
-	private long destinationId;
-	public DockMove(Ship ship, Planet planet) {
-		super(MoveType.DOCK, ship);
-		destinationId = planet.getId();
+	private int planetId;
+	public DockMove(int shipId, int planetId) {
+		super(MoveType.DOCK, shipId);
+		this.planetId = planetId;
 	}
-	public long getDestinationId() {
-		return destinationId;
+	public int getPlanetId() {
+		return planetId;
 	}
 }

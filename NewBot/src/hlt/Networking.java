@@ -14,33 +14,25 @@ public class Networking {
 		StringBuilder moveString = new StringBuilder();
 		for (Move move : moves) {
 			switch (move.getType()) {
-			case NOOP:
-				continue;
 			case UNDOCK:
-				moveString.append(UNDOCK_KEY).append(' ').append(move.getShip().getId()).append(' ');
+				moveString.append(UNDOCK_KEY).append(' ').append(move.getShipId()).append(' ');
 				break;
 			case DOCK:
-				moveString.append(DOCK_KEY).append(' ').append(move.getShip().getId()).append(' ')
-						.append(((DockMove) move).getDestinationId()).append(' ');
+				moveString.append(DOCK_KEY).append(' ').append(move.getShipId()).append(' ')
+						.append(((DockMove) move).getPlanetId()).append(' ');
 				break;
 			case THRUST:
-				if(((ThrustMove)move).getThrust()!=0){
-					moveString.append(THRUST_KEY).append(' ').append(move.getShip().getId()).append(' ')
-							.append(((ThrustMove) move).getThrust()).append(' ')
-							.append(getAngle(((ThrustMove) move).getRoundedAngle())).append(' ');
+				ThrustPlan plan = ((ThrustMove)move).getThrustPlan();
+				if(plan.getThrust()!=0){
+					moveString.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
+							.append(plan.getThrust()).append(' ')
+							.append(plan.getAngleDegrees()).append(' ');
 				}
 				break;
 			}
 		}
 		writer.println(moveString);
 		writer.flush();
-	}
-	private static int getAngle(double angle) {
-		int degrees = (int)(Math.round(Math.toDegrees(angle))%360);
-		if(degrees<0) {
-			degrees+=360;
-		}
-		return degrees;
 	}
 	private static String readLine() {
 		try {

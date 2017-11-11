@@ -1,7 +1,7 @@
 package hlt;
 
 public class UndockMove extends Move {
-	public UndockMove(Ship ship) {
-		super(MoveType.UNDOCK, ship);
+	public UndockMove(int shipId) {
+		super(MoveType.UNDOCK, shipId);
 	}
 }
