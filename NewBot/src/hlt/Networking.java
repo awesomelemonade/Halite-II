@@ -26,7 +26,7 @@ public class Networking {
 				if(plan.getThrust()!=0){
 					moveString.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
 							.append(plan.getThrust()).append(' ')
-							.append(plan.getAngleDegrees()).append(' ');
+							.append(plan.getAngle()).append(' ');
 				}
 				break;
 			}

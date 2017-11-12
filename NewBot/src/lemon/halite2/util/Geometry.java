@@ -69,14 +69,14 @@ public class Geometry {
 		}
 		return false;
 	}
-	public static double segmentSegmentDistance(Position a, Position b, Position c, Position d) {
+	public static double segmentSegmentDistanceSquared(Position a, Position b, Position c, Position d) {
 		if(segmentSegmentIntersection(a, b, c, d)) {
 			return 0;
 		}else {
-			double i = Geometry.segmentPointDistance(a, b, c);
-			double j = Geometry.segmentPointDistance(a, b, d);
-			double k = Geometry.segmentPointDistance(c, d, a);
-			double l = Geometry.segmentPointDistance(c, d, b);
+			double i = Geometry.segmentPointDistanceSquared(a, b, c);
+			double j = Geometry.segmentPointDistanceSquared(a, b, d);
+			double k = Geometry.segmentPointDistanceSquared(c, d, a);
+			double l = Geometry.segmentPointDistanceSquared(c, d, b);
 			return Math.min(Math.min(i, j), Math.min(k, l));
 		}
 	}

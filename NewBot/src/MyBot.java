@@ -2,7 +2,6 @@ import hlt.*;
 import lemon.halite2.strats.AdvancedStrategy;
 import lemon.halite2.strats.Strategy;
 import lemon.halite2.util.MoveQueue;
-import lemon.halite2.util.Pathfinder;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -18,7 +17,6 @@ public class MyBot {
 			GameMap gameMap = Networking.initialize();
 			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
-			Pathfinder.init(gameMap);
 			MoveQueue moveQueue = new MoveQueue(gameMap);
 			List<Integer> handledShips = new ArrayList<Integer>();
 			
@@ -30,7 +28,6 @@ public class MyBot {
 			while (true) {
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
 				gameMap.updateMap(Networking.readLineIntoMetadata());
-				Pathfinder.update();
 				handledShips.clear();
 				DebugLog.log("Processing Strategy");
 				strategy.newTurn(moveQueue);
