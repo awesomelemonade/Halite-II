@@ -1,5 +1,7 @@
 package lemon.halite2.util;
 
+import java.util.Map.Entry;
+
 import hlt.Position;
 import hlt.ThrustPlan;
 
@@ -37,11 +39,29 @@ public class Pathfinder {
 	public Position getPosition() {
 		return position;
 	}
+	public int getCandidate(ThrustPlan plan) {
+		return getCandidate(plan.getThrust(), plan.getAngle());
+	}
 	public int getCandidate(int thrust, int angle) {
 		if(thrust==0) {
 			return stillCandidate;
 		}
 		return candidates[thrust-1][angle];
+	}
+	public void resolveStaticObstacles() {
+		for(Circle circle: Obstacles.getStaticObstacles()) {
+			resolveStaticObstacle(circle);
+		}
+	}
+	public void resolveDynamicObstacles() {
+		for(Entry<Circle, ThrustPlan> entry: Obstacles.getDynamicObstacles().entrySet()) {
+			resolveDynamicObstacle(entry.getKey(), entry.getValue());
+		}
+	}
+	public void resolveUncertainObstacles() {
+		for(Entry<Integer, Circle> entry: Obstacles.getUncertainObstacles().entrySet()) {
+			resolveUncertainObstacle(entry.getValue(), entry.getKey());
+		}
 	}
 	public void resolveStaticObstacle(Circle circle) {
 		//resolve still candidate
@@ -59,7 +79,7 @@ public class Pathfinder {
 			}
 		}
 	}
-	public void resolveDynamicObstacle(Circle circle, ThrustPlan plan, boolean[] directions) {
+	public void resolveDynamicObstacle(Circle circle, ThrustPlan plan) {
 		Position velocity = velocityVector[plan.getThrust()-1][plan.getAngle()];
 		//resolve still candidate
 		if(stillCandidate!=CONFLICT&&Geometry.segmentCircleIntersection(circle.getPosition(),
@@ -88,17 +108,18 @@ public class Pathfinder {
 			}
 		}
 	}
-	public void resolveUncertainObstacle(Position position, double buffer, int shipId) {
+	public void resolveUncertainObstacle(Circle circle, int id) {
 		//resolve still candidate
-		if(stillCandidate==NO_CONFLICT&&this.position.getDistanceSquared(position)<=(this.buffer+buffer)*(this.buffer+buffer)) {
-			stillCandidate = shipId;
+		if(stillCandidate==NO_CONFLICT&&position.getDistanceSquared(circle.getPosition())<=
+				(buffer+circle.getRadius())*(buffer+circle.getRadius())) {
+			stillCandidate = id;
 		}
 		//resolve all other candidates
 		for(int i=0;i<candidates.length;++i) {
 			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j]==NO_CONFLICT&&Geometry.segmentCircleIntersection(this.position,
-						this.position.add(velocityVector[i][j]), position, this.buffer+buffer)) {
-					candidates[i][j] = shipId;
+				if(candidates[i][j]==NO_CONFLICT&&Geometry.segmentCircleIntersection(position,
+						position.add(velocityVector[i][j]), circle.getPosition(), buffer+circle.getRadius())) {
+					candidates[i][j] = id;
 				}
 			}
 		}

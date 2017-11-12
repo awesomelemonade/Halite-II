@@ -27,7 +27,6 @@ import lemon.halite2.micro.MicroGame;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.Obstacles;
-import lemon.halite2.util.PathfindPlan;
 import lemon.halite2.util.Pathfinder;
 
 public class AdvancedStrategy implements Strategy {
@@ -232,30 +231,49 @@ public class AdvancedStrategy implements Strategy {
 			}
 		}
 		//Add Uncertain Obstacles
-		
+		for(int planetId: targetPlanets.keySet()) {
+			for(Group group: targetPlanets.get(planetId).keySet()) {
+				if(!targetPlanets.get(planetId).get(group)) {
+					Obstacles.addUncertainObstacle(group.getCircle(), id);
+				}
+			}
+		}
 		//Resolve Micro
 		//	Merging
+		Deque<Pathfinder> pathfinders = new ArrayDeque<Pathfinder>();
 		//Resolve Macro
 		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
 			Planet targetPlanet = gameMap.getPlanet(planetId);
 			if(targetPlanets.get(planetId).size()>0) {
 				DebugLog.log("Handling Planet "+planetId+" with "+targetPlanets.get(planetId).size()+" ship(s)");
 			}
-			//Pathfind remaining groups
+			//Pathfind
 			for(Group group: targetPlanets.get(planetId).keySet()){
 				if(!targetPlanets.get(planetId).get(group)){
 					Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius());
+					pathfinder.resolveStaticObstacles();
+					pathfinders.add(pathfinder);
+					pathfinder.resolveObstacles();
+					pathfinder.resolveUncertainObstacles();
 					ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
 					if(plan==null) {
 						DebugLog.log("\tCan't move");
 					}else {
 						group.move(gameMap, moveQueue, plan);
-						Pathfinder.addDynamicObstacle(group.getCircle(), plan.toVelocity());
+						Obstacles.addDynamicObstacle(group.getCircle(), plan);
+						Obstacles.removeUncertainObstacle(id);
 					}
 				}else {
 					DebugLog.log("\tAlready Processed Group: "+group.getCircle().getPosition());
 				}
 			}
+		}
+		while(!pathfinders.isEmpty()) {
+			Pathfinder pathfinder = pathfinders.pop();
+			pathfinder.resolveDynamicObstacles();
+			pathfinder.resolveUncertainObstacles();
+			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet, buffer);
+			
 		}
 	}
 	public int countEnemyShips(Position position, double buffer) {
