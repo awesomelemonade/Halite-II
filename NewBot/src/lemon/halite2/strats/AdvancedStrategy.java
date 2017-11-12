@@ -234,14 +234,16 @@ public class AdvancedStrategy implements Strategy {
 		for(int planetId: targetPlanets.keySet()) {
 			for(Group group: targetPlanets.get(planetId).keySet()) {
 				if(!targetPlanets.get(planetId).get(group)) {
-					Obstacles.addUncertainObstacle(group.getCircle(), id);
+					Obstacles.addUncertainObstacle(group.getCircle(), group.getId());
 				}
 			}
 		}
 		//Resolve Micro
 		//	Merging
+		Set<Integer> handledGroups = new HashSet<Integer>();
+		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
 		Deque<Pathfinder> pathfinders = new ArrayDeque<Pathfinder>();
-		//Resolve Macro
+		Deque<Group> groups = new ArrayDeque<Group>();
 		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
 			Planet targetPlanet = gameMap.getPlanet(planetId);
 			if(targetPlanets.get(planetId).size()>0) {
@@ -252,28 +254,34 @@ public class AdvancedStrategy implements Strategy {
 				if(!targetPlanets.get(planetId).get(group)){
 					Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius());
 					pathfinder.resolveStaticObstacles();
-					pathfinders.add(pathfinder);
-					pathfinder.resolveObstacles();
-					pathfinder.resolveUncertainObstacles();
-					ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
-					if(plan==null) {
-						DebugLog.log("\tCan't move");
-					}else {
-						group.move(gameMap, moveQueue, plan);
-						Obstacles.addDynamicObstacle(group.getCircle(), plan);
-						Obstacles.removeUncertainObstacle(id);
-					}
+					pathfinders.push(pathfinder);
+					groups.push(group);
 				}else {
 					DebugLog.log("\tAlready Processed Group: "+group.getCircle().getPosition());
 				}
 			}
 		}
-		while(!pathfinders.isEmpty()) {
+		while((!pathfinders.isEmpty())&&(!groups.isEmpty())) {
+			Group group = groups.pop();
 			Pathfinder pathfinder = pathfinders.pop();
 			pathfinder.resolveDynamicObstacles();
 			pathfinder.resolveUncertainObstacles();
-			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet, buffer);
 			
+			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
+			if(plan==null) {
+				DebugLog.log("\tCan't move");
+			}else {
+				int candidate = pathfinder.getCandidate(plan);
+				if(candidate==Pathfinder.NO_CONFLICT) {
+					group.move(gameMap, moveQueue, plan);
+					Obstacles.addDynamicObstacle(group.getCircle(), plan);
+					Obstacles.removeUncertainObstacle(id);
+					Set<Integer> blame = blameMap.get(group.getGroup(id));
+					if()
+				}else if(candidate!=Pathfinder.CONFLICT){
+					
+				}
+			}
 		}
 	}
 	public int countEnemyShips(Position position, double buffer) {

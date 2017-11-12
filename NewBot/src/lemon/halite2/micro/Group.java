@@ -15,10 +15,14 @@ import lemon.halite2.util.Circle;
 import lemon.halite2.util.MoveQueue;
 
 public class Group implements Comparable<Group> {
+	private static Map<Integer, Group> identificationMap;
 	private static int idCounter = 0;
 	private Map<Integer, Position> ships; //Maps shipId to Position
 	private Circle circle;
 	private int id;
+	static {
+		identificationMap = new HashMap<Integer, Group>();
+	}
 	public Group(Ship ship) {
 		ships = new HashMap<Integer, Position>();
 		ships.put(ship.getId(), ship.getPosition());
@@ -27,6 +31,7 @@ public class Group implements Comparable<Group> {
 		this.circle = circle;
 		id = idCounter;
 		idCounter++;
+		identificationMap.put(id, this);
 	}
 	public Group(Map<Integer, Position> ships) {
 		this.ships = ships;
@@ -100,5 +105,8 @@ public class Group implements Comparable<Group> {
 	@Override
 	public int hashCode() {
 		return id;
+	}
+	public static Group getGroup(int id) {
+		return identificationMap.get(id);
 	}
 }
