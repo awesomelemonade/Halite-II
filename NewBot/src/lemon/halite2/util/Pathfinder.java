@@ -1,5 +1,6 @@
 package lemon.halite2.util;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import hlt.GameConstants;
@@ -12,51 +13,39 @@ public class Pathfinder {
 	private double buffer;
 	
 	private int magnitude;
-	private int directionDegrees;
-	private int bestDirection;
 	
 	private boolean[] staticDirections;
 	private boolean[] dynamicDirections;
-	private boolean[] uncertainDirections;
+	private Set<Interval> uncertainDirections;
 	
-	public Pathfinder(Position start, Position end, double buffer, double endBuffer) {
+	public Pathfinder(Position position) {
 		this.start = start;
 		this.buffer = buffer;
 		this.magnitude = (int)Math.min(7, start.getDistanceTo(end)-buffer-endBuffer);
-		this.directionDegrees = RoundPolicy.ROUND.applyDegrees(start.getDirectionTowards(end));
-		this.bestDirection = -1;
 		this.staticDirections = new boolean[MathUtil.TAU_DEGREES];
 		this.dynamicDirections = new boolean[MathUtil.TAU_DEGREES];
-		this.uncertainDirections = new boolean[MathUtil.TAU_DEGREES];
+		this.uncertainDirections = new HashSet<Interval>();
 	}
-	public int calcBestDirection() {
-		for(int i=0;i<=MathUtil.PI_DEGREES;++i) {
-			int pos = MathUtil.normalizeDegrees(directionDegrees+i);
-			int neg = MathUtil.normalizeDegrees(directionDegrees-i);
-			if(!isConflicting(pos)) {
-				return pos;
-			}
-			if(!isConflicting(neg)) {
-				return neg;
-			}
+	public boolean[] calcDirections() {
+		boolean[] directions = new boolean[MathUtil.TAU_DEGREES];
+		for(int i=0;i<directions.length;++i) {
+			directions[i] = isConflicting(i);
 		}
-		return -1;
+		return directions;
 	}
 	public boolean isConflicting(int direction) {
-		return staticDirections[direction]||dynamicDirections[direction]||uncertainDirections[direction];
-	}
-	public boolean resolveConflicts() {
-		//reresolve Uncertain Regions
-		this.uncertainDirections = new boolean[MathUtil.TAU_DEGREES];
-		resolveUncertainObstacles();
-		bestDirection = calcBestDirection();
-		return bestDirection!=-1;
+		if(staticDirections[direction]||dynamicDirections[direction]) {
+			return true;
+		}
+		for(Interval interval: uncertainDirections) {
+			if(interval.contains(direction)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	public void resolveStaticObstacles() {
 		resolveObstacles(Obstacles.getStaticObstacles(), staticDirections);
-	}
-	public void resolveUncertainObstacles() {
-		resolveObstacles(Obstacles.getUncertainRegions(), uncertainDirections);
 	}
 	public void resolveObstacles(Set<Circle> obstacles, boolean[] directions) {
 		//Resolve Static Obstacles
@@ -117,12 +106,42 @@ public class Pathfinder {
 			}
 		}
 	}
-	public ThrustPlan getThrustPlan() {
-		return new ThrustPlan(magnitude, bestDirection);
-	}
 	public static boolean checkCollisions(Position a, Position b, Position velocityA, Position velocityB, double buffer) {
 		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
 		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
 		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
+	}
+	private class Interval{
+		private int start;
+		private int end;
+		private int shipId;
+		public Interval(int start, int end, int shipId) {
+			this.start = start;
+			this.end = end;
+			this.shipId = shipId;
+			if(end<start) { //Interval modular arithmetic
+				end+=MathUtil.TAU_DEGREES;
+			}
+		}
+		public boolean contains(int i) {
+			return start<=i&&i<=end;
+		}
+		public int getShipId() {
+			return shipId;
+		}
+		@Override
+		public boolean equals(Object o) {
+			if(this==o) {
+				return true;
+			}
+			if(o==null||this.getClass()!=o.getClass()) {
+				return false;
+			}
+			return ((Interval)o).getShipId()==shipId;
+		}
+		@Override
+		public int hashCode() {
+			return shipId;
+		}
 	}
 }
