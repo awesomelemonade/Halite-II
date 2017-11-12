@@ -22,10 +22,10 @@ public class Obstacles {
 		dynamicObstacles.clear();
 		uncertainRegions.clear();
 	}
-	public static void setStaticObstacle(Circle circle) {
+	public static void addStaticObstacle(Circle circle) {
 		staticObstacles.add(circle);
 	}
-	public static void setDynamicObstacle(Circle circle, ThrustPlan plan) {
+	public static void addDynamicObstacle(Circle circle, ThrustPlan plan) {
 		dynamicObstacles.put(circle, plan);
 	}
 	public static void addUncertainRegion(Circle circle) {

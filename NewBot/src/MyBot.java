@@ -17,7 +17,7 @@ public class MyBot {
 			GameMap gameMap = Networking.initialize();
 			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
-			MoveQueue moveQueue = new MoveQueue(gameMap);
+			MoveQueue moveQueue = new MoveQueue();
 			List<Integer> handledShips = new ArrayList<Integer>();
 			
 			Strategy strategy = new AdvancedStrategy(gameMap);

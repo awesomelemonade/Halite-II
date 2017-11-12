@@ -9,6 +9,8 @@ import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Position;
 import hlt.Ship;
+import hlt.ThrustMove;
+import hlt.ThrustPlan;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MoveQueue;
 
@@ -50,10 +52,10 @@ public class Group implements Comparable<Group> {
 		this.circle = circle;
 		return true;
 	}
-	public void move(GameMap gameMap, MoveQueue moveQueue, PathfindPlan plan) {
+	public void move(GameMap gameMap, MoveQueue moveQueue, ThrustPlan plan) {
 		//pathfind using circle
 		for(int shipId: ships.keySet()) {
-			moveQueue.forceMove(plan.apply(gameMap.getMyPlayer().getShip(shipId)));
+			moveQueue.add(new ThrustMove(shipId, plan));
 		}
 	}
 	public Circle getCircle() {

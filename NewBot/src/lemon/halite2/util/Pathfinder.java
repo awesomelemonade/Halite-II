@@ -34,6 +34,15 @@ public class Pathfinder {
 			}
 		}
 	}
+	public Position getPosition() {
+		return position;
+	}
+	public int getCandidate(int thrust, int angle) {
+		if(thrust==0) {
+			return stillCandidate;
+		}
+		return candidates[thrust-1][angle];
+	}
 	public void resolveStaticObstacle(Circle circle) {
 		//resolve still candidate
 		if(stillCandidate!=CONFLICT&&position.getDistanceSquared(circle.getPosition())<=
@@ -98,5 +107,37 @@ public class Pathfinder {
 		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
 		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
 		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
+	}
+	public ThrustPlan getGreedyPlan(Position target, double buffer) {
+		double bufferSquared = buffer*buffer;
+		double bestDistanceSquared = Double.MAX_VALUE;
+		int bestThrust = 0;
+		int bestAngle = 0;
+		//still case
+		if(stillCandidate!=CONFLICT) {
+			double distanceSquared = position.getDistanceSquared(target);
+			if(distanceSquared>bufferSquared&&distanceSquared<bestDistanceSquared) {
+				bestDistanceSquared = distanceSquared;
+				bestThrust = 0;
+				bestAngle = 0;
+			}
+		}
+		for(int i=0;i<7;++i) {
+			for(int j=0;j<MathUtil.TAU_DEGREES;++j) {
+				if(candidates[i][j]!=CONFLICT) {
+					double distanceSquared = position.add(velocityVector[i][j]).getDistanceSquared(target);
+					if(distanceSquared>bufferSquared&&distanceSquared<bestDistanceSquared) {
+						bestDistanceSquared = distanceSquared;
+						bestThrust = i+1;
+						bestAngle = j;
+					}
+				}
+			}
+		}
+		if(bestDistanceSquared==Double.MAX_VALUE) {
+			return null;
+		}else {
+			return new ThrustPlan(bestThrust, bestAngle);
+		}
 	}
 }

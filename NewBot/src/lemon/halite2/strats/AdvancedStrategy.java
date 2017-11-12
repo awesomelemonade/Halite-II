@@ -21,9 +21,12 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
+import hlt.ThrustPlan;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
+import lemon.halite2.util.Circle;
 import lemon.halite2.util.MoveQueue;
+import lemon.halite2.util.Obstacles;
 import lemon.halite2.util.PathfindPlan;
 import lemon.halite2.util.Pathfinder;
 
@@ -40,6 +43,8 @@ public class AdvancedStrategy implements Strategy {
 		targetPlanets = new HashMap<Integer, Map<Group, Boolean>>();
 		//Initialize MicroGame
 		micro = new MicroGame(gameMap);
+		//Initialize Pathfinder
+		Pathfinder.init();
 	}
 	public int calcBasePlanetId(Position averageStart){
 		double mostDockingSpots = 0;
@@ -184,7 +189,13 @@ public class AdvancedStrategy implements Strategy {
 		if(!freeAgents.isEmpty()){
 			throw new IllegalStateException("How do we still have unassigned ships: "+freeAgents.size()); //Fail Fast
 		}
-		for(int planetId: targetPlanets.keySet()) { //Resolve Docking
+		Obstacles.clear();
+		//Add Planets to Obstacles
+		for(Planet planet: gameMap.getPlanets()) {
+			Obstacles.addStaticObstacle(new Circle(planet.getPosition(), planet.getRadius()));
+		}
+		//Resolve Docking; Adds docking ship to static obstacles
+		for(int planetId: targetPlanets.keySet()) {
 			Planet targetPlanet = gameMap.getPlanet(planetId);
 			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()) {
 				Set<Group> oldGroups = new HashSet<Group>();
@@ -209,10 +220,10 @@ public class AdvancedStrategy implements Strategy {
 					if(!targetPlanets.get(planetId).get(group)) {
 						for(int shipId: group.getShips().keySet()) {
 							if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
-								DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
-								moveQueue.forceMove(new DockMove(gameMap.getMyPlayer().getShip(shipId), targetPlanet));
+								DebugLog.log("\tDocking Ship "+shipId+" to Planet "+planetId);
+								moveQueue.add(new DockMove(shipId, planetId));
 								targetPlanets.get(planetId).put(group, true);
-								Pathfinder.addStaticObstacle(group.getCircle());
+								Obstacles.addStaticObstacle(group.getCircle());
 							}
 							break; //There's only supposed to be one ship per group
 						}
@@ -220,21 +231,23 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}
+		//Add Uncertain Obstacles
+		
+		//Resolve Micro
+		//	Merging
+		//Resolve Macro
 		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
 			Planet targetPlanet = gameMap.getPlanet(planetId);
 			if(targetPlanets.get(planetId).size()>0) {
 				DebugLog.log("Handling Planet "+planetId+" with "+targetPlanets.get(planetId).size()+" ship(s)");
 			}
-			//Handle Merging - merge only if enemy planet
-			
 			//Pathfind remaining groups
 			for(Group group: targetPlanets.get(planetId).keySet()){
 				if(!targetPlanets.get(planetId).get(group)){
-					PathfindPlan plan = Pathfinder.pathfind(group.getCircle().getPosition(), targetPlanet.getPosition(),
-							group.getCircle().getRadius(), targetPlanet.getRadius());
+					Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius());
+					ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
 					if(plan==null) {
 						DebugLog.log("\tCan't move");
-						Pathfinder.addStaticObstacle(group.getCircle());
 					}else {
 						group.move(gameMap, moveQueue, plan);
 						Pathfinder.addDynamicObstacle(group.getCircle(), plan.toVelocity());
