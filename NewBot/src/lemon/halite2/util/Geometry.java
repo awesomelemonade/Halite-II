@@ -14,7 +14,7 @@ public class Geometry {
 		return new Position(x, y);
 	}
 	// Segment - Point Distance
-	public static double segmentPointDistance(Position start, Position end, Position point) {
+	public static double segmentPointDistanceSquared(Position start, Position end, Position point) {
 		Position projection = projectPointToLine(start, end, point);
 		boolean xTest = ((start.getX() <= projection.getX() && projection.getX() <= end.getX()) ||
 				(start.getX() >= projection.getX() && projection.getX() >= end.getX()));
@@ -27,11 +27,11 @@ public class Geometry {
 		} else {
 			double i = point.getDistanceSquared(start);
 			double j = point.getDistanceSquared(end);
-			return i < j ? Math.sqrt(i) : Math.sqrt(j);
+			return i < j ? i : j;
 		}
 	}
 	public static boolean segmentCircleIntersection(Position a, Position b, Position center, double buffer) {
-		return segmentPointDistance(a, b, center)<=buffer;
+		return segmentPointDistanceSquared(a, b, center)<=buffer*buffer;
 	}
 	// Used in Segment-Segment Intersection; Intersection between segment a, b and point c
 	public static boolean segmentPointIntersection(Position a, Position b, Position c) {

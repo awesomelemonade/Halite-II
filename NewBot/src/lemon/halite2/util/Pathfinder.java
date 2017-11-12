@@ -1,61 +1,70 @@
 package lemon.halite2.util;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
-import hlt.DebugLog;
 import hlt.GameConstants;
-import hlt.GameMap;
-import hlt.Planet;
 import hlt.Position;
 import hlt.RoundPolicy;
-import hlt.Ship;
-import hlt.Ship.DockingStatus;
 import hlt.ThrustPlan;
 
 public class Pathfinder {
-	private static GameMap gameMap;
-	
 	private Position start;
-	private Position end;
 	private double buffer;
-	private double endBuffer;
 	
 	private int magnitude;
 	private int directionDegrees;
-	private int offsetCounterClockwise;
-	private int offsetClockwise;
+	private int bestDirection;
 	
 	private boolean[] staticDirections;
+	private boolean[] dynamicDirections;
+	private boolean[] uncertainDirections;
 	
 	public Pathfinder(Position start, Position end, double buffer, double endBuffer) {
 		this.start = start;
-		this.end = end;
 		this.buffer = buffer;
-		this.endBuffer = endBuffer;
 		this.magnitude = (int)Math.min(7, start.getDistanceTo(end)-buffer-endBuffer);
 		this.directionDegrees = RoundPolicy.ROUND.applyDegrees(start.getDirectionTowards(end));
-		this.offsetClockwise = 0;
-		this.offsetCounterClockwise = 0;
-		this.staticDirections = new boolean[360];
+		this.bestDirection = -1;
+		this.staticDirections = new boolean[MathUtil.TAU_DEGREES];
+		this.dynamicDirections = new boolean[MathUtil.TAU_DEGREES];
+		this.uncertainDirections = new boolean[MathUtil.TAU_DEGREES];
 	}
-	public int resolveConflicts() { //Returns conflicting obstacle?
-		//Resolve Uncertain Regions
-		for(Circle region: Obstacles.getUncertainRegions()) {
-			
+	public int calcBestDirection() {
+		for(int i=0;i<=MathUtil.PI_DEGREES;++i) {
+			int pos = MathUtil.normalizeDegrees(directionDegrees+i);
+			int neg = MathUtil.normalizeDegrees(directionDegrees-i);
+			if(!isConflicting(pos)) {
+				return pos;
+			}
+			if(!isConflicting(neg)) {
+				return neg;
+			}
 		}
 		return -1;
 	}
+	public boolean isConflicting(int direction) {
+		return staticDirections[direction]||dynamicDirections[direction]||uncertainDirections[direction];
+	}
+	public boolean resolveConflicts() {
+		//reresolve Uncertain Regions
+		this.uncertainDirections = new boolean[MathUtil.TAU_DEGREES];
+		resolveUncertainObstacles();
+		bestDirection = calcBestDirection();
+		return bestDirection!=-1;
+	}
 	public void resolveStaticObstacles() {
+		resolveObstacles(Obstacles.getStaticObstacles(), staticDirections);
+	}
+	public void resolveUncertainObstacles() {
+		resolveObstacles(Obstacles.getUncertainRegions(), uncertainDirections);
+	}
+	public void resolveObstacles(Set<Circle> obstacles, boolean[] directions) {
 		//Resolve Static Obstacles
-		for(Circle obstacle: Obstacles.getStaticObstacles()) {
+		for(Circle obstacle: obstacles) {
 			double distSquared = start.getDistanceSquared(obstacle.getPosition());
 			if(distSquared<(obstacle.getRadius()+magnitude)*(obstacle.getRadius()+magnitude)&&
 					!obstacle.contains(start)){
-				resolveStaticObstacle(obstacle, staticDirections);
+				resolveStaticObstacle(obstacle, directions);
 			}
 		}
 	}
@@ -69,9 +78,12 @@ public class Pathfinder {
 		}
 	}
 	public void resolveDynamicObstacle(Circle circle, ThrustPlan plan, boolean[] directions) {
+		Position endPosition = circle.getPosition().addPolar(plan.getThrust(), Math.toRadians(plan.getAngle()));
+		if(!Geometry.segmentCircleIntersection(circle.getPosition(), endPosition, start, circle.getRadius()+magnitude+GameConstants.SHIP_RADIUS)) {
+			return;
+		}
 		Position velocity = new Position(plan.getThrust()*Math.cos(Math.toRadians(plan.getAngle())),
 				plan.getThrust()*Math.sin(Math.toRadians(plan.getAngle())));
-		Position endPosition = circle.getPosition().addPolar(plan.getThrust(), Math.toRadians(plan.getAngle()));
 		double direction = start.getDirectionTowards(circle.getPosition());
 		double direction2 = start.getDirectionTowards(endPosition);
 		double theta = Math.asin((circle.getRadius()+buffer)/start.getDistanceTo(circle.getPosition()));
@@ -106,133 +118,11 @@ public class Pathfinder {
 		}
 	}
 	public ThrustPlan getThrustPlan() {
-		if(offsetCounterClockwise==-1&&offsetClockwise==-1) {
-			return null;
-		}
-		if(offsetCounterClockwise==-1) {
-			return new ThrustPlan(magnitude, directionDegrees+offsetClockwise);
-		}
-		if(offsetClockwise==-1) {
-			return new ThrustPlan(magnitude, directionDegrees-offsetCounterClockwise);
-		}
-		if(offsetClockwise<offsetCounterClockwise) {
-			return new ThrustPlan(magnitude, directionDegrees+offsetClockwise);
-		}else {
-			return new ThrustPlan(magnitude, directionDegrees-offsetCounterClockwise);
-		}
-	}
-	
-	public static void init(GameMap gameMap) {
-		Pathfinder.gameMap = gameMap;
-	}
-	public static void update() {
-		staticObstacles.clear();
-		for(Planet planet: gameMap.getPlanets()){
-			staticObstacles.add(new Circle(planet.getPosition(), planet.getRadius()));
-		}
-		for(Ship ship: gameMap.getMyPlayer().getShips()){
-			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
-				staticObstacles.add(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS));
-			}
-		}
-		dynamicObstacles.clear();
-	}
-	public static PathfindPlan pathfind(Position start, Position end, double buffer, double endBuffer) {
-		DebugLog.log("\tPathfinding: "+start+" - "+end+" - "+buffer+" - "+endBuffer);
-		double realDirection = start.getDirectionTowards(end);
-		double targetDirection = RoundPolicy.ROUND.apply(realDirection);
-		//Solves Law of Sines
-		double offsetDirection = Math.abs(targetDirection-realDirection);
-		double realDistance = start.getDistanceTo(end);
-		double targetDistance = 0;
-		if(offsetDirection>0&&(buffer+endBuffer)<realDistance&&(buffer+endBuffer)>=realDistance*Math.sin(offsetDirection)){ //Ensures triangle to be solvable
-			double lawOfSinesValue = Math.sin(offsetDirection)/(buffer+endBuffer); //Divide by 0 error if buffer = 0
-			double sineInverse = Math.PI-Math.asin(realDistance*lawOfSinesValue); //It's the one that is greater than Math.PI/2 radians
-			targetDistance = Math.sin(Math.PI-sineInverse-offsetDirection)/lawOfSinesValue;
-			//targetDistance = Math.sin(Math.asin(realDistance*lawOfSinesValue)-offsetDirection)/lawOfSinesValue;
-		}else{
-			if(offsetDirection==0||buffer+endBuffer>realDistance) {
-				targetDistance = Math.max(0, realDistance-(buffer+endBuffer));
-			}else {
-				targetDistance = realDistance*Math.cos(offsetDirection);
-			}
-		}
-		targetDistance = Math.max(0, targetDistance-CORRECTION);
-		DebugLog.log("Ideal Case: "+targetDistance+" - "+targetDirection);
-		double left = calcPlan(start, targetDistance, targetDirection, buffer, -1, Math.PI);
-		double right = calcPlan(start, targetDistance, targetDirection, buffer, 1, Math.PI);
-		DebugLog.log("\t\tleft="+left+";right="+right+";targetDistance="+targetDistance+";targetDirection="+targetDirection);
-		if(left==0&&right==0) {
-			targetDistance = (int)Math.min(7, targetDistance);
-			if(targetDistance==0) {
-				return null;
-			}
-			return new PathfindPlan((int)targetDistance, targetDirection, RoundPolicy.NONE);
-		}
-		if(left==-1&&right==-1) { //No Valid Directions
-			return null;
-		}
-		if(left==-1) {
-			return new PathfindPlan(7, targetDirection+right, RoundPolicy.NONE);
-		}else if(right==-1){
-			return new PathfindPlan(7, targetDirection-left, RoundPolicy.NONE);
-		}else if(left<right) {
-			return new PathfindPlan(7, targetDirection-left, RoundPolicy.NONE);
-		}else {
-			return new PathfindPlan(7, targetDirection+right, RoundPolicy.NONE);
-		}
-	}
-	private static final double DETECT = 0.001;
-	private static final double CORRECTION = 0.002;
-	//Feed in degree-workable start and end
-	private static double calcPlan(Position start, double magnitude, double direction, double buffer, int sign, double amount) {
-		DebugLog.log("\t\tCalcPlan: "+start+" - "+magnitude+" - "+direction+" - "+buffer+" - "+sign+" - "+amount);
-		Position end = start.addPolar(magnitude, direction);
-		for(Circle circle: staticObstacles) {
-			Position position = circle.getPosition();
-			double radius = circle.getRadius()+buffer+DETECT;
-			if(Geometry.segmentCircleIntersection(start, end, position, radius)){
-				double distance = start.getDistanceTo(position);
-				if(distance<=radius){
-					continue; //You're in the obstacle? - Skip the obstacle
-				}
-				DebugLog.log("\t\t\tIntersected with: "+position+" - "+radius);
-				double tangentValue = Math.asin(Math.min((radius+CORRECTION)/distance, 1));
-				double refDirection = start.getDirectionTowards(position);
-				double theta = Math.ceil(MathUtil.angleBetween(direction, refDirection+sign*tangentValue));
-				if(theta<=amount) {
-					double plan = calcPlan(start, 7, direction+sign*theta, buffer, sign, amount-theta);
-					if(plan==-1) {
-						return -1; //OH NOES
-					}
-					return theta+plan;
-				}else {
-					return -1; //OH NOES
-				}
-			}
-		}
-		magnitude = (int)Math.min(7, magnitude);
-		Position velocity = new Position(magnitude*Math.cos(direction), magnitude*Math.sin(direction));
-		for(Entry<Circle, Position> entry: dynamicObstacles.entrySet()) {
-			if(checkCollisions(start, entry.getKey().getPosition(), velocity, entry.getValue(), buffer+entry.getKey().getRadius()+DETECT)) {
-				if(ONE_DEGREE<=amount) {
-					double plan = calcPlan(start, 7, direction+sign*ONE_DEGREE, buffer, sign, amount-ONE_DEGREE);
-					if(plan==-1) {
-						return -1;
-					}
-					return ONE_DEGREE+plan;
-				}else {
-					return -1;
-				}
-			}
-		}
-		return 0;
+		return new ThrustPlan(magnitude, bestDirection);
 	}
 	public static boolean checkCollisions(Position a, Position b, Position velocityA, Position velocityB, double buffer) {
-		DebugLog.log("Solving: "+a+" - "+b+" - "+velocityA+" - "+velocityB+" - "+buffer);
 		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
 		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
-		DebugLog.log("Checking Collisions: "+MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time)+" - "+(buffer*buffer));
 		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 }
