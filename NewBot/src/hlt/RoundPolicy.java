@@ -1,28 +1,22 @@
 package hlt;
 
-import lemon.halite2.util.MathUtil;
-
 public enum RoundPolicy {
-	CLOCKWISE, COUNTER_CLOCKWISE, ROUND;
+	FLOOR, CEIL, ROUND;
 	public static int applyDegrees(double radians, RoundPolicy policy) {
-		double degrees = MathUtil.normalizeDegrees(Math.toDegrees(radians));
+		double degrees = Math.toDegrees(radians);
 		switch(policy) {
-		case CLOCKWISE:
-			degrees = Math.floor(degrees);
-			break;
-		case COUNTER_CLOCKWISE:
-			degrees = Math.ceil(degrees);
-			break;
+		case FLOOR:
+			return (int)Math.floor(degrees);
+		case CEIL:
+			return (int)Math.ceil(degrees);
 		case ROUND:
-			degrees = Math.round(degrees);
-			break;
+			return (int)Math.round(degrees);
 		default:
 			throw new NullPointerException(String.format("RoundPolicy is null: %f", radians));
 		}
-		return MathUtil.normalizeDegrees((int)Math.round(degrees));
 	}
 	public static double applyRadians(double radians, RoundPolicy policy) {
-		return MathUtil.normalizeRadians(Math.toRadians(applyDegrees(radians, policy)));
+		return Math.toRadians(applyDegrees(radians, policy));
 	}
 	public double applyRadians(double radians){
 		return RoundPolicy.applyRadians(radians, this);
