@@ -244,6 +244,7 @@ public class AdvancedStrategy implements Strategy {
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
 		Deque<Pathfinder> pathfinders = new ArrayDeque<Pathfinder>();
 		Deque<Group> groups = new ArrayDeque<Group>();
+		Deque<Integer> targets = new ArrayDeque<Integer>();
 		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
 			Planet targetPlanet = gameMap.getPlanet(planetId);
 			if(targetPlanets.get(planetId).size()>0) {
@@ -256,30 +257,33 @@ public class AdvancedStrategy implements Strategy {
 					pathfinder.resolveStaticObstacles();
 					pathfinders.push(pathfinder);
 					groups.push(group);
+					targets.push(planetId);
 				}else {
 					DebugLog.log("\tAlready Processed Group: "+group.getCircle().getPosition());
 				}
 			}
 		}
 		while((!pathfinders.isEmpty())&&(!groups.isEmpty())) {
-			Group group = groups.pop();
-			Pathfinder pathfinder = pathfinders.pop();
+			Group group = groups.poll();
+			Pathfinder pathfinder = pathfinders.poll();
+			int target = targets.poll();
 			pathfinder.resolveDynamicObstacles();
 			pathfinder.resolveUncertainObstacles();
+			Planet targetPlanet = gameMap.getPlanet(target);
 			
 			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
 			if(plan==null) {
-				DebugLog.log("\tCan't move");
+				DebugLog.log(String.format("\tCan't move: %d", group.getId()));
 			}else {
 				int candidate = pathfinder.getCandidate(plan);
 				if(candidate==Pathfinder.NO_CONFLICT) {
 					group.move(gameMap, moveQueue, plan);
 					Obstacles.addDynamicObstacle(group.getCircle(), plan);
-					Obstacles.removeUncertainObstacle(id);
-					Set<Integer> blame = blameMap.get(group.getGroup(id));
-					if()
+					Obstacles.removeUncertainObstacle(group.getId());
+					Set<Integer> blame = blameMap.get(group.getId());
+					//re-add all blamed into the deque
 				}else if(candidate!=Pathfinder.CONFLICT){
-					
+					//add to blame
 				}
 			}
 		}
