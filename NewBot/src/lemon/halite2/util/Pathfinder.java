@@ -3,6 +3,7 @@ package lemon.halite2.util;
 import java.util.Map.Entry;
 
 import hlt.Position;
+import hlt.RoundPolicy;
 import hlt.ThrustPlan;
 
 public class Pathfinder {
@@ -130,35 +131,25 @@ public class Pathfinder {
 		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 	public ThrustPlan getGreedyPlan(Position target, double buffer) {
-		double bufferSquared = buffer*buffer;
-		double bestDistanceSquared = Double.MAX_VALUE;
-		int bestThrust = 0;
-		int bestAngle = 0;
-		//still case
-		if(stillCandidate!=CONFLICT) {
-			double distanceSquared = position.getDistanceSquared(target);
-			if(distanceSquared>bufferSquared&&distanceSquared<bestDistanceSquared) {
-				bestDistanceSquared = distanceSquared;
-				bestThrust = 0;
-				bestAngle = 0;
-			}
-		}
-		for(int i=0;i<7;++i) {
-			for(int j=0;j<MathUtil.TAU_DEGREES;++j) {
-				if(candidates[i][j]!=CONFLICT) {
-					double distanceSquared = position.add(velocityVector[i][j]).getDistanceSquared(target);
-					if(distanceSquared>bufferSquared&&distanceSquared<bestDistanceSquared) {
-						bestDistanceSquared = distanceSquared;
-						bestThrust = i+1;
-						bestAngle = j;
-					}
+		double direction = position.getDirectionTowards(target);
+		double directionDegrees = Math.toDegrees(direction);
+		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
+		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1; //opposite because roundedDegrees is rounded already
+		//General Case
+		for(int i=7;i>=1;--i){ //magnitude
+			for(int j=0;j<=MathUtil.PI_DEGREES;++j){ //offset
+				if(getCandidate(i, MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign))!=CONFLICT){
+					return new ThrustPlan(i, MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign));
+				}
+				if(getCandidate(i, MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign))!=CONFLICT){
+					return new ThrustPlan(i, MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign));
 				}
 			}
 		}
-		if(bestDistanceSquared==Double.MAX_VALUE) {
-			return null;
-		}else {
-			return new ThrustPlan(bestThrust, bestAngle);
+		//Still case
+		if(stillCandidate!=CONFLICT) {
+			return new ThrustPlan(0, 0);
 		}
+		return null;
 	}
 }
