@@ -43,6 +43,8 @@ public class AdvancedStrategy implements Strategy {
 		micro = new MicroGame(gameMap);
 		//Initialize Pathfinder
 		Pathfinder.init();
+		//Initialize Obstacles
+		Obstacles.init();
 	}
 	public int calcBasePlanetId(Position averageStart){
 		double mostDockingSpots = 0;

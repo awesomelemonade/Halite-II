@@ -1,4 +1,3 @@
-import hlt.*;
 import lemon.halite2.benchmark.Benchmark;
 import lemon.halite2.strats.AdvancedStrategy;
 import lemon.halite2.strats.Strategy;
@@ -6,6 +5,10 @@ import lemon.halite2.util.MoveQueue;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import hlt.DebugLog;
+import hlt.GameMap;
+import hlt.Networking;
 
 public class MyBot {
 	public static final SimpleDateFormat READABLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
@@ -30,20 +33,26 @@ public class MyBot {
 				@Override
 				public void run() {
 					while(true){
-						while(!flag){
-							try {
-								Thread.sleep(1);
-							} catch (InterruptedException e) {
-								DebugLog.log("Why you interruptin?");
+						try {
+							while(!flag){
+								try {
+									Thread.sleep(1);
+								} catch (InterruptedException e) {
+									DebugLog.log("Why you interruptin?");
+								}
 							}
+							flag = false;
+							DebugLog.log("Processing Turn");
+							strategy.newTurn(moveQueue);
+							currentThread.interrupt();
+						}catch(Exception ex) {
+							DebugLog.log(ex);
 						}
-						flag = false;
-						strategy.newTurn(moveQueue);
-						currentThread.interrupt();
 					}
 				}
 			};
 			Thread thread = new Thread(runnable);
+			thread.start();
 			
 			DebugLog.log(String.format("Intialization finished in %s seconds", Benchmark.format(benchmark.pop())));
 			Networking.finalizeInitialization("Lemon");
