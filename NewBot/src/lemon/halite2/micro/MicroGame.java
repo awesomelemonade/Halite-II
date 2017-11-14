@@ -10,13 +10,13 @@ import java.util.Set;
 
 import hlt.GameMap;
 import hlt.Position;
+import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.Ship.DockingStatus;
-import hlt.ThrustMove.RoundPolicy;
+import hlt.ThrustPlan;
 import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
-import lemon.halite2.util.PathfindPlan;
 
 public class MicroGame {
 	private static final int[] MAGNITUDES = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
@@ -53,12 +53,12 @@ public class MicroGame {
 			double averageX = (a.getCircle().getPosition().getX()+b.getCircle().getPosition().getX())/2;
 			double averageY = (a.getCircle().getPosition().getY()+b.getCircle().getPosition().getY())/2;
 			Position midpoint = new Position(averageX, averageY);
-			Map<Position, PathfindPlan> possibilitiesA = 
+			Map<Position, ThrustPlan> possibilitiesA = 
 					bruteforce(a.getCircle().getPosition(), a.getCircle().getRadius(), midpoint, target, MAGNITUDES);
-			Map<Position, PathfindPlan> possibilitiesB = 
+			Map<Position, ThrustPlan> possibilitiesB = 
 					bruteforce(b.getCircle().getPosition(), b.getCircle().getRadius(), midpoint, target, MAGNITUDES);
-			PathfindPlan bestPathfindPlanA = null;
-			PathfindPlan bestPathfindPlanB = null;
+			ThrustPlan bestPathfindPlanA = null;
+			ThrustPlan bestPathfindPlanB = null;
 			double bestDistanceSquared = Double.MAX_VALUE;
 			for(Position positionA: possibilitiesA.keySet()) {
 				for(Position positionB: possibilitiesB.keySet()) {
@@ -75,16 +75,16 @@ public class MicroGame {
 			return null;
 		}
 	}
-	private Map<Position, PathfindPlan> bruteforce(Position position, double buffer, Position start, Position end, int[] magnitudes){
-		Map<Position, PathfindPlan> possibilities = new HashMap<Position, PathfindPlan>();
+	private Map<Position, ThrustPlan> bruteforce(Position position, double buffer, Position start, Position end, int[] magnitudes){
+		Map<Position, ThrustPlan> possibilities = new HashMap<Position, ThrustPlan>();
 		Position projection = Geometry.projectPointToLine(start, end, position);
 		double projectionDistance = projection.getDistanceTo(position)-buffer;
 		double projectionDirection = position.getDirectionTowards(projection);
 		double targetDirection = position.getDirectionTowards(end);
 		RoundPolicy roundPolicy;
 		int sign = 0;
-		if(MathUtil.angleBetween(RoundPolicy.FLOOR.apply(projectionDirection), targetDirection)<
-				MathUtil.angleBetween(RoundPolicy.CEIL.apply(projectionDirection), targetDirection)) {
+		if(MathUtil.angleBetweenRadians(RoundPolicy.FLOOR.applyRadians(projectionDirection), targetDirection)<
+				MathUtil.angleBetweenRadians(RoundPolicy.CEIL.applyRadians(projectionDirection), targetDirection)) {
 			sign = -1;
 			roundPolicy = RoundPolicy.FLOOR;
 		}else {
@@ -93,12 +93,12 @@ public class MicroGame {
 		}
 		for(int magnitude: magnitudes) {
 			if(magnitude<projectionDistance) {
-				double direction = roundPolicy.apply(projectionDirection);
-				possibilities.put(position.addPolar(magnitude, direction), new PathfindPlan(magnitude, direction, RoundPolicy.NONE));
+				double direction = roundPolicy.applyRadians(projectionDirection);
+				possibilities.put(position.addPolar(magnitude, direction), new ThrustPlan(magnitude, direction, RoundPolicy.ROUND));
 			}else {
 				double theta = Math.acos(projectionDistance/magnitude);
-				double direction = roundPolicy.apply(projectionDirection+theta*sign);
-				possibilities.put(position.addPolar(magnitude, direction), new PathfindPlan(magnitude, direction, RoundPolicy.NONE));
+				double direction = roundPolicy.applyRadians(projectionDirection+theta*sign);
+				possibilities.put(position.addPolar(magnitude, direction), new ThrustPlan(magnitude, direction, RoundPolicy.ROUND));
 			}
 		}
 		return possibilities;
