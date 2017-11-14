@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.TreeMap;
 
 import hlt.DebugLog;
 import hlt.DockMove;
@@ -31,7 +30,7 @@ import lemon.halite2.util.Pathfinder;
 
 public class AdvancedStrategy implements Strategy {
 	private GameMap gameMap;
-	private Map<Integer, Map<Group, Boolean>> targetPlanets;
+	private Map<Integer, Integer> targetPlanets;
 	private MicroGame micro;
 	public AdvancedStrategy(GameMap gameMap) {
 		this.gameMap = gameMap;
@@ -39,7 +38,7 @@ public class AdvancedStrategy implements Strategy {
 	@Override
 	public void init() {
 		//Initialize Data Structures
-		targetPlanets = new HashMap<Integer, Map<Group, Boolean>>();
+		targetPlanets = new HashMap<Integer, Integer>();
 		//Initialize MicroGame
 		micro = new MicroGame(gameMap);
 		//Initialize Pathfinder
@@ -90,9 +89,6 @@ public class AdvancedStrategy implements Strategy {
 	public void newTurn(MoveQueue moveQueue) {
 		micro.update();
 		targetPlanets.clear();
-		for(Planet planet: gameMap.getPlanets()){
-			targetPlanets.put(planet.getId(), new TreeMap<Group, Boolean>());
-		}
 		//Calculate Planet Requests
 		Map<Integer, Integer> planetRequests = new HashMap<Integer, Integer>();
 		for(Planet planet: gameMap.getPlanets()){
@@ -137,7 +133,7 @@ public class AdvancedStrategy implements Strategy {
 			int targetPlanetId = groupToPlanetOrder.get(popped).get(groupToPlanetOrderIndex.get(popped));
 			if(planetRequests.get(targetPlanetId)>0){
 				DebugLog.log("\tAssigned "+popped.getSize()+" ship(s) with "+planetRequests.get(targetPlanetId)+" requests to planet "+targetPlanetId);
-				targetPlanets.get(targetPlanetId).put(popped, false);
+				targetPlanets.put(popped.getId(), targetPlanetId);
 				planetRequests.put(targetPlanetId, planetRequests.get(targetPlanetId)-popped.getSize());
 			}else{
 				DebugLog.log("\tFufilled Requests! Recalculating");
@@ -161,7 +157,7 @@ public class AdvancedStrategy implements Strategy {
 			for(Planet planet: gameMap.getPlanets()) {
 				if(planet.getOwner()!=gameMap.getMyPlayerId()) {
 					for(Group group: freeAgents){
-						targetPlanets.get(planet.getId()).put(group, false);
+						targetPlanets.put(group.getId(), planet.getId());
 					}
 					freeAgents.clear();
 					break;
@@ -175,11 +171,11 @@ public class AdvancedStrategy implements Strategy {
 				int split = (int)Math.ceil(((double)totalShips)/((double)gameMap.getPlanets().size()));
 				if(freeAgents.size()>=split){
 					for(int i=0;i<split;++i){
-						targetPlanets.get(planet.getId()).put(freeAgents.pop(), false);
+						targetPlanets.put(freeAgents.pop().getId(), planet.getId());
 					}
 				}else{
 					for(Group group: freeAgents){
-						targetPlanets.get(planet.getId()).put(group, false);
+						targetPlanets.put(group.getId(), planet.getId());
 					}
 					freeAgents.clear();
 				}
@@ -193,97 +189,84 @@ public class AdvancedStrategy implements Strategy {
 		for(Planet planet: gameMap.getPlanets()) {
 			Obstacles.addStaticObstacle(new Circle(planet.getPosition(), planet.getRadius()));
 		}
+		Deque<Integer> groupQueue = new ArrayDeque<Integer>(); //Queue of Group IDs
+		Deque<Integer> resolved = new ArrayDeque<Integer>();
+		//Add all to queue
+		for(int groupId: targetPlanets.keySet()) {
+			groupQueue.push(groupId);
+		}
 		//Resolve Docking; Adds docking ship to static obstacles
-		for(int planetId: targetPlanets.keySet()) {
-			Planet targetPlanet = gameMap.getPlanet(planetId);
+		while(!queue.isEmpty()) {
+			Group group = Group.getGroup(groupQueue.peek());
+			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(groupQueue.poll()));
 			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()) {
-				Set<Group> oldGroups = new HashSet<Group>();
-				Set<Group> newGroups = new HashSet<Group>();
-				for(Group group: targetPlanets.get(planetId).keySet()){
-					if(group.getSize()>1) {
-						oldGroups.add(group);
-						for(int shipId: group.getShips().keySet()) {
-							newGroups.add(new Group(gameMap.getMyPlayer().getShip(shipId)));
-						}
-					}
-				}
-				for(Group group: oldGroups) {
-					targetPlanets.get(planetId).remove(group);
+				if(group.getSize()>1) {
 					micro.getGroups().remove(group);
-				}
-				for(Group group: newGroups) {
-					targetPlanets.get(planetId).put(group, false);
-					micro.getGroups().add(group);
-				}
-				for(Group group: targetPlanets.get(planetId).keySet()) {
-					if(!targetPlanets.get(planetId).get(group)) {
-						for(int shipId: group.getShips().keySet()) {
-							if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
-								DebugLog.log("\tDocking Ship "+shipId+" to Planet "+planetId);
-								moveQueue.add(new DockMove(shipId, planetId));
-								targetPlanets.get(planetId).put(group, true);
-								Obstacles.addStaticObstacle(group.getCircle());
-							}
-							break; //There's only supposed to be one ship per group
-						}
+					for(int shipId: group.getShips().keySet()) {
+						Group newGroup = new Group(gameMap.getMyPlayer().getShip(shipId));
+						groupQueue.push(newGroup.getId());
+						micro.getGroups().add(newGroup);
+					}
+				}else {
+					for(int shipId: group.getShips().keySet()) {
+						DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
+						moveQueue.add(new DockMove(shipId, targetPlanet.getId()));
+						Obstacles.addStaticObstacle(group.getCircle());
 					}
 				}
+			}else {
+				resolved.push(group.getId());
 			}
 		}
+		while(!resolved.isEmpty()) {
+			groupQueue.push(resolved.poll());
+		}
 		//Add Uncertain Obstacles
-		for(int planetId: targetPlanets.keySet()) {
-			for(Group group: targetPlanets.get(planetId).keySet()) {
-				if(!targetPlanets.get(planetId).get(group)) {
-					Obstacles.addUncertainObstacle(group.getCircle(), group.getId());
-				}
-			}
+		for(int groupId: groupQueue) {
+			Obstacles.addUncertainObstacle(Group.getGroup(groupId).getCircle(), groupId);
 		}
 		//Resolve Micro
 		//	Merging
-		Set<Integer> handledGroups = new HashSet<Integer>();
-		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
-		Deque<Pathfinder> pathfinders = new ArrayDeque<Pathfinder>();
-		Deque<Group> groups = new ArrayDeque<Group>();
-		Deque<Integer> targets = new ArrayDeque<Integer>();
-		for(int planetId: targetPlanets.keySet()){ //Resolve by planet
-			Planet targetPlanet = gameMap.getPlanet(planetId);
-			if(targetPlanets.get(planetId).size()>0) {
-				DebugLog.log("Handling Planet "+planetId+" with "+targetPlanets.get(planetId).size()+" ship(s)");
-			}
-			//Pathfind
-			for(Group group: targetPlanets.get(planetId).keySet()){
-				if(!targetPlanets.get(planetId).get(group)){
-					Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius());
-					pathfinder.resolveStaticObstacles();
-					pathfinders.push(pathfinder);
-					groups.push(group);
-					targets.push(planetId);
-				}else {
-					DebugLog.log("\tAlready Processed Group: "+group.getCircle().getPosition());
-				}
-			}
+		Map<Integer, Pathfinder> pathfinders = new HashMap<Integer, Pathfinder>();
+		for(int groupId: groupQueue) { //Attach a pathfinder to all groups that are left
+			Group group = Group.getGroup(groupId);
+			Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius());
+			pathfinder.resolveStaticObstacles();
+			pathfinders.put(groupId, pathfinder);
 		}
-		while((!pathfinders.isEmpty())&&(!groups.isEmpty())) {
-			Group group = groups.poll();
-			Pathfinder pathfinder = pathfinders.poll();
-			int target = targets.poll();
-			pathfinder.resolveDynamicObstacles();
+		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
+		while(!groupQueue.isEmpty()) {
+			Group group = Group.getGroup(groupQueue.poll());
+			Pathfinder pathfinder = pathfinders.get(group.getId());
+			pathfinder.clearUncertainObstacles();
 			pathfinder.resolveUncertainObstacles();
-			Planet targetPlanet = gameMap.getPlanet(target);
-			
+			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
 			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
 			if(plan==null) {
-				DebugLog.log(String.format("\tCan't move: %d", group.getId()));
+				DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
 			}else {
 				int candidate = pathfinder.getCandidate(plan);
 				if(candidate==Pathfinder.NO_CONFLICT) {
 					group.move(gameMap, moveQueue, plan);
+					pathfinders.remove(group.getId());
 					Obstacles.addDynamicObstacle(group.getCircle(), plan);
+					for(Pathfinder p: pathfinders.values()) {
+						p.resolveDynamicObstacle(group.getCircle(), plan);
+					}
 					Obstacles.removeUncertainObstacle(group.getId());
-					Set<Integer> blame = blameMap.get(group.getId());
-					//re-add all blamed into the deque
-				}else if(candidate!=Pathfinder.CONFLICT){
-					//add to blame
+					if(blameMap.containsKey(group.getId())) {
+						for(int groupId: blameMap.get(group.getId())) {
+							groupQueue.push(groupId);
+						}
+						blameMap.get(group.getId()).clear();
+					}
+				}else if(candidate!=Pathfinder.CONFLICT) {
+					if(!blameMap.containsKey(candidate)) {
+						blameMap.put(candidate, new HashSet<Integer>());
+					}
+					blameMap.get(candidate).add(group.getId());
+				}else {
+					DebugLog.log(String.format("\tConflict? %d", group.getId()));
 				}
 			}
 		}
