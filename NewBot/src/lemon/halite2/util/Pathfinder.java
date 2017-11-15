@@ -84,6 +84,10 @@ public class Pathfinder {
 		}
 	}
 	public void resolveDynamicObstacle(Circle circle, ThrustPlan plan) {
+		if(plan.getThrust()==0) {
+			resolveStaticObstacle(circle);
+			return;
+		}
 		Position velocity = velocityVector[plan.getThrust()-1][plan.getAngle()];
 		//resolve still candidate
 		if(stillCandidate!=CONFLICT&&Geometry.segmentCircleIntersection(circle.getPosition(),
@@ -141,11 +145,17 @@ public class Pathfinder {
 		//General Case
 		for(int i=7;i>=1;--i){ //magnitude
 			for(int j=0;j<=MathUtil.PI_DEGREES;++j){ //offset
-				if(getCandidate(i, MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign))!=CONFLICT){
-					return new ThrustPlan(i, MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign));
+				int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
+				int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
+				if(getCandidate(i, candidateA)!=CONFLICT){
+					if(!Geometry.segmentCircleIntersection(position, position.add(velocityVector[i-1][candidateA]), target, buffer)) {
+						return new ThrustPlan(i, candidateA);
+					}
 				}
-				if(getCandidate(i, MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign))!=CONFLICT){
-					return new ThrustPlan(i, MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign));
+				if(getCandidate(i, candidateB)!=CONFLICT){
+					if(!Geometry.segmentCircleIntersection(position, position.add(velocityVector[i-1][candidateB]), target, buffer)) {
+						return new ThrustPlan(i, candidateB);
+					}
 				}
 			}
 		}

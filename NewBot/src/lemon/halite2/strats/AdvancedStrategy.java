@@ -24,6 +24,7 @@ import hlt.Ship.DockingStatus;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
 import lemon.halite2.util.Circle;
+import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 import lemon.halite2.util.Obstacles;
 import lemon.halite2.util.Pathfinder;
@@ -252,7 +253,13 @@ public class AdvancedStrategy implements Strategy {
 			pathfinder.clearUncertainObstacles();
 			pathfinder.resolveUncertainObstacles(group.getId());
 			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
-			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
+			Ship enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
+			ThrustPlan plan = null;
+			if(enemyShip==null) {
+				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
+			}else {
+				plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS/2);
+			}
 			if(plan==null) {
 				DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
 			}else {
@@ -325,7 +332,6 @@ public class AdvancedStrategy implements Strategy {
 		bufferSquared = bufferSquared*bufferSquared;
 		
 		double startDirection = planet.getPosition().getDirectionTowards(position);
-		double angleBuffer = 2*Math.asin(4/Math.sqrt(bufferSquared)); //8 degrees of buffer; you can calculate this in init time to make it faster
 		double shortestDirection = Double.MAX_VALUE;
 		Ship shortestShip = null;
 		
@@ -335,13 +341,7 @@ public class AdvancedStrategy implements Strategy {
 			}
 			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {
 				double targetDirection = planet.getPosition().getDirectionTowards(ship.getPosition());
-				if(Math.abs(targetDirection-startDirection)<angleBuffer) {
-					return ship;
-				}
-				double deltaDirection = (targetDirection-startDirection)%(2*Math.PI);
-				if(deltaDirection<0) {
-					deltaDirection+=(2*Math.PI);
-				}
+				double deltaDirection = MathUtil.angleBetweenRadians(startDirection, targetDirection);
 				if(shortestDirection>deltaDirection) {
 					shortestDirection = deltaDirection;
 					shortestShip = ship;
