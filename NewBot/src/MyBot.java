@@ -41,10 +41,12 @@ public class MyBot {
 									DebugLog.log("Why you interruptin?");
 								}
 							}
-							flag = false;
 							DebugLog.log("Processing Turn");
 							strategy.newTurn(moveQueue);
-							currentThread.interrupt();
+							if(!Thread.interrupted()) {
+								currentThread.interrupt();
+							}
+							flag = false;
 						}catch(Exception ex) {
 							DebugLog.log(ex);
 						}
@@ -60,16 +62,20 @@ public class MyBot {
 			while (true) {
 				benchmark.push();
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
-				benchmark.push();
 				try{
 					benchmark.push();
 					gameMap.updateMap(Networking.readLineIntoMetadata());
 					flag = true;
-					Thread.sleep((int)(1900.0-Math.ceil(benchmark.peek()/1000000.0))); //nano to milli
+					Thread.sleep(Math.max(0, (int)(1900.0-Math.ceil(benchmark.peek()/1000000.0)))); //nano to milli
 					DebugLog.log("Interrupting Thread");
 					thread.interrupt();
 				}catch(InterruptedException ex){
 					//Ignore
+				}
+				while(flag) {
+					try {
+						Thread.sleep(1);
+					}catch(InterruptedException ex) {}
 				}
 				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
 				moveQueue.flush();

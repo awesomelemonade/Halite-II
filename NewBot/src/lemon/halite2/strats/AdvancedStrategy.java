@@ -247,7 +247,7 @@ public class AdvancedStrategy implements Strategy {
 			pathfinders.put(groupId, pathfinder);
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
-		while(!groupQueue.isEmpty()) {
+		while(!groupQueue.isEmpty()&&(!Thread.currentThread().isInterrupted())) {
 			Group group = Group.getGroup(groupQueue.poll());
 			Pathfinder pathfinder = pathfinders.get(group.getId());
 			pathfinder.clearUncertainObstacles();
