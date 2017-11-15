@@ -136,7 +136,6 @@ public class AdvancedStrategy implements Strategy {
 			Group popped = queue.poll();
 			int targetPlanetId = groupToPlanetOrder.get(popped).get(groupToPlanetOrderIndex.get(popped));
 			if(planetRequests.get(targetPlanetId)>0){
-				DebugLog.log("\tAssigned "+popped.getSize()+" ship(s) with "+planetRequests.get(targetPlanetId)+" requests to planet "+targetPlanetId);
 				targetPlanets.put(popped.getId(), targetPlanetId);
 				planetRequests.put(targetPlanetId, planetRequests.get(targetPlanetId)-popped.getSize());
 			}else{

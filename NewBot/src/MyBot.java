@@ -76,11 +76,11 @@ public class MyBot {
 				DebugLog.log(timeout+" - "+lastBenchmarkTime+" - "+Math.ceil(benchmark.peek()/1000000.0));
 				millis = Math.max(0, (int)(timeout-lastBenchmarkTime*1.2-Math.ceil(benchmark.peek()/1000000.0)));
 				strategy.newTurn(moveQueue);
+				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
 				if(!Thread.interrupted()) {
 					DebugLog.log("Interrupting Timer Thread");
 					thread.interrupt();
 				}
-				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
 				benchmark.push();
 				moveQueue.flush();
 				lastBenchmarkTime = (long) (benchmark.pop()/1000000.0);
