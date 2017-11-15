@@ -1,25 +1,18 @@
 package lemon.halite2.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import hlt.Move;
 import hlt.Networking;
-import hlt.ThrustMove;
 
 public class MoveQueue {
-	private List<Move> totalMoves;
-	private List<ThrustMove> thrustMoves;
+	private StringBuilder builder;
 	public MoveQueue(){
-		totalMoves = new ArrayList<Move>();
-		thrustMoves = new ArrayList<ThrustMove>();
+		builder = new StringBuilder();
 	}
 	public void add(Move move) {
-		totalMoves.add(move);
+		Networking.writeMove(builder, move);
 	}
 	public void flush(){
-		Networking.sendMoves(totalMoves);
-		totalMoves.clear();
-		thrustMoves.clear();
+		Networking.send(builder.toString());
+		builder = new StringBuilder();
 	}
 }

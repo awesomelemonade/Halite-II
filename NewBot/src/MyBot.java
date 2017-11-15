@@ -14,6 +14,7 @@ public class MyBot {
 	public static final SimpleDateFormat READABLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 	public static final SimpleDateFormat FILENAME_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
 	private static boolean flag = false;
+	private static boolean flag2 = false;
 	public static void main(String[] args) {
 		try {
 			Benchmark benchmark = new Benchmark();
@@ -41,12 +42,13 @@ public class MyBot {
 									DebugLog.log("Why you interruptin?");
 								}
 							}
+							flag = false;
 							DebugLog.log("Processing Turn");
 							strategy.newTurn(moveQueue);
 							if(!Thread.interrupted()) {
 								currentThread.interrupt();
 							}
-							flag = false;
+							flag2 = true;
 						}catch(Exception ex) {
 							DebugLog.log(ex);
 						}
@@ -72,11 +74,12 @@ public class MyBot {
 				}catch(InterruptedException ex){
 					//Ignore
 				}
-				while(flag) {
+				while(!flag2) {
 					try {
 						Thread.sleep(1);
 					}catch(InterruptedException ex) {}
 				}
+				flag2 = false;
 				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
 				moveQueue.flush();
 				DebugLog.log(String.format("Total Time = %s seconds", Benchmark.format(benchmark.pop())));

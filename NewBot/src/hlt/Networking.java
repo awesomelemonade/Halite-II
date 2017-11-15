@@ -10,28 +10,27 @@ public class Networking {
 	static {
 		writer = new PrintWriter(System.out);
 	}
-	public static void sendMoves(Iterable<Move> moves) {
-		StringBuilder moveString = new StringBuilder();
-		for (Move move : moves) {
-			switch (move.getType()) {
-			case UNDOCK:
-				moveString.append(UNDOCK_KEY).append(' ').append(move.getShipId()).append(' ');
-				break;
-			case DOCK:
-				moveString.append(DOCK_KEY).append(' ').append(move.getShipId()).append(' ')
-						.append(((DockMove) move).getPlanetId()).append(' ');
-				break;
-			case THRUST:
-				ThrustPlan plan = ((ThrustMove)move).getThrustPlan();
-				if(plan.getThrust()!=0){
-					moveString.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
-							.append(plan.getThrust()).append(' ')
-							.append(plan.getAngle()).append(' ');
-				}
-				break;
+	public static void writeMove(StringBuilder builder, Move move) {
+		switch (move.getType()) {
+		case UNDOCK:
+			builder.append(UNDOCK_KEY).append(' ').append(move.getShipId()).append(' ');
+			break;
+		case DOCK:
+			builder.append(DOCK_KEY).append(' ').append(move.getShipId()).append(' ')
+					.append(((DockMove) move).getPlanetId()).append(' ');
+			break;
+		case THRUST:
+			ThrustPlan plan = ((ThrustMove)move).getThrustPlan();
+			if(plan.getThrust()!=0){
+				builder.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
+						.append(plan.getThrust()).append(' ')
+						.append(plan.getAngle()).append(' ');
 			}
+			break;
 		}
-		writer.println(moveString);
+	}
+	public static void send(String string) {
+		writer.println(string);
 		writer.flush();
 	}
 	private static String readLine() {
