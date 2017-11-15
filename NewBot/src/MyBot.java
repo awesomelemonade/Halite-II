@@ -16,6 +16,10 @@ public class MyBot {
 	private static boolean flag = false;
 	private static boolean flag2 = false;
 	public static void main(String[] args) {
+		double timeout = 1900.0;
+		if(args.length>0) {
+			timeout = Double.parseDouble(args[0]);
+		}
 		try {
 			Benchmark benchmark = new Benchmark();
 			benchmark.push();
@@ -68,7 +72,7 @@ public class MyBot {
 					benchmark.push();
 					gameMap.updateMap(Networking.readLineIntoMetadata());
 					flag = true;
-					Thread.sleep(Math.max(0, (int)(1900.0-Math.ceil(benchmark.peek()/1000000.0)))); //nano to milli
+					Thread.sleep(Math.max(0, (int)(timeout-Math.ceil(benchmark.peek()/1000000.0)))); //nano to milli
 					DebugLog.log("Interrupting Thread");
 					thread.interrupt();
 				}catch(InterruptedException ex){
