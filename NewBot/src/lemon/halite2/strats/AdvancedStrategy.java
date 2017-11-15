@@ -21,6 +21,7 @@ import hlt.Planet;
 import hlt.Position;
 import hlt.Ship;
 import hlt.ThrustPlan;
+import hlt.Ship.DockingStatus;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
 import lemon.halite2.util.Circle;
@@ -138,10 +139,8 @@ public class AdvancedStrategy implements Strategy {
 				targetPlanets.put(popped.getId(), targetPlanetId);
 				planetRequests.put(targetPlanetId, planetRequests.get(targetPlanetId)-popped.getSize());
 			}else{
-				DebugLog.log("\tFufilled Requests! Recalculating");
 				int index = groupToPlanetOrderIndex.get(popped);
 				if(index+1>=groupToPlanetOrder.get(popped).size()){
-					DebugLog.log("\tNo more planets! Adding to Free Agents");
 					freeAgents.add(popped);
 				}else{
 					Planet newTargetPlanet = gameMap.getPlanet(groupToPlanetOrder.get(popped).get(index+1));
@@ -191,14 +190,21 @@ public class AdvancedStrategy implements Strategy {
 		for(Planet planet: gameMap.getPlanets()) {
 			Obstacles.addStaticObstacle(new Circle(planet.getPosition(), planet.getRadius()));
 		}
+		//Add Docked Ships to Obstacles
+		for(Ship ship: gameMap.getMyPlayer().getShips()) {
+			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
+				Obstacles.addStaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS));
+			}
+		}
 		Deque<Integer> groupQueue = new ArrayDeque<Integer>(); //Queue of Group IDs
 		Deque<Integer> resolved = new ArrayDeque<Integer>();
 		//Add all to queue
 		for(int groupId: targetPlanets.keySet()) {
 			groupQueue.push(groupId);
 		}
+		DebugLog.log(String.format("Resolving %d Groups for Docking", groupQueue.size()));
 		//Resolve Docking; Adds docking ship to static obstacles
-		while(!queue.isEmpty()) {
+		while(!groupQueue.isEmpty()) {
 			Group group = Group.getGroup(groupQueue.peek());
 			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(groupQueue.poll()));
 			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()) {
@@ -211,9 +217,13 @@ public class AdvancedStrategy implements Strategy {
 					}
 				}else {
 					for(int shipId: group.getShips().keySet()) {
-						DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
-						moveQueue.add(new DockMove(shipId, targetPlanet.getId()));
-						Obstacles.addStaticObstacle(group.getCircle());
+						if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
+							DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
+							moveQueue.add(new DockMove(shipId, targetPlanet.getId()));
+							Obstacles.addStaticObstacle(group.getCircle());
+						}else {
+							resolved.push(group.getId());
+						}
 					}
 				}
 			}else {
@@ -223,6 +233,7 @@ public class AdvancedStrategy implements Strategy {
 		while(!resolved.isEmpty()) {
 			groupQueue.push(resolved.poll());
 		}
+		DebugLog.log(String.format("Resolving %d Groups for Pathfinding", groupQueue.size()));
 		//Add Uncertain Obstacles
 		for(int groupId: groupQueue) {
 			Obstacles.addUncertainObstacle(Group.getGroup(groupId).getCircle(), groupId);
@@ -241,7 +252,7 @@ public class AdvancedStrategy implements Strategy {
 			Group group = Group.getGroup(groupQueue.poll());
 			Pathfinder pathfinder = pathfinders.get(group.getId());
 			pathfinder.clearUncertainObstacles();
-			pathfinder.resolveUncertainObstacles();
+			pathfinder.resolveUncertainObstacles(group.getId());
 			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
 			ThrustPlan plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
 			if(plan==null) {

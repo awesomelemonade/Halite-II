@@ -59,8 +59,11 @@ public class Pathfinder {
 			resolveDynamicObstacle(entry.getKey(), entry.getValue());
 		}
 	}
-	public void resolveUncertainObstacles() {
+	public void resolveUncertainObstacles(int exception) {
 		for(Entry<Integer, Circle> entry: Obstacles.getUncertainObstacles().entrySet()) {
+			if(exception==entry.getKey()) {
+				continue;
+			}
 			resolveUncertainObstacle(entry.getValue(), entry.getKey());
 		}
 	}
