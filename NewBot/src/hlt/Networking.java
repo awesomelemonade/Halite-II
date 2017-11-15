@@ -30,7 +30,10 @@ public class Networking {
 		}
 	}
 	public static void send(String string) {
-		writer.println(string);
+		writer.print(string);
+	}
+	public static void flush() {
+		writer.println();
 		writer.flush();
 	}
 	private static String readLine() {

@@ -4,15 +4,12 @@ import hlt.Move;
 import hlt.Networking;
 
 public class MoveQueue {
-	private StringBuilder builder;
-	public MoveQueue(){
-		builder = new StringBuilder();
-	}
 	public void add(Move move) {
+		StringBuilder builder = new StringBuilder();
 		Networking.writeMove(builder, move);
+		Networking.send(builder.toString());
 	}
 	public void flush(){
-		Networking.send(builder.toString());
-		builder = new StringBuilder();
+		Networking.flush();
 	}
 }
