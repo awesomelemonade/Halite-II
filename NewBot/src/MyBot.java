@@ -65,6 +65,7 @@ public class MyBot {
 			DebugLog.log(String.format("Intialization finished in %s seconds", Benchmark.format(benchmark.pop())));
 			Networking.finalizeInitialization("Lemon");
 			
+			long lastBenchmarkTime = 0;
 			while (true) {
 				benchmark.push();
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
@@ -72,7 +73,7 @@ public class MyBot {
 					benchmark.push();
 					gameMap.updateMap(Networking.readLineIntoMetadata());
 					flag = true;
-					Thread.sleep(Math.max(0, (int)(timeout-Math.ceil(benchmark.peek()/1000000.0)))); //nano to milli
+					Thread.sleep(Math.max(0, (int)(timeout-lastBenchmarkTime*1.2-Math.ceil(benchmark.peek()/1000000.0)))); //nano to milli
 					DebugLog.log("Interrupting Thread");
 					thread.interrupt();
 				}catch(InterruptedException ex){
@@ -85,7 +86,9 @@ public class MyBot {
 				}
 				flag2 = false;
 				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
+				benchmark.push();
 				moveQueue.flush();
+				lastBenchmarkTime = benchmark.pop();
 				DebugLog.log(String.format("Total Time = %s seconds", Benchmark.format(benchmark.pop())));
 			}
 		}catch(Exception ex) {
