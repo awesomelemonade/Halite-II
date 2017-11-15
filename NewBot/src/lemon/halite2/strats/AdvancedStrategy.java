@@ -204,7 +204,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		DebugLog.log(String.format("Resolving %d Groups", groupQueue.size()));
 		//Resolve Docking; Adds docking ship to static obstacles
-		while(!groupQueue.isEmpty()) {
+		while(!groupQueue.isEmpty()&&checkInterruption()) {
 			Group group = Group.getGroup(groupQueue.peek());
 			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(groupQueue.poll()));
 			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()) {
@@ -230,7 +230,7 @@ public class AdvancedStrategy implements Strategy {
 				resolved.push(group.getId());
 			}
 		}
-		while(!resolved.isEmpty()) {
+		while(!resolved.isEmpty()&&checkInterruption()) {
 			groupQueue.push(resolved.poll());
 		}
 		//Add Uncertain Obstacles
@@ -247,7 +247,7 @@ public class AdvancedStrategy implements Strategy {
 			pathfinders.put(groupId, pathfinder);
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
-		while(!groupQueue.isEmpty()&&(!Thread.currentThread().isInterrupted())) {
+		while(!groupQueue.isEmpty()&&checkInterruption()) {
 			Group group = Group.getGroup(groupQueue.poll());
 			Pathfinder pathfinder = pathfinders.get(group.getId());
 			pathfinder.clearUncertainObstacles();
@@ -288,6 +288,9 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}
+	}
+	public boolean checkInterruption() {
+		return !Thread.currentThread().isInterrupted();
 	}
 	public int countEnemyShips(Position position, double buffer) {
 		buffer = buffer*buffer; //compares against distanceSquared

@@ -13,8 +13,7 @@ import hlt.Networking;
 public class MyBot {
 	public static final SimpleDateFormat READABLE_DATE_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 	public static final SimpleDateFormat FILENAME_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd--HH-mm-ss");
-	private static boolean flag = false;
-	private static boolean flag2 = false;
+	private static long millis;
 	public static void main(String[] args) {
 		double timeout = 1900.0;
 		if(args.length>0) {
@@ -32,27 +31,30 @@ public class MyBot {
 			Strategy strategy = new AdvancedStrategy(gameMap);
 			strategy.init();
 			
-			Thread currentThread = Thread.currentThread();
+			Thread mainThread = Thread.currentThread();
 			
 			Runnable runnable = new Runnable(){
 				@Override
 				public void run() {
 					while(true){
 						try {
-							while(!flag){
+							if(millis>0) {
+								try {
+									Thread.sleep(millis);
+									DebugLog.log("Interrupting Main Thread: "+benchmark.peek()/1000000.0);
+									mainThread.interrupt();
+								}catch(InterruptedException ex) {
+									DebugLog.log("Interrupted, Finished Early");
+									//Ignore
+								}
+								millis = 0;
+							}else {
 								try {
 									Thread.sleep(1);
-								} catch (InterruptedException e) {
-									DebugLog.log("Why you interruptin?");
+								}catch(InterruptedException ex) {
+									DebugLog.log("Why you interruptin");
 								}
 							}
-							flag = false;
-							DebugLog.log("Processing Turn");
-							strategy.newTurn(moveQueue);
-							if(!Thread.interrupted()) {
-								currentThread.interrupt();
-							}
-							flag2 = true;
 						}catch(Exception ex) {
 							DebugLog.log(ex);
 						}
@@ -69,26 +71,19 @@ public class MyBot {
 			while (true) {
 				benchmark.push();
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
-				try{
-					benchmark.push();
-					gameMap.updateMap(Networking.readLineIntoMetadata());
-					flag = true;
-					Thread.sleep(Math.max(0, (int)(timeout-lastBenchmarkTime*1.2-Math.ceil(benchmark.peek()/1000000.0)))); //nano to milli
-					DebugLog.log("Interrupting Thread");
+				gameMap.updateMap(Networking.readLineIntoMetadata());
+				benchmark.push();
+				DebugLog.log(timeout+" - "+lastBenchmarkTime+" - "+Math.ceil(benchmark.peek()/1000000.0));
+				millis = Math.max(0, (int)(timeout-lastBenchmarkTime*1.2-Math.ceil(benchmark.peek()/1000000.0)));
+				strategy.newTurn(moveQueue);
+				if(!Thread.interrupted()) {
+					DebugLog.log("Interrupting Timer Thread");
 					thread.interrupt();
-				}catch(InterruptedException ex){
-					//Ignore
 				}
-				while(!flag2) {
-					try {
-						Thread.sleep(1);
-					}catch(InterruptedException ex) {}
-				}
-				flag2 = false;
 				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
 				benchmark.push();
 				moveQueue.flush();
-				lastBenchmarkTime = benchmark.pop();
+				lastBenchmarkTime = (long) (benchmark.pop()/1000000.0);
 				DebugLog.log(String.format("Total Time = %s seconds", Benchmark.format(benchmark.pop())));
 			}
 		}catch(Exception ex) {
