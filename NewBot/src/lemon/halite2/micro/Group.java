@@ -109,4 +109,7 @@ public class Group implements Comparable<Group> {
 	public static Group getGroup(int id) {
 		return identificationMap.get(id);
 	}
+	public static int getIdCounter() {
+		return idCounter;
+	}
 }

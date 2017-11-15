@@ -2,7 +2,6 @@ package lemon.halite2.strats;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
@@ -90,6 +89,7 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
+		DebugLog.log("ID Counter: "+Group.getIdCounter());
 		micro.update();
 		targetPlanets.clear();
 		//Calculate Planet Requests
@@ -152,7 +152,6 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}
-		DebugLog.log("Free Agents: "+Arrays.toString(freeAgents.toArray()));
 		//Assign Free Agents - Target planet that is not ours
 		if(!freeAgents.isEmpty()) {
 			for(Planet planet: gameMap.getPlanets()) {
@@ -202,7 +201,7 @@ public class AdvancedStrategy implements Strategy {
 		for(int groupId: targetPlanets.keySet()) {
 			groupQueue.push(groupId);
 		}
-		DebugLog.log(String.format("Resolving %d Groups for Docking", groupQueue.size()));
+		DebugLog.log(String.format("Resolving %d Groups", groupQueue.size()));
 		//Resolve Docking; Adds docking ship to static obstacles
 		while(!groupQueue.isEmpty()) {
 			Group group = Group.getGroup(groupQueue.peek());
@@ -233,7 +232,6 @@ public class AdvancedStrategy implements Strategy {
 		while(!resolved.isEmpty()) {
 			groupQueue.push(resolved.poll());
 		}
-		DebugLog.log(String.format("Resolving %d Groups for Pathfinding", groupQueue.size()));
 		//Add Uncertain Obstacles
 		for(int groupId: groupQueue) {
 			Obstacles.addUncertainObstacle(Group.getGroup(groupId).getCircle(), groupId);
