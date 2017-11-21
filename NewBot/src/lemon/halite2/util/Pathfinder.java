@@ -1,7 +1,5 @@
 package lemon.halite2.util;
 
-import java.util.Map.Entry;
-
 import hlt.Position;
 import hlt.RoundPolicy;
 import hlt.ThrustPlan;
@@ -19,7 +17,7 @@ public class Pathfinder {
 	private int stillCandidate;
 	private int[][] candidates;
 	
-	private List<Obstacle> obstacles;
+	private Obstacles obstacles;
 	
 	public static void init() {
 		velocityVector = new Position[7][MathUtil.TAU_DEGREES];
@@ -30,7 +28,7 @@ public class Pathfinder {
 			}
 		}
 	}
-	public Pathfinder(Position position, double buffer) {
+	public Pathfinder(Position position, double buffer, Obstacles obstacles) {
 		this.position = position;
 		this.buffer = buffer;
 		this.candidates = new int[7][MathUtil.TAU_DEGREES]; //1-7; 0 magnitude = special case to save memory
@@ -39,10 +37,22 @@ public class Pathfinder {
 				candidates[i][j] = UNCHECKED;
 			}
 		}
-		obstacles = new ArrayList<Obstacle>();
+		this.obstacles = obstacles;
 	}
 	public Position getPosition() {
 		return position;
+	}
+	public void clearUncertainObstacles() {
+		if(stillCandidate>=0) {
+			stillCandidate = UNCHECKED;
+		}
+		for(int i=0;i<candidates.length;++i) {
+			for(int j=0;j<candidates[0].length;++j) {
+				if(candidates[i][j]>=0) {
+					candidates[i][j] = UNCHECKED;
+				}
+			}
+		}
 	}
 	public int getCandidate(ThrustPlan plan) {
 		return getCandidate(plan.getThrust(), plan.getAngle());
@@ -60,21 +70,26 @@ public class Pathfinder {
 		return candidates[thrust-1][angle];
 	}
 	public void evaluateStillCandidate(){
-		for(Obstacle obstacle: obstacles){
+		for(Obstacle obstacle: obstacles.getObstacles()){
 			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
-			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0){  //Static or Uncertain
+			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0){  //Static
 				if(obstacle.getCircle().getPosition().getDistanceSquared(position)<=distanceSquared){
-					if(obstacle.getId()==-1){
-						stillCandidate = CONFLICT;
-						return;
-					}else{
-						stillCandidate = obstacle.getId();
-					}
+					stillCandidate = CONFLICT;
+					return;
 				}
 			}else{ //Dynamic Obstacle
-				if(Geometry.segmentPointDistanceSquared(obstacle.getCircle().getPosition(),obstacle.getCircle().getPosition().add(
+				if(Geometry.segmentPointDistanceSquared(obstacle.getCircle().getPosition(), obstacle.getCircle().getPosition().add(
 						velocityVector[obstacle.getThrustPlan().getThrust()-1][obstacle.getThrustPlan().getAngle()]), position)<=distanceSquared){
 					stillCandidate = CONFLICT;
+					return;
+				}
+			}
+		}
+		for(Obstacle obstacle: obstacles.getUncertainObstacles().values()) {
+			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
+			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0){
+				if(obstacle.getCircle().getPosition().getDistanceSquared(position)<=distanceSquared){
+					stillCandidate = obstacle.getId();
 					return;
 				}
 			}
@@ -84,97 +99,39 @@ public class Pathfinder {
 		}
 	}
 	public void evaluateCandidate(int thrust, int angle){
-		for(Obstacle obstacle: obstacles){
-			
-		}
-	}
-	public void resolveStaticObstacles() {
-		for(Circle circle: Obstacles.getStaticObstacles()) {
-			resolveStaticObstacle(circle);
-		}
-	}
-	public void resolveDynamicObstacles() {
-		for(Entry<Circle, ThrustPlan> entry: Obstacles.getDynamicObstacles().entrySet()) {
-			resolveDynamicObstacle(entry.getKey(), entry.getValue());
-		}
-	}
-	public void resolveUncertainObstacles(int exception) {
-		for(Entry<Integer, Circle> entry: Obstacles.getUncertainObstacles().entrySet()) {
-			if(exception==entry.getKey()) {
-				continue;
-			}
-			resolveUncertainObstacle(entry.getValue(), entry.getKey());
-		}
-	}
-	public void resolveStaticObstacle(Circle circle) {
-		//resolve still candidate
-		if(stillCandidate!=CONFLICT&&position.getDistanceSquared(circle.getPosition())<=
-				(buffer+circle.getRadius())*(buffer+circle.getRadius())) {
-			stillCandidate = CONFLICT;
-		}
-		//resolve all other candidates
-		for(int i=0;i<candidates.length;++i) {
-			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j]!=CONFLICT&&Geometry.segmentCircleIntersection(position, position.add(velocityVector[i][j]),
-						circle.getPosition(), circle.getRadius()+buffer)) {
-					candidates[i][j] = CONFLICT;
+		Position velocity = velocityVector[thrust-1][angle];
+		for(Obstacle obstacle: obstacles.getObstacles()){
+			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
+			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0) { //Static or Uncertain
+				if(Geometry.segmentPointDistanceSquared(position, position.add(velocity), obstacle.getCircle().getPosition())<=distanceSquared){
+					candidates[thrust-1][angle] = CONFLICT;
+					return;
+				}
+			}else {
+				if(getMinDistanceSquared(position, obstacle.getCircle().getPosition(), velocity,
+						velocityVector[obstacle.getThrustPlan().getThrust()-1][obstacle.getThrustPlan().getAngle()])<=distanceSquared){
+					candidates[thrust-1][angle] = CONFLICT;
+					return;
 				}
 			}
 		}
-	}
-	public void resolveDynamicObstacle(Circle circle, ThrustPlan plan) {
-		if(plan.getThrust()==0) {
-			resolveStaticObstacle(circle);
-			return;
-		}
-		Position velocity = velocityVector[plan.getThrust()-1][plan.getAngle()];
-		//resolve still candidate
-		if(stillCandidate!=CONFLICT&&Geometry.segmentCircleIntersection(circle.getPosition(),
-				circle.getPosition().add(velocity), position, buffer+circle.getRadius())) {
-			stillCandidate = CONFLICT;
-		}
-		//resolve all other candidates
-		for(int i=0;i<candidates.length;++i) {
-			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j]!=CONFLICT&&checkCollisions(circle.getPosition(), position, velocity, velocityVector[i][j],
-						circle.getRadius()+buffer)) {
-					candidates[i][j] = CONFLICT;
+		for(Obstacle obstacle: obstacles.getUncertainObstacles().values()) {
+			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
+			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0) {
+				if(Geometry.segmentPointDistanceSquared(position, position.add(velocity), obstacle.getCircle().getPosition())<=distanceSquared){
+					candidates[thrust-1][angle] = obstacle.getId();
+					return;
 				}
 			}
 		}
-	}
-	public void clearUncertainObstacles() {
-		if(stillCandidate>=0) {
-			stillCandidate = NO_CONFLICT;
-		}
-		for(int i=0;i<candidates.length;++i) {
-			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j]>=0) {
-					candidates[i][j] = NO_CONFLICT;
-				}
-			}
+		if(candidates[thrust-1][angle]==UNCHECKED) {
+			candidates[thrust-1][angle] = NO_CONFLICT;
 		}
 	}
-	public void resolveUncertainObstacle(Circle circle, int id) {
-		//resolve still candidate
-		if(stillCandidate==NO_CONFLICT&&position.getDistanceSquared(circle.getPosition())<=
-				(buffer+circle.getRadius())*(buffer+circle.getRadius())) {
-			stillCandidate = id;
-		}
-		//resolve all other candidates
-		for(int i=0;i<candidates.length;++i) {
-			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j]==NO_CONFLICT&&Geometry.segmentCircleIntersection(position,
-						position.add(velocityVector[i][j]), circle.getPosition(), buffer+circle.getRadius())) {
-					candidates[i][j] = id;
-				}
-			}
-		}
-	}
-	public static boolean checkCollisions(Position a, Position b, Position velocityA, Position velocityB, double buffer) {
+	public static double getMinDistanceSquared(Position a, Position b, Position velocityA, Position velocityB) {
 		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
 		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
-		return buffer*buffer>=MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
+		return MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 	public ThrustPlan getGreedyPlan(Position target, double buffer) {
 		double direction = position.getDirectionTowards(target);
