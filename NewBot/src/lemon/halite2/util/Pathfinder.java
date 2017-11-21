@@ -10,13 +10,16 @@ public class Pathfinder {
 	private Position position;
 	private double buffer;
 	
-	public static final int NO_CONFLICT = -1;
-	public static final int CONFLICT = -2; // Planet, Ship that already moved
+	public static final int UNCHECKED = -1;
+	public static final int NO_CONFLICT = -2;
+	public static final int CONFLICT = -3; // Planet, Ship that already moved
 	//All positive integers represent uncertain; value = shipId to blame
+	private static Position[][] velocityVector;
+	
 	private int stillCandidate;
 	private int[][] candidates;
 	
-	private static Position[][] velocityVector;
+	private List<Obstacle> obstacles;
 	
 	public static void init() {
 		velocityVector = new Position[7][MathUtil.TAU_DEGREES];
@@ -33,9 +36,10 @@ public class Pathfinder {
 		this.candidates = new int[7][MathUtil.TAU_DEGREES]; //1-7; 0 magnitude = special case to save memory
 		for(int i=0;i<candidates.length;++i) {
 			for(int j=0;j<candidates[0].length;++j) {
-				candidates[i][j] = NO_CONFLICT;
+				candidates[i][j] = UNCHECKED;
 			}
 		}
+		obstacles = new ArrayList<Obstacle>();
 	}
 	public Position getPosition() {
 		return position;
@@ -45,9 +49,44 @@ public class Pathfinder {
 	}
 	public int getCandidate(int thrust, int angle) {
 		if(thrust==0) {
+			if(stillCandidate==UNCHECKED){
+				evaluateStillCandidate();
+			}
 			return stillCandidate;
 		}
+		if(candidates[thrust-1][angle]==UNCHECKED){
+			evaluateCandidate(thrust, angle);
+		}
 		return candidates[thrust-1][angle];
+	}
+	public void evaluateStillCandidate(){
+		for(Obstacle obstacle: obstacles){
+			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
+			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0){  //Static or Uncertain
+				if(obstacle.getCircle().getPosition().getDistanceSquared(position)<=distanceSquared){
+					if(obstacle.getId()==-1){
+						stillCandidate = CONFLICT;
+						return;
+					}else{
+						stillCandidate = obstacle.getId();
+					}
+				}
+			}else{ //Dynamic Obstacle
+				if(Geometry.segmentPointDistanceSquared(obstacle.getCircle().getPosition(),obstacle.getCircle().getPosition().add(
+						velocityVector[obstacle.getThrustPlan().getThrust()-1][obstacle.getThrustPlan().getAngle()]), position)<=distanceSquared){
+					stillCandidate = CONFLICT;
+					return;
+				}
+			}
+		}
+		if(stillCandidate==UNCHECKED){
+			stillCandidate = NO_CONFLICT;
+		}
+	}
+	public void evaluateCandidate(int thrust, int angle){
+		for(Obstacle obstacle: obstacles){
+			
+		}
 	}
 	public void resolveStaticObstacles() {
 		for(Circle circle: Obstacles.getStaticObstacles()) {

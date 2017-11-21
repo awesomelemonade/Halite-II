@@ -21,6 +21,7 @@ public class MyBot {
 		}
 		try {
 			Benchmark benchmark = new Benchmark();
+			AdvancedStrategy.benchmark = benchmark;
 			benchmark.push();
 			Date currentDate = new Date();
 			GameMap gameMap = Networking.initialize();

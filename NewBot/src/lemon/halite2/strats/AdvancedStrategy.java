@@ -21,6 +21,7 @@ import hlt.Position;
 import hlt.Ship;
 import hlt.ThrustPlan;
 import hlt.Ship.DockingStatus;
+import lemon.halite2.benchmark.Benchmark;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
 import lemon.halite2.util.Circle;
@@ -287,8 +288,15 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}
+		if(Thread.currentThread().isInterrupted()){
+			DebugLog.log("Exiting Function: "+(benchmark.peek()/1000000.0));
+		}
 	}
+	public static Benchmark benchmark;
 	public boolean checkInterruption() {
+		if(Thread.currentThread().isInterrupted()){
+			DebugLog.log("Received Interruption: "+(benchmark.peek()/1000000.0));
+		}
 		return !Thread.currentThread().isInterrupted();
 	}
 	public int countEnemyShips(Position position, double buffer) {
