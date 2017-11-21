@@ -18,6 +18,7 @@ public class Pathfinder {
 	private int[][] candidates;
 	
 	private Obstacles obstacles;
+	private int exception;
 	
 	public static void init() {
 		velocityVector = new Position[7][MathUtil.TAU_DEGREES];
@@ -28,7 +29,7 @@ public class Pathfinder {
 			}
 		}
 	}
-	public Pathfinder(Position position, double buffer, Obstacles obstacles) {
+	public Pathfinder(Position position, double buffer, Obstacles obstacles, int exception) {
 		this.position = position;
 		this.buffer = buffer;
 		this.candidates = new int[7][MathUtil.TAU_DEGREES]; //1-7; 0 magnitude = special case to save memory
@@ -38,6 +39,7 @@ public class Pathfinder {
 			}
 		}
 		this.obstacles = obstacles;
+		this.exception = exception;
 	}
 	public Position getPosition() {
 		return position;
@@ -86,12 +88,13 @@ public class Pathfinder {
 			}
 		}
 		for(Obstacle obstacle: obstacles.getUncertainObstacles().values()) {
+			if(obstacle.getId()==exception) {
+				continue;
+			}
 			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
-			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0){
-				if(obstacle.getCircle().getPosition().getDistanceSquared(position)<=distanceSquared){
-					stillCandidate = obstacle.getId();
-					return;
-				}
+			if(obstacle.getCircle().getPosition().getDistanceSquared(position)<=distanceSquared){
+				stillCandidate = obstacle.getId();
+				return;
 			}
 		}
 		if(stillCandidate==UNCHECKED){
@@ -116,12 +119,13 @@ public class Pathfinder {
 			}
 		}
 		for(Obstacle obstacle: obstacles.getUncertainObstacles().values()) {
+			if(obstacle.getId()==exception) {
+				continue;
+			}
 			double distanceSquared = (obstacle.getCircle().getRadius()+buffer)*(obstacle.getCircle().getRadius()+buffer);
-			if(obstacle.getThrustPlan()==null||obstacle.getThrustPlan().getThrust()==0) {
-				if(Geometry.segmentPointDistanceSquared(position, position.add(velocity), obstacle.getCircle().getPosition())<=distanceSquared){
-					candidates[thrust-1][angle] = obstacle.getId();
-					return;
-				}
+			if(Geometry.segmentPointDistanceSquared(position, position.add(velocity), obstacle.getCircle().getPosition())<=distanceSquared){
+				candidates[thrust-1][angle] = obstacle.getId();
+				return;
 			}
 		}
 		if(candidates[thrust-1][angle]==UNCHECKED) {

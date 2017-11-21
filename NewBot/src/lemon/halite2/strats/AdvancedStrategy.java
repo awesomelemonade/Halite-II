@@ -240,7 +240,7 @@ public class AdvancedStrategy implements Strategy {
 		Map<Integer, Pathfinder> pathfinders = new HashMap<Integer, Pathfinder>();
 		for(int groupId: groupQueue) { //Attach a pathfinder to all groups that are left
 			Group group = Group.getGroup(groupId);
-			Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius(), obstacles);
+			Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius(), obstacles, group.getId());
 			pathfinders.put(groupId, pathfinder);
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();

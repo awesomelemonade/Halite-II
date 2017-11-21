@@ -1,6 +1,7 @@
 package lemon.halite2.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,7 @@ public class Obstacles {
 	private Map<Integer, Obstacle> uncertainObstacles;
 	public Obstacles() {
 		obstacles = new ArrayList<Obstacle>();
+		uncertainObstacles = new HashMap<Integer, Obstacle>();
 	}
 	public void clear() {
 		obstacles.clear();
