@@ -13,7 +13,11 @@ public class DynamicObstacle implements Obstacle {
 	private int priority;
 	public DynamicObstacle(Circle circle, ThrustPlan plan, int priority) {
 		this.circle = circle;
-		this.velocity = Pathfinder.velocityVector[plan.getThrust()-1][plan.getAngle()];
+		if(plan.getThrust()==0) {
+			this.velocity = Position.ZERO;
+		}else {
+			this.velocity = Pathfinder.velocityVector[plan.getThrust()-1][plan.getAngle()];
+		}
 		this.priority = priority;
 		this.endPoint = circle.getPosition().add(velocity);
 	}

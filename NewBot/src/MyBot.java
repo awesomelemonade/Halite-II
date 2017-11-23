@@ -74,7 +74,6 @@ public class MyBot {
 				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
 				gameMap.updateMap(Networking.readLineIntoMetadata());
 				benchmark.push();
-				DebugLog.log(timeout+" - "+lastBenchmarkTime+" - "+Math.ceil(benchmark.peek()/1000000.0));
 				millis = Math.max(0, (int)(timeout-lastBenchmarkTime*1.2-Math.ceil(benchmark.peek()/1000000.0)));
 				strategy.newTurn(moveQueue);
 				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));

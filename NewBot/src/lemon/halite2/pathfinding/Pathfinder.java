@@ -14,7 +14,7 @@ public class Pathfinder {
 	
 	public static Position[][] velocityVector;
 	
-	private static final Obstacle NO_CONFLICT = new Obstacle() {
+	public static final Obstacle NO_CONFLICT = new Obstacle() {
 		@Override
 		public boolean willCollide(Position position, Position velocity, double buffer) {
 			return false;
@@ -52,26 +52,29 @@ public class Pathfinder {
 		return position;
 	}
 	public void clearObstacles(int priority) {
-		if(stillCandidate.getPriority()<=priority) {
+		if(stillCandidate!=null&&stillCandidate.getPriority()<=priority) {
 			stillCandidate = null;
 		}
 		for(int i=0;i<candidates.length;++i) {
 			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j].getPriority()<=priority) {
+				if(candidates[i][j]!=null&&candidates[i][j].getPriority()<=priority) {
 					candidates[i][j] = null;
 				}
 			}
 		}
+	}
+	public Obstacle getStillCandidate() {
+		if(stillCandidate==null) {
+			evaluateStillCandidate();
+		}
+		return stillCandidate;
 	}
 	public Obstacle getCandidate(ThrustPlan plan) {
 		return getCandidate(plan.getThrust(), plan.getAngle());
 	}
 	public Obstacle getCandidate(int thrust, int angle) {
 		if(thrust==0) {
-			if(stillCandidate==null){
-				evaluateStillCandidate();
-			}
-			return stillCandidate;
+			return getStillCandidate();
 		}
 		if(candidates[thrust-1][angle]==null){
 			evaluateCandidate(thrust, angle);
@@ -107,7 +110,7 @@ public class Pathfinder {
 			candidates[thrust-1][angle] = NO_CONFLICT;
 		}
 	}
-	public ThrustPlan getGreedyPlan(Position target, double buffer) {
+	public ThrustPlan getGreedyPlan(Position target, double buffer, int priority) {
 		double direction = position.getDirectionTowards(target);
 		double directionDegrees = Math.toDegrees(direction);
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
@@ -117,12 +120,12 @@ public class Pathfinder {
 			for(int j=0;j<=MathUtil.PI_DEGREES;++j){ //offset
 				int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
 				int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
-				if(getCandidate(i, candidateA)==NO_CONFLICT){
+				if(getCandidate(i, candidateA).getPriority()<=priority){
 					if(!Geometry.segmentCircleIntersection(position, position.add(velocityVector[i-1][candidateA]), target, buffer)) {
 						return new ThrustPlan(i, candidateA);
 					}
 				}
-				if(getCandidate(i, candidateB)==NO_CONFLICT){
+				if(getCandidate(i, candidateB).getPriority()<=priority){
 					if(!Geometry.segmentCircleIntersection(position, position.add(velocityVector[i-1][candidateB]), target, buffer)) {
 						return new ThrustPlan(i, candidateB);
 					}
@@ -130,7 +133,7 @@ public class Pathfinder {
 			}
 		}
 		//Still case
-		if(stillCandidate==NO_CONFLICT) {
+		if(getStillCandidate().getPriority()<=priority) {
 			return new ThrustPlan(0, 0);
 		}
 		return null;

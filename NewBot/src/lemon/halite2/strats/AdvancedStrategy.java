@@ -35,9 +35,10 @@ import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
-	public static final int DOCKED_SHIP_PRIORITY = 4;
-	public static final int PLANET_PRIORITY = 3;
-	public static final int SHIP_PRIORITY = 2;
+	public static final int DOCKED_SHIP_PRIORITY = 5;
+	public static final int PLANET_PRIORITY = 4;
+	public static final int SHIP_PRIORITY = 3;
+	public static final int ENEMY_SHIP_PRIORITY = 2;
 	public static final int UNCERTAIN_SHIP_PRIORITY = 1;
 	private GameMap gameMap;
 	private Map<Integer, Integer> targetPlanets;
@@ -264,15 +265,16 @@ public class AdvancedStrategy implements Strategy {
 			Ship enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
 			ThrustPlan plan = null;
 			if(enemyShip==null) {
-				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius());
+				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), UNCERTAIN_SHIP_PRIORITY);
 			}else {
-				plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS/2);
+				plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS/2, UNCERTAIN_SHIP_PRIORITY);
 			}
 			if(plan==null) {
 				DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
 			}else {
 				Obstacle candidate = pathfinder.getCandidate(plan);
-				if(candidate==null) {
+				DebugLog.log("Evaluating Candidate for "+group.getId()+": "+candidate.getPriority()+" - "+uncertainObstacles.getKey(candidate));
+				if(candidate==null||candidate==Pathfinder.NO_CONFLICT) {
 					group.move(gameMap, moveQueue, plan);
 					pathfinders.remove(group.getId());
 					obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
@@ -290,7 +292,7 @@ public class AdvancedStrategy implements Strategy {
 					}
 					blameMap.get(groupId).add(group.getId());
 				}else {
-					DebugLog.log(String.format("\tConflict? %d", group.getId()));
+					DebugLog.log(String.format("\tConflict? %d %d", group.getId(), candidate.getPriority()));
 				}
 			}
 		}

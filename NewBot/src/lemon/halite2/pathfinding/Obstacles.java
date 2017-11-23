@@ -10,7 +10,11 @@ public class Obstacles {
 		obstacles = new TreeSet<Obstacle>(new Comparator<Obstacle>() {
 			@Override
 			public int compare(Obstacle a, Obstacle b) {
-				return a.getPriority()-b.getPriority();
+				int temp = b.getPriority()-a.getPriority();
+				if(temp==0) {
+					temp = a.hashCode()-b.hashCode();
+				}
+				return temp;
 			}
 		});
 	}
