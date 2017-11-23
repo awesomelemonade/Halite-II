@@ -24,13 +24,21 @@ import hlt.Ship.DockingStatus;
 import lemon.halite2.benchmark.Benchmark;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
+import lemon.halite2.pathfinding.DynamicObstacle;
+import lemon.halite2.pathfinding.Obstacle;
+import lemon.halite2.pathfinding.Obstacles;
+import lemon.halite2.pathfinding.Pathfinder;
+import lemon.halite2.pathfinding.StaticObstacle;
+import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
-import lemon.halite2.util.Obstacles;
-import lemon.halite2.util.Pathfinder;
 
 public class AdvancedStrategy implements Strategy {
+	public static final int DOCKED_SHIP_PRIORITY = 4;
+	public static final int PLANET_PRIORITY = 3;
+	public static final int SHIP_PRIORITY = 2;
+	public static final int UNCERTAIN_SHIP_PRIORITY = 1;
 	private GameMap gameMap;
 	private Map<Integer, Integer> targetPlanets;
 	private MicroGame micro;
@@ -186,12 +194,12 @@ public class AdvancedStrategy implements Strategy {
 		Obstacles obstacles = new Obstacles();
 		//Add Planets to Obstacles
 		for(Planet planet: gameMap.getPlanets()) {
-			obstacles.addStaticObstacle(new Circle(planet.getPosition(), planet.getRadius()));
+			obstacles.addObstacle(new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius()), PLANET_PRIORITY));
 		}
 		//Add Docked Ships to Obstacles
 		for(Ship ship: gameMap.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
-				obstacles.addStaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS));
+				obstacles.addObstacle(new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), DOCKED_SHIP_PRIORITY));
 			}
 		}
 		Deque<Integer> groupQueue = new ArrayDeque<Integer>(); //Queue of Group IDs
@@ -218,7 +226,7 @@ public class AdvancedStrategy implements Strategy {
 						if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
 							DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
 							moveQueue.add(new DockMove(shipId, targetPlanet.getId()));
-							obstacles.addStaticObstacle(group.getCircle());
+							obstacles.addObstacle(new StaticObstacle(group.getCircle(), DOCKED_SHIP_PRIORITY));
 						}else {
 							resolved.push(group.getId());
 						}
@@ -232,22 +240,26 @@ public class AdvancedStrategy implements Strategy {
 			groupQueue.push(resolved.poll());
 		}
 		//Add Uncertain Obstacles
+		BiMap<Integer, Obstacle> uncertainObstacles = new BiMap<Integer, Obstacle>();
 		for(int groupId: groupQueue) {
-			obstacles.addUncertainObstacle(Group.getGroup(groupId).getCircle(), groupId);
+			Obstacle obstacle = new StaticObstacle(Group.getGroup(groupId).getCircle(), UNCERTAIN_SHIP_PRIORITY);
+			uncertainObstacles.put(groupId, obstacle);
+			obstacles.addObstacle(obstacle);
 		}
 		//Resolve Micro
 		//	Merging
 		Map<Integer, Pathfinder> pathfinders = new HashMap<Integer, Pathfinder>();
 		for(int groupId: groupQueue) { //Attach a pathfinder to all groups that are left
 			Group group = Group.getGroup(groupId);
-			Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius(), obstacles, group.getId());
+			Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius(), obstacles,
+					o->o.equals(uncertainObstacles.getValue(groupId))); //Weird use of Lambdas :)
 			pathfinders.put(groupId, pathfinder);
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
 		while(!groupQueue.isEmpty()&&checkInterruption()) {
 			Group group = Group.getGroup(groupQueue.poll());
 			Pathfinder pathfinder = pathfinders.get(group.getId());
-			pathfinder.clearUncertainObstacles();
+			pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
 			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
 			Ship enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
 			ThrustPlan plan = null;
@@ -259,23 +271,24 @@ public class AdvancedStrategy implements Strategy {
 			if(plan==null) {
 				DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
 			}else {
-				int candidate = pathfinder.getCandidate(plan);
-				if(candidate==Pathfinder.NO_CONFLICT) {
+				Obstacle candidate = pathfinder.getCandidate(plan);
+				if(candidate==null) {
 					group.move(gameMap, moveQueue, plan);
 					pathfinders.remove(group.getId());
-					obstacles.addDynamicObstacle(group.getCircle(), plan);
-					obstacles.removeUncertainObstacle(group.getId());
+					obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
+					obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
 					if(blameMap.containsKey(group.getId())) {
 						for(int groupId: blameMap.get(group.getId())) {
 							groupQueue.push(groupId);
 						}
 						blameMap.get(group.getId()).clear();
 					}
-				}else if(candidate!=Pathfinder.CONFLICT) {
-					if(!blameMap.containsKey(candidate)) {
-						blameMap.put(candidate, new HashSet<Integer>());
+				}else if(candidate.getPriority()==UNCERTAIN_SHIP_PRIORITY) {
+					int groupId = uncertainObstacles.getKey(candidate);
+					if(!blameMap.containsKey(groupId)) {
+						blameMap.put(groupId, new HashSet<Integer>());
 					}
-					blameMap.get(candidate).add(group.getId());
+					blameMap.get(groupId).add(group.getId());
 				}else {
 					DebugLog.log(String.format("\tConflict? %d", group.getId()));
 				}

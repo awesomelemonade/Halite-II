@@ -1,6 +1,7 @@
 package hlt;
 
 public class Position {
+	public static final Position ZERO = new Position(0, 0);
 	private double x;
 	private double y;
 	public Position(double x, double y) {
