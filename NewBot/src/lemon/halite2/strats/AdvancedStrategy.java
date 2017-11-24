@@ -25,6 +25,7 @@ import lemon.halite2.benchmark.Benchmark;
 import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
 import lemon.halite2.pathfinding.DynamicObstacle;
+import lemon.halite2.pathfinding.EnemyShipObstacle;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.Obstacles;
 import lemon.halite2.pathfinding.Pathfinder;
@@ -38,8 +39,8 @@ public class AdvancedStrategy implements Strategy {
 	public static final int DOCKED_SHIP_PRIORITY = 5;
 	public static final int PLANET_PRIORITY = 4;
 	public static final int SHIP_PRIORITY = 3;
-	public static final int ENEMY_SHIP_PRIORITY = 2;
-	public static final int UNCERTAIN_SHIP_PRIORITY = 1;
+	public static final int UNCERTAIN_SHIP_PRIORITY = 2;
+	public static final int ENEMY_SHIP_PRIORITY = 1;
 	private GameMap gameMap;
 	private Map<Integer, Integer> targetPlanets;
 	private MicroGame micro;
@@ -54,32 +55,6 @@ public class AdvancedStrategy implements Strategy {
 		micro = new MicroGame(gameMap);
 		//Initialize Pathfinder
 		Pathfinder.init();
-	}
-	public int calcBasePlanetId(Position averageStart){
-		double mostDockingSpots = 0;
-		double closestDistance = Double.MAX_VALUE;
-		int basePlanetId = -1;
-		DebugLog.log("Calculating Base Planet");
-		for(Planet planet: gameMap.getPlanets()) {
-			double distance = planet.getPosition().getDistanceTo(averageStart)-planet.getRadius();
-			double actualDistance = distance;
-			if(distance>50) {
-				continue;
-			}
-			distance-=0.25*(planet.getPosition().getDistanceTo(gameMap.getCenterPosition())-planet.getRadius()); //Prefer to be not near center
-			DebugLog.log("Evaluating Planet "+planet.getId()+": "+planet.getDockingSpots()+" - "+actualDistance+" - "+distance);
-			if(planet.getDockingSpots()>mostDockingSpots||(planet.getDockingSpots()==mostDockingSpots&&distance<closestDistance)) {
-				mostDockingSpots = planet.getDockingSpots();
-				basePlanetId = planet.getId();
-				closestDistance = distance;
-			}
-		}
-		if(basePlanetId==-1) {
-			basePlanetId = getClosestPlanet(averageStart).getId();
-			DebugLog.log("Using Closest Planet: "+basePlanetId);
-		}
-		DebugLog.log("Base Planet Picked: "+basePlanetId);
-		return basePlanetId;
 	}
 	public List<Integer> getClosestPlanets(Position position){
 		List<Integer> planets = new ArrayList<Integer>();
@@ -203,6 +178,20 @@ public class AdvancedStrategy implements Strategy {
 				obstacles.addObstacle(new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), DOCKED_SHIP_PRIORITY));
 			}
 		}
+		//Add Enemy Ship Movements to Obstacles
+		for(Ship ship: gameMap.getMyPlayer().getShips()) {
+			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+				continue;
+			}
+			Planet closestPlanet = getClosestOwnedPlanet(ship.getPosition());
+			if(closestPlanet==null) {
+				continue;
+			}else {
+				if(closestPlanet.getOwner()!=gameMap.getMyPlayerId()) {
+					obstacles.addObstacle(new EnemyShipObstacle(ship.getPosition(), ENEMY_SHIP_PRIORITY));
+				}
+			}
+		}
 		Deque<Integer> groupQueue = new ArrayDeque<Integer>(); //Queue of Group IDs
 		Deque<Integer> resolved = new ArrayDeque<Integer>();
 		//Add all to queue
@@ -262,8 +251,13 @@ public class AdvancedStrategy implements Strategy {
 			Pathfinder pathfinder = pathfinders.get(group.getId());
 			pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
 			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
-			Ship enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
-			ThrustPlan plan = null;
+			Ship enemyShip = null;
+			if(targetPlanet.getOwner()==gameMap.getMyPlayerId()) {
+				enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
+			}else {
+				enemyShip = findEnemyDockedShip(targetPlanet, group.getCircle().getPosition());
+			}
+			ThrustPlan plan;
 			if(enemyShip==null) {
 				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), UNCERTAIN_SHIP_PRIORITY);
 			}else {
@@ -276,7 +270,6 @@ public class AdvancedStrategy implements Strategy {
 				DebugLog.log("Evaluating Candidate for "+group.getId()+": "+candidate.getPriority()+" - "+uncertainObstacles.getKey(candidate));
 				if(candidate==null||candidate==Pathfinder.NO_CONFLICT) {
 					group.move(gameMap, moveQueue, plan);
-					pathfinders.remove(group.getId());
 					obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
 					obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
 					if(blameMap.containsKey(group.getId())) {
@@ -291,6 +284,27 @@ public class AdvancedStrategy implements Strategy {
 						blameMap.put(groupId, new HashSet<Integer>());
 					}
 					blameMap.get(groupId).add(group.getId());
+				}else if(candidate.getPriority()==ENEMY_SHIP_PRIORITY){
+					ThrustPlan newPlan;
+					if(enemyShip==null) {
+						newPlan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), ENEMY_SHIP_PRIORITY);
+					}else {
+						newPlan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS/2, ENEMY_SHIP_PRIORITY);
+					}
+					if(newPlan==null) {
+						group.move(gameMap, moveQueue, plan);
+						obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
+					}else {
+						group.move(gameMap, moveQueue, newPlan);
+						obstacles.addObstacle(new DynamicObstacle(group.getCircle(), newPlan, SHIP_PRIORITY));
+					}
+					obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
+					if(blameMap.containsKey(group.getId())) {
+						for(int groupId: blameMap.get(group.getId())) {
+							groupQueue.push(groupId);
+						}
+						blameMap.get(group.getId()).clear();
+					}
 				}else {
 					DebugLog.log(String.format("\tConflict? %d %d", group.getId(), candidate.getPriority()));
 				}
@@ -321,11 +335,14 @@ public class AdvancedStrategy implements Strategy {
 		}
 		return count;
 	}
-	public Planet getClosestPlanet(Position position) {
+	public Planet getClosestOwnedPlanet(Position position) {
 		Planet closestPlanet = null;
 		double closestDistance = Double.MAX_VALUE;
 		for(Planet planet: gameMap.getPlanets()) {
-			double distance = position.getDistanceSquared(planet.getPosition());
+			if(!planet.isOwned()) {
+				continue;
+			}
+			double distance = position.getDistanceTo(planet.getPosition())-planet.getRadius();
 			if(closestDistance>distance) {
 				closestDistance = distance;
 				closestPlanet = planet;
@@ -355,6 +372,29 @@ public class AdvancedStrategy implements Strategy {
 		
 		for(Ship ship: gameMap.getShips()) {
 			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+				continue;
+			}
+			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {
+				double targetDirection = planet.getPosition().getDirectionTowards(ship.getPosition());
+				double deltaDirection = MathUtil.angleBetweenRadians(startDirection, targetDirection);
+				if(shortestDirection>deltaDirection) {
+					shortestDirection = deltaDirection;
+					shortestShip = ship;
+				}
+			}
+		}
+		return shortestShip;
+	}
+	public Ship findEnemyDockedShip(Planet planet, Position position) {
+		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
+		bufferSquared = bufferSquared*bufferSquared;
+		
+		double startDirection = planet.getPosition().getDirectionTowards(position);
+		double shortestDirection = Double.MAX_VALUE;
+		Ship shortestShip = null;
+		
+		for(Ship ship: gameMap.getShips()) {
+			if(ship.getOwner()==gameMap.getMyPlayerId()||ship.getDockingStatus()==DockingStatus.UNDOCKED) {
 				continue;
 			}
 			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {

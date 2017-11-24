@@ -16,8 +16,7 @@ public class StaticObstacle implements Obstacle {
 		if(Position.ZERO.equals(velocity)) {
 			return circle.getPosition().getDistanceSquared(position)<=(circle.getRadius()+buffer)*(circle.getRadius()+buffer);
 		}else {
-			return Geometry.segmentPointDistanceSquared(position, position.add(velocity),
-					circle.getPosition())<=(buffer+circle.getRadius())*(buffer+circle.getRadius());
+			return Geometry.segmentCircleIntersection(position, position.add(velocity), circle.getPosition(), buffer+circle.getRadius());
 		}
 	}
 	@Override

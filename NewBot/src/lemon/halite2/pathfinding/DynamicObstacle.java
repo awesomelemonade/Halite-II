@@ -24,19 +24,13 @@ public class DynamicObstacle implements Obstacle {
 	@Override
 	public boolean willCollide(Position position, Position velocity, double buffer) {
 		if(Position.ZERO.equals(velocity)) {
-			return Geometry.segmentPointDistanceSquared(circle.getPosition(), endPoint,
-					position)<=(buffer+circle.getRadius())*(buffer+circle.getRadius());
+			return Geometry.segmentCircleIntersection(circle.getPosition(), endPoint, position, buffer+circle.getRadius());
 		}else {
-			return getMinDistanceSquared(circle.getPosition(), position, this.velocity, velocity)<=(buffer+circle.getRadius())*(buffer+circle.getRadius());
+			return MathUtil.getMinDistanceSquared(circle.getPosition(), this.velocity, position, velocity)<=(buffer+circle.getRadius())*(buffer+circle.getRadius());
 		}
 	}
 	@Override
 	public int getPriority() {
 		return priority;
-	}
-	public static double getMinDistanceSquared(Position a, Position b, Position velocityA, Position velocityB) {
-		double time = MathUtil.getMinTime(a, b, velocityA, velocityB);
-		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
-		return MathUtil.getDistanceSquared(a, b, velocityA, velocityB, time);
 	}
 }
