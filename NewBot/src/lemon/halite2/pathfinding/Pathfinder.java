@@ -110,18 +110,44 @@ public class Pathfinder {
 			candidates[thrust-1][angle] = NO_CONFLICT;
 		}
 	}
+	public ThrustPlan getGreediestPlan(Position target, double innerBuffer, double outerBuffer) {
+		int bestThrust = 0;
+		int bestAngle = 0;
+		double bestDistance = Double.MAX_VALUE;
+		//General Case
+		for(int i=7;i>=1;--i){ //magnitude
+			for(int j=0;j<MathUtil.TAU_DEGREES;++j){ //offset
+				Position endPoint = position.add(velocityVector[i-1][j]);
+				if(!Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
+					double distance = target.getDistanceSquared(endPoint);
+					if(distance<bestDistance) {
+						bestDistance = distance;
+						bestThrust = i;
+						bestAngle = j;
+					}
+				}
+			}
+		}
+		//Still case
+		double distance = target.getDistanceSquared(position);
+		if(distance<bestDistance) {
+			bestDistance = distance;
+			bestThrust = 0;
+			bestAngle = 0;
+		}
+		return bestDistance==Double.MAX_VALUE?null:new ThrustPlan(bestThrust, bestAngle);
+	}
 	public ThrustPlan getGreedyPlan(Position target, double innerBuffer, double outerBuffer, int priority) {
+		if(position.getDistanceSquared(target)<=outerBuffer*outerBuffer) {
+			ThrustPlan greediestPlan = getGreediestPlan(target, innerBuffer, outerBuffer);
+			if(getCandidate(greediestPlan).getPriority()<=priority) {
+				return greediestPlan;
+			}
+		}
 		double direction = position.getDirectionTowards(target);
 		double directionDegrees = Math.toDegrees(direction);
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1; //opposite because roundedDegrees is rounded already
-		boolean greedy = false;
-		if(position.getDistanceSquared(target)<=outerBuffer*outerBuffer) {
-			greedy = true;
-		}
-		int bestThrust = 0;
-		int bestAngle = 0;
-		double bestDistance = Double.MAX_VALUE;
 		//General Case
 		for(int i=7;i>=1;--i){ //magnitude
 			for(int j=0;j<=MathUtil.PI_DEGREES;++j){ //offset
@@ -130,52 +156,21 @@ public class Pathfinder {
 				if(getCandidate(i, candidateA).getPriority()<=priority){
 					Position endPoint = position.add(velocityVector[i-1][candidateA]);
 					if(!Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
-						if(greedy) {
-							double distance = target.getDistanceSquared(endPoint);
-							if(distance<bestDistance) {
-								bestDistance = distance;
-								bestThrust = i;
-								bestAngle = candidateA;
-							}
-						}else {
-							return new ThrustPlan(i, candidateA);
-						}
+						return new ThrustPlan(i, candidateA);
 					}
 				}
 				if(getCandidate(i, candidateB).getPriority()<=priority){
 					Position endPoint = position.add(velocityVector[i-1][candidateB]);
 					if(!Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
-						if(greedy) {
-							double distance = target.getDistanceSquared(endPoint);
-							if(distance<bestDistance) {
-								bestDistance = distance;
-								bestThrust = i;
-								bestAngle = candidateB;
-							}
-						}else {
-							return new ThrustPlan(i, candidateB);
-						}
+						return new ThrustPlan(i, candidateB);
 					}
 				}
 			}
 		}
 		//Still case
 		if(getStillCandidate().getPriority()<=priority) {
-			if(greedy) {
-				double distance = target.getDistanceSquared(position);
-				if(distance<bestDistance) {
-					bestDistance = distance;
-					bestThrust = 0;
-					bestAngle = 0;
-				}
-			}else {
-				return new ThrustPlan(0, 0);
-			}
+			return new ThrustPlan(0, 0);
 		}
-		if(greedy) {
-			return bestDistance==Double.MAX_VALUE?null:new ThrustPlan(bestThrust, bestAngle);
-		}else {
-			return null;
-		}
+		return null;
 	}
 }

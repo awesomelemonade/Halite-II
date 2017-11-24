@@ -259,9 +259,9 @@ public class AdvancedStrategy implements Strategy {
 			}
 			ThrustPlan plan;
 			if(enemyShip==null) {
-				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), UNCERTAIN_SHIP_PRIORITY);
+				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, UNCERTAIN_SHIP_PRIORITY);
 			}else {
-				plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS/2, UNCERTAIN_SHIP_PRIORITY);
+				plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, UNCERTAIN_SHIP_PRIORITY);
 			}
 			if(plan==null) {
 				DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
@@ -287,9 +287,9 @@ public class AdvancedStrategy implements Strategy {
 				}else if(candidate.getPriority()==ENEMY_SHIP_PRIORITY){
 					ThrustPlan newPlan;
 					if(enemyShip==null) {
-						newPlan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), ENEMY_SHIP_PRIORITY);
+						newPlan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, ENEMY_SHIP_PRIORITY);
 					}else {
-						newPlan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS/2, ENEMY_SHIP_PRIORITY);
+						newPlan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, ENEMY_SHIP_PRIORITY);
 					}
 					if(newPlan==null) {
 						group.move(gameMap, moveQueue, plan);
