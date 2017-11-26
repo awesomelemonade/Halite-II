@@ -8,7 +8,7 @@ public class Ship extends Entity {
 	private int dockedPlanet;
 	private int dockingProgress;
 	private int weaponCooldown;
-	public Ship(int owner, int id, Position position, int health, DockingStatus dockingStatus, int dockedPlanet,
+	public Ship(int owner, int id, Vector position, int health, DockingStatus dockingStatus, int dockedPlanet,
 			int dockingProgress, int weaponCooldown) {
 		super(owner, id, position, health, GameConstants.SHIP_RADIUS);
 		this.dockingStatus = dockingStatus;

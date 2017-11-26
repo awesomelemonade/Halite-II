@@ -1,25 +1,25 @@
 package lemon.halite2.util;
 
-import hlt.Position;
+import hlt.Vector;
 
 public class Circle {
-	private Position position;
+	private Vector position;
 	private double radius;
 	
-	public Circle(Position position, double radius) {
+	public Circle(Vector position, double radius) {
 		this.position = position;
 		this.radius = radius;
 	}
-	public boolean contains(Position position) {
+	public boolean contains(Vector position) {
 		return radius * radius >= position.getDistanceSquared(this.position);
 	}
-	public void setPosition(Position position) {
+	public void setPosition(Vector position) {
 		this.position = position;
 	}
 	public void setRadius(double radius) {
 		this.radius = radius;
 	}
-	public Position getPosition() {
+	public Vector getPosition() {
 		return position;
 	}
 	public double getRadius() {

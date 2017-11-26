@@ -5,28 +5,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import hlt.Position;
+import hlt.Vector;
 import lemon.halite2.util.Circle;
 
 public class EncloseCircle {
 	//https://www.nayuki.io/res/smallest-enclosing-circle/SmallestEnclosingCircle.java
 	
-	public static Circle create(Collection<Position> points) {
-		List<Position> shuffled = new ArrayList<Position>(points);
+	public static Circle create(Collection<Vector> points) {
+		List<Vector> shuffled = new ArrayList<Vector>(points);
 		Collections.shuffle(shuffled);
 		Circle circle = null;
 		for(int i=0;i<shuffled.size();++i) {
-			Position point = shuffled.get(i);
+			Vector point = shuffled.get(i);
 			if(circle==null||!circle.contains(point)) {
 				circle = makeCircleFromOnePoint(shuffled.subList(0, i+1), point);
 			}
 		}
 		return circle;
 	}
-	private static Circle makeCircleFromOnePoint(List<Position> points, Position p) {
+	private static Circle makeCircleFromOnePoint(List<Vector> points, Vector p) {
 		Circle circle = new Circle(p, 0);
 		for(int i=0;i<points.size();++i) {
-			Position q = points.get(i);
+			Vector q = points.get(i);
 			if(!circle.contains(q)) {
 				if(circle.getRadius()==0) {
 					circle = makeDiameter(p, q);
@@ -37,12 +37,12 @@ public class EncloseCircle {
 		}
 		return circle;
 	}
-	private static Circle makeCircleFromTwoPoints(List<Position> points, Position p, Position q) {
+	private static Circle makeCircleFromTwoPoints(List<Vector> points, Vector p, Vector q) {
 		Circle circle = makeDiameter(p, q);
 		Circle left = null;
 		Circle right = null;
-		Position pq = subtract(q, p);
-		for(Position r: points) {
+		Vector pq = subtract(q, p);
+		for(Vector r: points) {
 			if(circle.contains(r)) {
 				continue;
 			}
@@ -66,12 +66,12 @@ public class EncloseCircle {
 			return left.getRadius()<=right.getRadius()?left:right;
 		}
 	}
-	private static Circle makeDiameter(Position a, Position b) {
-		Position c = new Position((a.getX()+b.getX())/2, (a.getY()+b.getY())/2);
+	private static Circle makeDiameter(Vector a, Vector b) {
+		Vector c = new Vector((a.getX()+b.getX())/2, (a.getY()+b.getY())/2);
 		double r = Math.max(c.getDistanceSquared(a), c.getDistanceSquared(b));
 		return new Circle(c, Math.sqrt(r));
 	}
-	private static Circle makeCircumcircle(Position a, Position b, Position c) {
+	private static Circle makeCircumcircle(Vector a, Vector b, Vector c) {
 		double ox = (Math.min(Math.min(a.getX(), b.getX()), c.getX())+Math.max(Math.min(a.getX(), b.getX()), c.getX()))/2;
 		double oy = (Math.min(Math.min(a.getY(), b.getY()), c.getY())+Math.max(Math.min(a.getY(), b.getY()), c.getY()))/2;
 		double ax = a.getX()-ox, ay = a.getY()-oy;
@@ -83,14 +83,14 @@ public class EncloseCircle {
 		}
 		double x = ((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/d;
 		double y = ((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/d;
-		Position p = new Position(ox+x, oy+y);
+		Vector p = new Vector(ox+x, oy+y);
 		double r = Math.sqrt(Math.max(Math.max(p.getDistanceSquared(a), p.getDistanceSquared(b)), p.getDistanceSquared(c)));
 		return new Circle(p, r);
 	}
-	private static Position subtract(Position a, Position b) {
-		return new Position(a.getX()-b.getX(), a.getY()-b.getY());
+	private static Vector subtract(Vector a, Vector b) {
+		return new Vector(a.getX()-b.getX(), a.getY()-b.getY());
 	}
-	private static double cross(Position a, Position b) {
+	private static double cross(Vector a, Vector b) {
 		return a.getX()*b.getY()-a.getY()*b.getX();
 	}
 }

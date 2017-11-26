@@ -7,7 +7,7 @@ import java.util.Map;
 
 import hlt.GameConstants;
 import hlt.GameMap;
-import hlt.Position;
+import hlt.Vector;
 import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
@@ -17,14 +17,14 @@ import lemon.halite2.util.MoveQueue;
 public class Group implements Comparable<Group> {
 	private static Map<Integer, Group> identificationMap;
 	private static int idCounter = 0;
-	private Map<Integer, Position> ships; //Maps shipId to Position
+	private Map<Integer, Vector> ships; //Maps shipId to Vector
 	private Circle circle;
 	private int id;
 	static {
 		identificationMap = new HashMap<Integer, Group>();
 	}
 	public Group(Ship ship) {
-		ships = new HashMap<Integer, Position>();
+		ships = new HashMap<Integer, Vector>();
 		ships.put(ship.getId(), ship.getPosition());
 		Circle circle = EncloseCircle.create(ships.values());
 		circle.setRadius(circle.getRadius()+GameConstants.SHIP_RADIUS);
@@ -33,7 +33,7 @@ public class Group implements Comparable<Group> {
 		idCounter++;
 		identificationMap.put(id, this);
 	}
-	public Group(Map<Integer, Position> ships) {
+	public Group(Map<Integer, Vector> ships) {
 		this.ships = ships;
 		Circle circle = EncloseCircle.create(ships.values());
 		circle.setRadius(circle.getRadius()+GameConstants.SHIP_RADIUS);
@@ -70,7 +70,7 @@ public class Group implements Comparable<Group> {
 	public Circle getCircle() {
 		return circle;
 	}
-	public Map<Integer, Position> getShips(){
+	public Map<Integer, Vector> getShips(){
 		return ships;
 	}
 	public int getSize(){

@@ -2,21 +2,21 @@ package lemon.halite2.pathfinding;
 
 import java.util.function.Predicate;
 
-import hlt.Position;
+import hlt.Vector;
 import hlt.RoundPolicy;
 import hlt.ThrustPlan;
 import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class Pathfinder {
-	private Position position;
+	private Vector position;
 	private double buffer;
 	
-	public static Position[][] velocityVector;
+	public static Vector[][] velocityVector;
 	
 	public static final Obstacle NO_CONFLICT = new Obstacle() {
 		@Override
-		public boolean willCollide(Position position, Position velocity, double buffer) {
+		public boolean willCollide(Vector position, Vector velocity, double buffer) {
 			return false;
 		}
 		@Override
@@ -33,22 +33,22 @@ public class Pathfinder {
 	private Predicate<Obstacle> exceptions;
 	
 	public static void init() {
-		velocityVector = new Position[7][MathUtil.TAU_DEGREES];
+		velocityVector = new Vector[7][MathUtil.TAU_DEGREES];
 		for(int i=0;i<velocityVector.length;++i) {
 			for(int j=0;j<velocityVector[0].length;++j) {
 				double radians = Math.toRadians(j);
-				velocityVector[i][j] = new Position((i+1)*Math.cos(radians), (i+1)*Math.sin(radians));
+				velocityVector[i][j] = new Vector((i+1)*Math.cos(radians), (i+1)*Math.sin(radians));
 			}
 		}
 	}
-	public Pathfinder(Position position, double buffer, Obstacles obstacles, Predicate<Obstacle> exceptions) {
+	public Pathfinder(Vector position, double buffer, Obstacles obstacles, Predicate<Obstacle> exceptions) {
 		this.position = position;
 		this.buffer = buffer;
 		this.candidates = new Obstacle[7][MathUtil.TAU_DEGREES]; //1-7; 0 magnitude = special case to save memory
 		this.obstacles = obstacles;
 		this.exceptions = exceptions;
 	}
-	public Position getPosition() {
+	public Vector getVector() {
 		return position;
 	}
 	public void clearObstacles(int priority) {
@@ -86,7 +86,7 @@ public class Pathfinder {
 			if(exceptions.test(obstacle)) {
 				continue;
 			}
-			if(obstacle.willCollide(position, Position.ZERO, buffer)){
+			if(obstacle.willCollide(position, Vector.ZERO, buffer)){
 				stillCandidate = obstacle;
 				return;
 			}
@@ -96,7 +96,7 @@ public class Pathfinder {
 		}
 	}
 	public void evaluateCandidate(int thrust, int angle){
-		Position velocity = velocityVector[thrust-1][angle];
+		Vector velocity = velocityVector[thrust-1][angle];
 		for(Obstacle obstacle: obstacles.getObstacles()) {
 			if(exceptions.test(obstacle)) {
 				continue;
@@ -110,14 +110,14 @@ public class Pathfinder {
 			candidates[thrust-1][angle] = NO_CONFLICT;
 		}
 	}
-	public ThrustPlan getGreediestPlan(Position target, double innerBuffer, double outerBuffer) {
+	public ThrustPlan getGreediestPlan(Vector target, double innerBuffer, double outerBuffer) {
 		int bestThrust = 0;
 		int bestAngle = 0;
 		double bestDistance = Double.MAX_VALUE;
 		//General Case
 		for(int j=0;j<MathUtil.TAU_DEGREES;++j){ //offset
 			for(int i=1;i<=7;++i){ //magnitude
-				Position endPoint = position.add(velocityVector[i-1][j]);
+				Vector endPoint = position.add(velocityVector[i-1][j]);
 				if(Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
 					break;
 				}else {
@@ -139,7 +139,7 @@ public class Pathfinder {
 		}
 		return bestDistance==Double.MAX_VALUE?null:new ThrustPlan(bestThrust, bestAngle);
 	}
-	public ThrustPlan getGreedyPlan(Position target, double innerBuffer, double outerBuffer, int priority) {
+	public ThrustPlan getGreedyPlan(Vector target, double innerBuffer, double outerBuffer, int priority) {
 		if(position.getDistanceSquared(target)<=outerBuffer*outerBuffer) {
 			ThrustPlan greediestPlan = getGreediestPlan(target, innerBuffer, outerBuffer);
 			if(getCandidate(greediestPlan).getPriority()<=priority) {
@@ -156,13 +156,13 @@ public class Pathfinder {
 				int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
 				int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
 				if(getCandidate(i, candidateA).getPriority()<=priority){
-					Position endPoint = position.add(velocityVector[i-1][candidateA]);
+					Vector endPoint = position.add(velocityVector[i-1][candidateA]);
 					if(!Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
 						return new ThrustPlan(i, candidateA);
 					}
 				}
 				if(getCandidate(i, candidateB).getPriority()<=priority){
-					Position endPoint = position.add(velocityVector[i-1][candidateB]);
+					Vector endPoint = position.add(velocityVector[i-1][candidateB]);
 					if(!Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
 						return new ThrustPlan(i, candidateB);
 					}

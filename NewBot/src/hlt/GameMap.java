@@ -16,7 +16,7 @@ public class GameMap {
 	private Map<Integer, Planet> planets;
 	private List<Ship> ships;
 	private List<Ship> shipsUnmodifiable;
-	private Position centerPosition;
+	private Vector centerPosition;
 	// used only during parsing to reduce memory allocations
 	private List<Ship> currentShips;
 
@@ -31,7 +31,7 @@ public class GameMap {
 		this.shipsUnmodifiable = Collections.unmodifiableList(ships);
 		this.currentShips = new ArrayList<Ship>();
 		this.turnNumber = -1;
-		centerPosition = new Position(((double)width)/2, ((double)height)/2);
+		centerPosition = new Vector(((double)width)/2, ((double)height)/2);
 	}
 	public int getTurnNumber() {
 		return turnNumber;
@@ -63,7 +63,7 @@ public class GameMap {
 	public List<Ship> getShips() {
 		return shipsUnmodifiable;
 	}
-	public Position getCenterPosition(){
+	public Vector getCenterPosition(){
 		return centerPosition;
 	}
 	public GameMap updateMap(Metadata metadata) {

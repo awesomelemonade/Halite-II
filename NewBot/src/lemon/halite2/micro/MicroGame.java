@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import hlt.GameMap;
-import hlt.Position;
+import hlt.Vector;
 import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.Ship.DockingStatus;
@@ -34,17 +34,17 @@ public class MicroGame {
 		}
 		return null;
 	}
-	public Group combineGroups(Group a, Group b, Position target, MoveQueue moveQueue) {
+	public Group combineGroups(Group a, Group b, Vector target, MoveQueue moveQueue) {
 		//check if close enough
 		//if so, return new Group()
 		double targetDistance = a.getCircle().getRadius()+b.getCircle().getRadius()+0.5;
 		if(a.getCircle().getPosition().getDistanceSquared(b.getCircle().getPosition())<targetDistance*targetDistance) {
 			//Create new group
-			Map<Integer, Position> ships = new HashMap<Integer, Position>();
-			for(Entry<Integer, Position> entry: a.getShips().entrySet()) {
+			Map<Integer, Vector> ships = new HashMap<Integer, Vector>();
+			for(Entry<Integer, Vector> entry: a.getShips().entrySet()) {
 				ships.put(entry.getKey(), entry.getValue());
 			}
-			for(Entry<Integer, Position> entry: b.getShips().entrySet()) {
+			for(Entry<Integer, Vector> entry: b.getShips().entrySet()) {
 				ships.put(entry.getKey(), entry.getValue());
 			}
 			return new Group(ships);
@@ -52,16 +52,16 @@ public class MicroGame {
 			//Get them closer together
 			double averageX = (a.getCircle().getPosition().getX()+b.getCircle().getPosition().getX())/2;
 			double averageY = (a.getCircle().getPosition().getY()+b.getCircle().getPosition().getY())/2;
-			Position midpoint = new Position(averageX, averageY);
-			Map<Position, ThrustPlan> possibilitiesA = 
+			Vector midpoint = new Vector(averageX, averageY);
+			Map<Vector, ThrustPlan> possibilitiesA = 
 					bruteforce(a.getCircle().getPosition(), a.getCircle().getRadius(), midpoint, target, MAGNITUDES);
-			Map<Position, ThrustPlan> possibilitiesB = 
+			Map<Vector, ThrustPlan> possibilitiesB = 
 					bruteforce(b.getCircle().getPosition(), b.getCircle().getRadius(), midpoint, target, MAGNITUDES);
 			ThrustPlan bestPathfindPlanA = null;
 			ThrustPlan bestPathfindPlanB = null;
 			double bestDistanceSquared = Double.MAX_VALUE;
-			for(Position positionA: possibilitiesA.keySet()) {
-				for(Position positionB: possibilitiesB.keySet()) {
+			for(Vector positionA: possibilitiesA.keySet()) {
+				for(Vector positionB: possibilitiesB.keySet()) {
 					double distanceSquared = positionA.getDistanceSquared(positionB);
 					if(bestDistanceSquared>distanceSquared) {
 						bestPathfindPlanA = possibilitiesA.get(positionA);
@@ -75,9 +75,9 @@ public class MicroGame {
 			return null;
 		}
 	}
-	private Map<Position, ThrustPlan> bruteforce(Position position, double buffer, Position start, Position end, int[] magnitudes){
-		Map<Position, ThrustPlan> possibilities = new HashMap<Position, ThrustPlan>();
-		Position projection = Geometry.projectPointToLine(start, end, position);
+	private Map<Vector, ThrustPlan> bruteforce(Vector position, double buffer, Vector start, Vector end, int[] magnitudes){
+		Map<Vector, ThrustPlan> possibilities = new HashMap<Vector, ThrustPlan>();
+		Vector projection = Geometry.projectPointToLine(start, end, position);
 		double projectionDistance = projection.getDistanceTo(position)-buffer;
 		double projectionDirection = position.getDirectionTowards(projection);
 		double targetDirection = position.getDirectionTowards(end);

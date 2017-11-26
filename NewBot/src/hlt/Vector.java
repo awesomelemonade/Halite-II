@@ -1,10 +1,10 @@
 package hlt;
 
-public class Position {
-	public static final Position ZERO = new Position(0, 0);
+public class Vector {
+	public static final Vector ZERO = new Vector(0, 0);
 	private double x;
 	private double y;
-	public Position(double x, double y) {
+	public Vector(double x, double y) {
 		this.x = x;
 		this.y = y;
 	}
@@ -14,25 +14,25 @@ public class Position {
 	public double getY() {
 		return y;
 	}
-	public double getDistanceTo(Position target) {
+	public double getDistanceTo(Vector target) {
 		return Math.sqrt(this.getDistanceSquared(target));
 	}
-	public double getDistanceSquared(Position target) {
+	public double getDistanceSquared(Vector target) {
 		double dx = target.getX() - x;
 		double dy = target.getY() - y;
 		return dx*dx+dy*dy;
 	}
-	public double getDirectionTowards(Position target) {
+	public double getDirectionTowards(Vector target) {
 		return Math.atan2(target.getY()-y, target.getX()-x);
 	}
-	public Position add(Position position) {
-		return add(position.getX(), position.getY());
+	public Vector add(Vector vector) {
+		return add(vector.getX(), vector.getY());
 	}
-	public Position add(double x, double y) {
-		return new Position(this.x+x, this.y+y);
+	public Vector add(double x, double y) {
+		return new Vector(this.x+x, this.y+y);
 	}
-	public Position addPolar(double magnitude, double direction) {
-		return new Position(x+Math.cos(direction)*magnitude, y+Math.sin(direction)*magnitude);
+	public Vector addPolar(double magnitude, double direction) {
+		return new Vector(x+Math.cos(direction)*magnitude, y+Math.sin(direction)*magnitude);
 	}
 	@Override
 	public boolean equals(Object o) {
@@ -42,8 +42,8 @@ public class Position {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		Position position = (Position) o;
-		return (Double.compare(position.getX(), x) == 0) && (Double.compare(position.getY(), y) == 0);
+		Vector vector = (Vector) o;
+		return (Double.compare(vector.getX(), x) == 0) && (Double.compare(vector.getY(), y) == 0);
 	}
 	@Override
 	public int hashCode() {
@@ -57,6 +57,6 @@ public class Position {
 	}
 	@Override
 	public String toString() {
-		return "Position(" + x + ", " + y + ")";
+		return "Vector(" + x + ", " + y + ")";
 	}
 }

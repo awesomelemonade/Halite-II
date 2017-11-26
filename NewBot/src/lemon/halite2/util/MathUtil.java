@@ -1,6 +1,6 @@
 package lemon.halite2.util;
 
-import hlt.Position;
+import hlt.Vector;
 
 public class MathUtil {
 	public static final double TAU = 2*Math.PI;
@@ -31,18 +31,18 @@ public class MathUtil {
 		return between;
 	}
 	//https://gamedev.stackexchange.com/questions/97337/detect-if-two-objects-are-going-to-collide
-	public static double getMinTime(Position a, Position velocityA, Position b, Position velocityB) {
+	public static double getMinTime(Vector a, Vector velocityA, Vector b, Vector velocityB) {
 		double deltaVelocityX = velocityA.getX()-velocityB.getX();
 		double deltaVelocityY = velocityA.getY()-velocityB.getY();
 		return -(deltaVelocityX*(a.getX()-b.getX())+deltaVelocityY*(a.getY()-b.getY()))/
 				(deltaVelocityX*deltaVelocityX+deltaVelocityY*deltaVelocityY);
 	}
-	public static double getDistanceSquared(Position a, Position velocityA, Position b, Position velocityB, double time) {
+	public static double getDistanceSquared(Vector a, Vector velocityA, Vector b, Vector velocityB, double time) {
 		double deltaX = (a.getX()+velocityA.getX()*time)-(b.getX()+velocityB.getX()*time);
 		double deltaY = (a.getY()+velocityA.getY()*time)-(b.getY()+velocityB.getY()*time);
 		return deltaX*deltaX+deltaY*deltaY;
 	}
-	public static double getMinDistanceSquared(Position a, Position velocityA, Position b, Position velocityB) {
+	public static double getMinDistanceSquared(Vector a, Vector velocityA, Vector b, Vector velocityB) {
 		double time = MathUtil.getMinTime(a, velocityA, b, velocityB);
 		time = Math.max(0, Math.min(1, time)); //Clamp between 0 and 1
 		return MathUtil.getDistanceSquared(a, velocityA, b, velocityB, time);

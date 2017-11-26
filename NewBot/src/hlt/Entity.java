@@ -3,11 +3,11 @@ package hlt;
 public class Entity {
 	private int owner;
 	private int id;
-	private Position position;
+	private Vector position;
 	private int health;
 	private double radius;
 
-	public Entity(int owner, int id, Position position, int health, double radius) {
+	public Entity(int owner, int id, Vector position, int health, double radius) {
 		this.owner = owner;
 		this.id = id;
 		this.position = position;
@@ -20,7 +20,7 @@ public class Entity {
 	public int getId() {
 		return id;
 	}
-	public Position getPosition() {
+	public Vector getPosition() {
 		return position;
 	}
 	public int getHealth() {

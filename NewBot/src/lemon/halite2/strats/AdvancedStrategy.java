@@ -17,7 +17,7 @@ import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Planet;
-import hlt.Position;
+import hlt.Vector;
 import hlt.Ship;
 import hlt.ThrustPlan;
 import hlt.Ship.DockingStatus;
@@ -57,7 +57,7 @@ public class AdvancedStrategy implements Strategy {
 		//Initialize Pathfinder
 		Pathfinder.init();
 	}
-	public List<Integer> getClosestPlanets(Position position){
+	public List<Integer> getClosestPlanets(Vector position){
 		List<Integer> planets = new ArrayList<Integer>();
 		final Map<Integer, Double> distances = new HashMap<Integer, Double>();
 		for(Planet planet: gameMap.getPlanets()) {
@@ -170,7 +170,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		Obstacles obstacles = new Obstacles();
 		//Add Map Border Obstacle
-		obstacles.addObstacle(new MapBorderObstacle(new Position(0, 0), new Position(gameMap.getWidth(), gameMap.getHeight())));
+		obstacles.addObstacle(new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
 		//Add Planets to Obstacles
 		for(Planet planet: gameMap.getPlanets()) {
 			obstacles.addObstacle(new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius()), PLANET_PRIORITY));
@@ -340,7 +340,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		return !Thread.currentThread().isInterrupted();
 	}
-	public int countEnemyShips(Position position, double buffer) {
+	public int countEnemyShips(Vector position, double buffer) {
 		buffer = buffer*buffer; //compares against distanceSquared
 		int count = 0;
 		for(Ship ship: gameMap.getShips()) {
@@ -354,7 +354,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		return count;
 	}
-	public Planet getClosestOwnedPlanet(Position position) {
+	public Planet getClosestOwnedPlanet(Vector position) {
 		Planet closestPlanet = null;
 		double closestDistance = Double.MAX_VALUE;
 		for(Planet planet: gameMap.getPlanets()) {
@@ -381,7 +381,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		return true;
 	}
-	public Ship findEnemyShip(Planet planet, Position position) {
+	public Ship findEnemyShip(Planet planet, Vector position) {
 		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
 		bufferSquared = bufferSquared*bufferSquared;
 		
@@ -404,7 +404,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		return shortestShip;
 	}
-	public Ship findEnemyDockedShip(Planet planet, Position position) {
+	public Ship findEnemyDockedShip(Planet planet, Vector position) {
 		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
 		bufferSquared = bufferSquared*bufferSquared;
 		

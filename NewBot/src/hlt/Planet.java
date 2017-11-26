@@ -9,7 +9,7 @@ public class Planet extends Entity {
 	private int dockingSpots;
 	private List<Integer> dockedShips;
 	
-	public Planet(int owner, int id, Position position, int health, double radius, int dockingSpots,
+	public Planet(int owner, int id, Vector position, int health, double radius, int dockingSpots,
 			int currentProduction, int remainingProduction, List<Integer> dockedShips) {
 		super(owner, id, position, health, radius);
 		this.dockingSpots = dockingSpots;

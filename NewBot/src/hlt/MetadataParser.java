@@ -21,7 +21,7 @@ public class MetadataParser {
 		int dockedPlanet = Integer.parseInt(metadata.pop());
 		int dockingProgress = Integer.parseInt(metadata.pop());
 		int weaponCooldown = Integer.parseInt(metadata.pop());
-		return new Ship(owner, id, new Position(xPos, yPos), health, dockingStatus, dockedPlanet, dockingProgress,
+		return new Ship(owner, id, new Vector(xPos, yPos), health, dockingStatus, dockedPlanet, dockingProgress,
 				weaponCooldown);
 	}
 	public static Planet newPlanetFromMetadata(List<Integer> dockedShips, Metadata metadata) {
@@ -45,7 +45,7 @@ public class MetadataParser {
 		for (int i = 0; i < dockedShipCount; ++i) {
 			dockedShips.add(Integer.parseInt(metadata.pop()));
 		}
-		return new Planet(owner, id, new Position(xPos, yPos), health, radius, dockingSpots, currentProduction,
+		return new Planet(owner, id, new Vector(xPos, yPos), health, radius, dockingSpots, currentProduction,
 				remainingProduction, dockedShips);
 	}
 	public static int parsePlayerNum(Metadata metadata) {
