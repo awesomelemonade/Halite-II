@@ -26,6 +26,7 @@ import lemon.halite2.micro.Group;
 import lemon.halite2.micro.MicroGame;
 import lemon.halite2.pathfinding.DynamicObstacle;
 import lemon.halite2.pathfinding.EnemyShipObstacle;
+import lemon.halite2.pathfinding.MapBorderObstacle;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.Obstacles;
 import lemon.halite2.pathfinding.Pathfinder;
@@ -168,6 +169,8 @@ public class AdvancedStrategy implements Strategy {
 			throw new IllegalStateException("How do we still have unassigned ships: "+freeAgents.size()); //Fail Fast
 		}
 		Obstacles obstacles = new Obstacles();
+		//Add Map Border Obstacle
+		obstacles.addObstacle(new MapBorderObstacle(new Position(0, 0), new Position(gameMap.getWidth(), gameMap.getHeight())));
 		//Add Planets to Obstacles
 		for(Planet planet: gameMap.getPlanets()) {
 			obstacles.addObstacle(new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius()), PLANET_PRIORITY));
@@ -246,70 +249,86 @@ public class AdvancedStrategy implements Strategy {
 			pathfinders.put(groupId, pathfinder);
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
-		while(!groupQueue.isEmpty()&&checkInterruption()) {
-			Group group = Group.getGroup(groupQueue.poll());
-			Pathfinder pathfinder = pathfinders.get(group.getId());
-			pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
-			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
-			Ship enemyShip = null;
-			if(targetPlanet.getOwner()==gameMap.getMyPlayerId()) {
-				enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
-			}else {
-				enemyShip = findEnemyDockedShip(targetPlanet, group.getCircle().getPosition());
-			}
-			ThrustPlan plan;
-			if(enemyShip==null) {
-				plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, UNCERTAIN_SHIP_PRIORITY);
-			}else {
-				plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, UNCERTAIN_SHIP_PRIORITY);
-			}
-			if(plan==null) {
-				DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
-			}else {
-				Obstacle candidate = pathfinder.getCandidate(plan);
-				DebugLog.log("Evaluating Candidate for "+group.getId()+": "+candidate.getPriority()+" - "+uncertainObstacles.getKey(candidate));
-				if(candidate==null||candidate==Pathfinder.NO_CONFLICT) {
-					group.move(gameMap, moveQueue, plan);
-					obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
-					obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
-					if(blameMap.containsKey(group.getId())) {
-						for(int groupId: blameMap.get(group.getId())) {
-							groupQueue.push(groupId);
-						}
-						blameMap.get(group.getId()).clear();
-					}
-				}else if(candidate.getPriority()==UNCERTAIN_SHIP_PRIORITY) {
-					int groupId = uncertainObstacles.getKey(candidate);
-					if(!blameMap.containsKey(groupId)) {
-						blameMap.put(groupId, new HashSet<Integer>());
-					}
-					blameMap.get(groupId).add(group.getId());
-				}else if(candidate.getPriority()==ENEMY_SHIP_PRIORITY){
-					ThrustPlan newPlan;
-					if(enemyShip==null) {
-						newPlan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, ENEMY_SHIP_PRIORITY);
-					}else {
-						newPlan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, ENEMY_SHIP_PRIORITY);
-					}
-					if(newPlan==null) {
-						group.move(gameMap, moveQueue, plan);
-						obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
-					}else {
-						group.move(gameMap, moveQueue, newPlan);
-						obstacles.addObstacle(new DynamicObstacle(group.getCircle(), newPlan, SHIP_PRIORITY));
-					}
-					obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
-					if(blameMap.containsKey(group.getId())) {
-						for(int groupId: blameMap.get(group.getId())) {
-							groupQueue.push(groupId);
-						}
-						blameMap.get(group.getId()).clear();
-					}
-				}else {
-					DebugLog.log(String.format("\tConflict? %d %d", group.getId(), candidate.getPriority()));
+		do {
+			int biggestSet = 0;
+			int biggestSize = 0;
+			for(int id: blameMap.keySet()) {
+				if(blameMap.get(id).size()>biggestSize) {
+					biggestSet = id;
+					biggestSize = blameMap.get(id).size();
 				}
 			}
-		}
+			if(biggestSize>0) {
+				Group group = Group.getGroup(biggestSet);
+				Pathfinder pathfinder = pathfinders.get(group.getId());
+				pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
+				
+			}
+			while(!groupQueue.isEmpty()&&checkInterruption()) {
+				Group group = Group.getGroup(groupQueue.poll());
+				Pathfinder pathfinder = pathfinders.get(group.getId());
+				pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
+				Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
+				Ship enemyShip = null;
+				if(targetPlanet.getOwner()==gameMap.getMyPlayerId()) {
+					enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
+				}else {
+					enemyShip = findEnemyDockedShip(targetPlanet, group.getCircle().getPosition());
+				}
+				ThrustPlan plan;
+				if(enemyShip==null) {
+					plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, UNCERTAIN_SHIP_PRIORITY);
+				}else {
+					plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, UNCERTAIN_SHIP_PRIORITY);
+				}
+				if(plan==null) {
+					DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
+				}else {
+					Obstacle candidate = pathfinder.getCandidate(plan);
+					DebugLog.log("Evaluating Candidate for "+group.getId()+": "+candidate.getPriority()+" - "+uncertainObstacles.getKey(candidate));
+					if(candidate==null||candidate==Pathfinder.NO_CONFLICT) {
+						group.move(gameMap, moveQueue, plan);
+						obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
+						obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
+						if(blameMap.containsKey(group.getId())) {
+							for(int groupId: blameMap.get(group.getId())) {
+								groupQueue.push(groupId);
+							}
+							blameMap.get(group.getId()).clear();
+						}
+					}else if(candidate.getPriority()==UNCERTAIN_SHIP_PRIORITY) {
+						int groupId = uncertainObstacles.getKey(candidate);
+						if(!blameMap.containsKey(groupId)) {
+							blameMap.put(groupId, new HashSet<Integer>());
+						}
+						blameMap.get(groupId).add(group.getId());
+					}else if(candidate.getPriority()==ENEMY_SHIP_PRIORITY){
+						ThrustPlan newPlan;
+						if(enemyShip==null) {
+							newPlan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, ENEMY_SHIP_PRIORITY);
+						}else {
+							newPlan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, ENEMY_SHIP_PRIORITY);
+						}
+						if(newPlan==null) {
+							group.move(gameMap, moveQueue, plan);
+							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
+						}else {
+							group.move(gameMap, moveQueue, newPlan);
+							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), newPlan, SHIP_PRIORITY));
+						}
+						obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
+						if(blameMap.containsKey(group.getId())) {
+							for(int groupId: blameMap.get(group.getId())) {
+								groupQueue.push(groupId);
+							}
+							blameMap.remove(group.getId());
+						}
+					}else {
+						DebugLog.log(String.format("\tConflict? %d %d", group.getId(), candidate.getPriority()));
+					}
+				}
+			}
+		}while((!blameMap.isEmpty())&&checkInterruption());
 		if(Thread.currentThread().isInterrupted()){
 			DebugLog.log("Exiting Function: "+(benchmark.peek()/1000000.0));
 		}

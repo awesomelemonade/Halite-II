@@ -115,10 +115,12 @@ public class Pathfinder {
 		int bestAngle = 0;
 		double bestDistance = Double.MAX_VALUE;
 		//General Case
-		for(int i=7;i>=1;--i){ //magnitude
-			for(int j=0;j<MathUtil.TAU_DEGREES;++j){ //offset
+		for(int j=0;j<MathUtil.TAU_DEGREES;++j){ //offset
+			for(int i=1;i<=7;++i){ //magnitude
 				Position endPoint = position.add(velocityVector[i-1][j]);
-				if(!Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
+				if(Geometry.segmentCircleIntersection(position, endPoint, target, innerBuffer)) {
+					break;
+				}else {
 					double distance = target.getDistanceSquared(endPoint);
 					if(distance<bestDistance) {
 						bestDistance = distance;
