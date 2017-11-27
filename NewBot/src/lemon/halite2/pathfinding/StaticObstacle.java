@@ -6,10 +6,8 @@ import lemon.halite2.util.Geometry;
 
 public class StaticObstacle implements Obstacle {
 	private Circle circle;
-	private int priority;
-	public StaticObstacle(Circle circle, int priority) {
+	public StaticObstacle(Circle circle) {
 		this.circle = circle;
-		this.priority = priority;
 	}
 	@Override
 	public boolean willCollide(Vector position, Vector velocity, double buffer) {
@@ -18,9 +16,5 @@ public class StaticObstacle implements Obstacle {
 		}else {
 			return Geometry.segmentCircleIntersection(position, position.add(velocity), circle.getPosition(), buffer+circle.getRadius());
 		}
-	}
-	@Override
-	public int getPriority() {
-		return priority;
 	}
 }

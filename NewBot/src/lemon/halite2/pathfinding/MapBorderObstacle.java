@@ -15,8 +15,4 @@ public class MapBorderObstacle implements Obstacle {
 		double endY = position.getY()+velocity.getY();
 		return endX<=min.getX()||endX>=max.getX()||endY<=min.getY()||endY>=max.getY();
 	}
-	@Override
-	public int getPriority() {
-		return Integer.MAX_VALUE;
-	}
 }

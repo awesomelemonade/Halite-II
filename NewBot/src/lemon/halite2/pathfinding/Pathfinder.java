@@ -1,5 +1,6 @@
 package lemon.halite2.pathfinding;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import hlt.Vector;
@@ -9,24 +10,10 @@ import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class Pathfinder {
+	public static Vector[][] velocityVector;
+
 	private Vector position;
 	private double buffer;
-	
-	public static Vector[][] velocityVector;
-	
-	public static final Obstacle NO_CONFLICT = new Obstacle() {
-		@Override
-		public boolean willCollide(Vector position, Vector velocity, double buffer) {
-			return false;
-		}
-		@Override
-		public int getPriority() {
-			return 0;
-		}
-	};
-	
-	private Obstacle stillCandidate;
-	private Obstacle[][] candidates;
 	//null = not checked; stores blame
 	
 	private Obstacles obstacles;
@@ -44,71 +31,41 @@ public class Pathfinder {
 	public Pathfinder(Vector position, double buffer, Obstacles obstacles, Predicate<Obstacle> exceptions) {
 		this.position = position;
 		this.buffer = buffer;
-		this.candidates = new Obstacle[7][MathUtil.TAU_DEGREES]; //1-7; 0 magnitude = special case to save memory
 		this.obstacles = obstacles;
 		this.exceptions = exceptions;
 	}
 	public Vector getVector() {
 		return position;
 	}
-	public void clearObstacles(int priority) {
-		if(stillCandidate!=null&&stillCandidate.getPriority()<=priority) {
-			stillCandidate = null;
-		}
-		for(int i=0;i<candidates.length;++i) {
-			for(int j=0;j<candidates[0].length;++j) {
-				if(candidates[i][j]!=null&&candidates[i][j].getPriority()<=priority) {
-					candidates[i][j] = null;
-				}
-			}
-		}
-	}
 	public Obstacle getStillCandidate() {
-		if(stillCandidate==null) {
-			evaluateStillCandidate();
-		}
-		return stillCandidate;
-	}
-	public Obstacle getCandidate(ThrustPlan plan) {
-		return getCandidate(plan.getThrust(), plan.getAngle());
-	}
-	public Obstacle getCandidate(int thrust, int angle) {
-		if(thrust==0) {
-			return getStillCandidate();
-		}
-		if(candidates[thrust-1][angle]==null){
-			evaluateCandidate(thrust, angle);
-		}
-		return candidates[thrust-1][angle];
-	}
-	public void evaluateStillCandidate(){
 		for(Obstacle obstacle: obstacles.getObstacles()) {
 			if(exceptions.test(obstacle)) {
 				continue;
 			}
 			if(obstacle.willCollide(position, Vector.ZERO, buffer)){
-				stillCandidate = obstacle;
-				return;
+				return obstacle;
 			}
 		}
-		if(stillCandidate==null) {
-			stillCandidate = NO_CONFLICT;
-		}
+		return null;
 	}
-	public void evaluateCandidate(int thrust, int angle){
+	public Obstacle getCandidate(ThrustPlan plan) {
+		return getCandidate(plan.getThrust(), plan.getAngle());
+	}
+	public Obstacle getCandidate(int thrust, int angle) {
 		Vector velocity = velocityVector[thrust-1][angle];
-		for(Obstacle obstacle: obstacles.getObstacles()) {
-			if(exceptions.test(obstacle)) {
-				continue;
-			}
-			if(obstacle.willCollide(position, velocity, buffer)) {
-				candidates[thrust-1][angle] = obstacle;
-				return;
+		if(thrust==0){
+			return getStillCandidate();
+		}else{
+			for(Obstacle obstacle: obstacles.getObstacles()){
+				if(exceptions.test(obstacle)){
+					continue;
+				}
+				if(obstacle.willCollide(position, velocity, buffer)){
+					return obstacle;
+				}
 			}
 		}
-		if(candidates[thrust-1][angle]==null) {
-			candidates[thrust-1][angle] = NO_CONFLICT;
-		}
+		return null;
 	}
 	public ThrustPlan getGreediestPlan(Vector target, double innerBuffer, double outerBuffer) {
 		int bestThrust = 0;
@@ -142,9 +99,7 @@ public class Pathfinder {
 	public ThrustPlan getGreedyPlan(Vector target, double innerBuffer, double outerBuffer, int priority) {
 		if(position.getDistanceSquared(target)<=outerBuffer*outerBuffer) {
 			ThrustPlan greediestPlan = getGreediestPlan(target, innerBuffer, outerBuffer);
-			if(getCandidate(greediestPlan).getPriority()<=priority) {
-				return greediestPlan;
-			}
+			return greediestPlan;
 		}
 		double direction = position.getDirectionTowards(target);
 		double directionDegrees = Math.toDegrees(direction);

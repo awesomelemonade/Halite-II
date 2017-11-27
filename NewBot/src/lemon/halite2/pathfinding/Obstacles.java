@@ -1,22 +1,12 @@
 package lemon.halite2.pathfinding;
 
-import java.util.Comparator;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Obstacles {
-	private Set<Obstacle> obstacles;
+	private List<Obstacle> obstacles;
 	public Obstacles() {
-		obstacles = new TreeSet<Obstacle>(new Comparator<Obstacle>() {
-			@Override
-			public int compare(Obstacle a, Obstacle b) {
-				int temp = b.getPriority()-a.getPriority();
-				if(temp==0) {
-					temp = a.hashCode()-b.hashCode();
-				}
-				return temp;
-			}
-		});
+		obstacles = new ArrayList<Obstacle>();
 	}
 	public void addObstacle(Obstacle obstacle) {
 		obstacles.add(obstacle);
@@ -24,7 +14,13 @@ public class Obstacles {
 	public void removeObstacle(Obstacle obstacle) {
 		obstacles.remove(obstacle);
 	}
-	public Set<Obstacle> getObstacles(){
+	public List<Obstacle> getObstacles(){
 		return obstacles;
+	}
+	public List<Obstacle> getObstacles(int index){
+		return obstacles.subList(index, obstacles.size());
+	}
+	public int getSize(){
+		return obstacles.size();
 	}
 }

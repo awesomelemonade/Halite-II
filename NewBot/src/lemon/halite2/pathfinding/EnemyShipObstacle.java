@@ -24,8 +24,4 @@ public class EnemyShipObstacle implements Obstacle {
 		}
 		return false;
 	}
-	@Override
-	public int getPriority() {
-		return priority;
-	}
 }
