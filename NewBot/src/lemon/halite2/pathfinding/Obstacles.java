@@ -1,26 +1,21 @@
 package lemon.halite2.pathfinding;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class Obstacles {
-	private List<Obstacle> obstacles;
+public class Obstacles<T> {
+	private Map<T, List<Obstacle>> obstacles;
 	public Obstacles() {
-		obstacles = new ArrayList<Obstacle>();
+		obstacles = new HashMap<T, List<Obstacle>>();
 	}
-	public void addObstacle(Obstacle obstacle) {
-		obstacles.add(obstacle);
+	public void addObstacle(T type, Obstacle obstacle) {
+		obstacles.get(type).add(obstacle);
 	}
-	public void removeObstacle(Obstacle obstacle) {
-		obstacles.remove(obstacle);
+	public void removeObstacle(T type, Obstacle obstacle) {
+		obstacles.get(type).remove(obstacle);
 	}
-	public List<Obstacle> getObstacles(){
-		return obstacles;
-	}
-	public List<Obstacle> getObstacles(int index){
-		return obstacles.subList(index, obstacles.size());
-	}
-	public int getSize(){
-		return obstacles.size();
+	public List<Obstacle> getObstacles(T type){
+		return obstacles.get(type);
 	}
 }

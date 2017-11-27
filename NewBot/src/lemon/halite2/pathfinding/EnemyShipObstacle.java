@@ -8,10 +8,8 @@ import lemon.halite2.util.MathUtil;
 public class EnemyShipObstacle implements Obstacle {
 	private static final int MAGNITUDE = 7;
 	private Vector position;
-	private int priority;
-	public EnemyShipObstacle(Vector position, int priority) {
+	public EnemyShipObstacle(Vector position) {
 		this.position = position;
-		this.priority = priority;
 	}
 	@Override
 	public boolean willCollide(Vector position, Vector velocity, double buffer) {

@@ -16,7 +16,7 @@ public class Pathfinder {
 	private double buffer;
 	//null = not checked; stores blame
 	
-	private Obstacles obstacles;
+	private Obstacles<ObstacleType> obstacles;
 	private Predicate<Obstacle> exceptions;
 	
 	public static void init() {
@@ -28,17 +28,16 @@ public class Pathfinder {
 			}
 		}
 	}
-	public Pathfinder(Vector position, double buffer, Obstacles obstacles, Predicate<Obstacle> exceptions) {
+	public Pathfinder(Vector position, double buffer, Obstacles<ObstacleType> obstacles, Predicate<Obstacle> exceptions) {
 		this.position = position;
 		this.buffer = buffer;
-		this.obstacles = obstacles;
 		this.exceptions = exceptions;
 	}
 	public Vector getVector() {
 		return position;
 	}
-	public Obstacle getStillCandidate() {
-		for(Obstacle obstacle: obstacles.getObstacles()) {
+	public Obstacle getStillCandidate(ObstacleType type) {
+		for(Obstacle obstacle: obstacles.getObstacles(type)) {
 			if(exceptions.test(obstacle)) {
 				continue;
 			}
@@ -48,15 +47,15 @@ public class Pathfinder {
 		}
 		return null;
 	}
-	public Obstacle getCandidate(ThrustPlan plan) {
-		return getCandidate(plan.getThrust(), plan.getAngle());
+	public Obstacle getCandidate(ObstacleType type, ThrustPlan plan) {
+		return getCandidate(type, plan.getThrust(), plan.getAngle());
 	}
-	public Obstacle getCandidate(int thrust, int angle) {
+	public Obstacle getCandidate(ObstacleType type, int thrust, int angle) {
 		Vector velocity = velocityVector[thrust-1][angle];
 		if(thrust==0){
-			return getStillCandidate();
+			return getStillCandidate(type);
 		}else{
-			for(Obstacle obstacle: obstacles.getObstacles()){
+			for(Obstacle obstacle: obstacles.getObstacles(type)){
 				if(exceptions.test(obstacle)){
 					continue;
 				}

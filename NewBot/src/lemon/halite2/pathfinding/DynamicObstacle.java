@@ -10,7 +10,7 @@ public class DynamicObstacle implements Obstacle {
 	private Circle circle;
 	private Vector velocity;
 	private Vector endPoint; // so no recalculation in willCollide
-	public DynamicObstacle(Circle circle, ThrustPlan plan, int priority) {
+	public DynamicObstacle(Circle circle, ThrustPlan plan) {
 		this.circle = circle;
 		if(plan.getThrust()==0) {
 			this.velocity = Vector.ZERO;

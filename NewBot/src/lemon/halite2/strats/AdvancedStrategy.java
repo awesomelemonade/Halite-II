@@ -28,6 +28,7 @@ import lemon.halite2.pathfinding.DynamicObstacle;
 import lemon.halite2.pathfinding.EnemyShipObstacle;
 import lemon.halite2.pathfinding.MapBorderObstacle;
 import lemon.halite2.pathfinding.Obstacle;
+import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Obstacles;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.pathfinding.StaticObstacle;
@@ -37,11 +38,6 @@ import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
-	public static final int DOCKED_SHIP_PRIORITY = 5;
-	public static final int PLANET_PRIORITY = 4;
-	public static final int SHIP_PRIORITY = 3;
-	public static final int UNCERTAIN_SHIP_PRIORITY = 2;
-	public static final int ENEMY_SHIP_PRIORITY = 1;
 	private GameMap gameMap;
 	private Map<Integer, Integer> targetPlanets;
 	private MicroGame micro;
@@ -168,17 +164,17 @@ public class AdvancedStrategy implements Strategy {
 		if(!freeAgents.isEmpty()){
 			throw new IllegalStateException("How do we still have unassigned ships: "+freeAgents.size()); //Fail Fast
 		}
-		Obstacles obstacles = new Obstacles();
+		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Add Map Border Obstacle
-		obstacles.addObstacle(new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
+		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
 		//Add Planets to Obstacles
 		for(Planet planet: gameMap.getPlanets()) {
-			obstacles.addObstacle(new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius()), PLANET_PRIORITY));
+			obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius())));
 		}
 		//Add Docked Ships to Obstacles
 		for(Ship ship: gameMap.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
-				obstacles.addObstacle(new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), DOCKED_SHIP_PRIORITY));
+				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 			}
 		}
 		//Add Enemy Ship Movements to Obstacles
@@ -191,7 +187,7 @@ public class AdvancedStrategy implements Strategy {
 				continue;
 			}else {
 				if(closestPlanet.getOwner()!=gameMap.getMyPlayerId()) {
-					obstacles.addObstacle(new EnemyShipObstacle(ship.getPosition(), ENEMY_SHIP_PRIORITY));
+					obstacles.addObstacle(ObstacleType.ENEMY, new EnemyShipObstacle(ship.getPosition()));
 				}
 			}
 		}
@@ -219,7 +215,7 @@ public class AdvancedStrategy implements Strategy {
 						if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
 							DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
 							moveQueue.add(new DockMove(shipId, targetPlanet.getId()));
-							obstacles.addObstacle(new StaticObstacle(group.getCircle(), DOCKED_SHIP_PRIORITY));
+							obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(group.getCircle()));
 						}else {
 							resolved.push(group.getId());
 						}
@@ -235,9 +231,9 @@ public class AdvancedStrategy implements Strategy {
 		//Add Uncertain Obstacles
 		BiMap<Integer, Obstacle> uncertainObstacles = new BiMap<Integer, Obstacle>();
 		for(int groupId: groupQueue) {
-			Obstacle obstacle = new StaticObstacle(Group.getGroup(groupId).getCircle(), UNCERTAIN_SHIP_PRIORITY);
+			Obstacle obstacle = new StaticObstacle(Group.getGroup(groupId).getCircle());
 			uncertainObstacles.put(groupId, obstacle);
-			obstacles.addObstacle(obstacle);
+			obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
 		}
 		//Resolve Micro
 		//	Merging
@@ -277,9 +273,9 @@ public class AdvancedStrategy implements Strategy {
 				}
 				ThrustPlan plan;
 				if(enemyShip==null) {
-					plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, UNCERTAIN_SHIP_PRIORITY);
+					plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS);
 				}else {
-					plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, UNCERTAIN_SHIP_PRIORITY);
+					plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
 				}
 				if(plan==null) {
 					DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
@@ -288,8 +284,8 @@ public class AdvancedStrategy implements Strategy {
 					DebugLog.log("Evaluating Candidate for "+group.getId()+": "+candidate.getPriority()+" - "+uncertainObstacles.getKey(candidate));
 					if(candidate==null||candidate==Pathfinder.NO_CONFLICT) {
 						group.move(gameMap, moveQueue, plan);
-						obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
-						obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
+						obstacles.addObstacle(ObstacleType.PERMANENT, new DynamicObstacle(group.getCircle(), plan));
+						obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(group.getId()));
 						if(blameMap.containsKey(group.getId())) {
 							for(int groupId: blameMap.get(group.getId())) {
 								groupQueue.push(groupId);
@@ -311,10 +307,10 @@ public class AdvancedStrategy implements Strategy {
 						}
 						if(newPlan==null) {
 							group.move(gameMap, moveQueue, plan);
-							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan, SHIP_PRIORITY));
+							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan));
 						}else {
 							group.move(gameMap, moveQueue, newPlan);
-							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), newPlan, SHIP_PRIORITY));
+							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), newPlan));
 						}
 						obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
 						if(blameMap.containsKey(group.getId())) {
@@ -324,7 +320,7 @@ public class AdvancedStrategy implements Strategy {
 							blameMap.remove(group.getId());
 						}
 					}else {
-						DebugLog.log(String.format("\tConflict? %d %d", group.getId(), candidate.getPriority()));
+						DebugLog.log(String.format("\tConflict? %d %d", group.getId()));
 					}
 				}
 			}
