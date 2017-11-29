@@ -32,6 +32,11 @@ import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Obstacles;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.pathfinding.StaticObstacle;
+import lemon.halite2.task.AttackDockedEnemyTask;
+import lemon.halite2.task.AttackEnemyTask;
+import lemon.halite2.task.DefendDockedShipTask;
+import lemon.halite2.task.DockTask;
+import lemon.halite2.task.Task;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
@@ -39,17 +44,11 @@ import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
 	private GameMap gameMap;
-	private Map<Integer, Integer> targetPlanets;
-	private MicroGame micro;
 	public AdvancedStrategy(GameMap gameMap) {
 		this.gameMap = gameMap;
 	}
 	@Override
 	public void init() {
-		//Initialize Data Structures
-		targetPlanets = new HashMap<Integer, Integer>();
-		//Initialize MicroGame
-		micro = new MicroGame(gameMap);
 		//Initialize Pathfinder
 		Pathfinder.init();
 	}
@@ -70,100 +69,48 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
-		DebugLog.log("ID Counter: "+Group.getIdCounter());
-		micro.update();
-		targetPlanets.clear();
-		//Calculate Planet Requests
-		Map<Integer, Integer> planetRequests = new HashMap<Integer, Integer>();
+		//Calculate Tasks
+		Map<Integer, Task> taskMap = new HashMap<Integer, Task>();
+		List<Task> taskRequests = new ArrayList<Task>();
 		for(Planet planet: gameMap.getPlanets()){
 			if(planet.isOwned()){
-				int enemyShips = countEnemyShips(planet.getPosition(), planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.WEAPON_RADIUS);
 				if(planet.getOwner()==gameMap.getMyPlayerId()){
 					int dockingSpotsLeft = planet.getDockingSpots()-planet.getDockedShips().size();
-					planetRequests.put(planet.getId(), Math.max(enemyShips, dockingSpotsLeft));
-				}else{
-					planetRequests.put(planet.getId(), Math.max(enemyShips, planet.getDockingSpots()));
+					if(dockingSpotsLeft>0){
+						taskRequests.add(new DockTask(planet));
+					}
 				}
 			}else{
-				planetRequests.put(planet.getId(), planet.getDockingSpots());
+				taskRequests.add(new DockTask(planet));
 			}
 		}
-		//Free Agents
-		Deque<Group> freeAgents = new ArrayDeque<Group>();
-		//Initialize groupToDistance map
-		final Map<Group, Double> groupToDistance = new HashMap<Group, Double>(); //Maps Group to distance of target planet
-		//Initialize PriorityQueue with custom comparator
-		PriorityQueue<Group> queue = new PriorityQueue<Group>(new Comparator<Group>() {
-			@Override
-			public int compare(Group a, Group b) {
-				return Double.compare(groupToDistance.get(a), groupToDistance.get(b));
-			}
-		});
-		Map<Group, List<Integer>> groupToPlanetOrder = new HashMap<Group, List<Integer>>(); //Maps Group to priority of planets
-		Map<Group, Integer> groupToPlanetOrderIndex = new HashMap<Group, Integer>();
-		for(Group group: micro.getGroups()){
-			groupToPlanetOrder.put(group, getClosestPlanets(group.getCircle().getPosition()));
-			groupToPlanetOrderIndex.put(group, 0);
-			Planet targetPlanet = gameMap.getPlanet(groupToPlanetOrder.get(group).get(groupToPlanetOrderIndex.get(group)));
-			double distance = targetPlanet.getPosition().getDistanceTo(group.getCircle().getPosition())
-					-group.getCircle().getRadius()-targetPlanet.getRadius();
-			groupToDistance.put(group, distance);
-			queue.add(group);
-		}
-		DebugLog.log("Processing Queue");
-		//Assign Groups to Planets
-		while(!queue.isEmpty()) {
-			Group popped = queue.poll();
-			int targetPlanetId = groupToPlanetOrder.get(popped).get(groupToPlanetOrderIndex.get(popped));
-			if(planetRequests.get(targetPlanetId)>0){
-				targetPlanets.put(popped.getId(), targetPlanetId);
-				planetRequests.put(targetPlanetId, planetRequests.get(targetPlanetId)-popped.getSize());
+		for(Ship ship: gameMap.getShips()){
+			if(ship.getOwner()==gameMap.getMyPlayerId()){
+				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
+					taskRequests.add(new DefendDockedShipTask(ship));
+				}
 			}else{
-				int index = groupToPlanetOrderIndex.get(popped);
-				if(index+1>=groupToPlanetOrder.get(popped).size()){
-					freeAgents.add(popped);
+				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
+					taskRequests.add(new AttackEnemyTask(ship));
 				}else{
-					Planet newTargetPlanet = gameMap.getPlanet(groupToPlanetOrder.get(popped).get(index+1));
-					double distance = newTargetPlanet.getPosition().getDistanceTo(popped.getCircle().getPosition())
-							-popped.getCircle().getRadius()-newTargetPlanet.getRadius();
-					groupToDistance.put(popped, distance);
-					groupToPlanetOrderIndex.put(popped, index+1);
-					queue.add(popped);
+					taskRequests.add(new AttackDockedEnemyTask(ship));
 				}
 			}
 		}
-		//Assign Free Agents - Target planet that is not ours
-		if(!freeAgents.isEmpty()) {
-			for(Planet planet: gameMap.getPlanets()) {
-				if(planet.getOwner()!=gameMap.getMyPlayerId()) {
-					for(Group group: freeAgents){
-						targetPlanets.put(group.getId(), planet.getId());
-					}
-					freeAgents.clear();
-					break;
+		for(Ship ship: gameMap.getMyPlayer().getShips()){
+			Task bestTask = null;
+			double bestScore = Double.MIN_VALUE;
+			for(Task task: taskRequests){
+				double score = task.getScore(ship);
+				if(bestScore<=score){
+					bestScore = score;
+					bestTask = task;
 				}
 			}
+			bestTask.accept(ship);
+			taskMap.put(ship.getId(), bestTask);
 		}
-		//We've conquered all planets!
-		if(!freeAgents.isEmpty()) {
-			int totalShips = freeAgents.size();
-			for(Planet planet: gameMap.getPlanets()){
-				int split = (int)Math.ceil(((double)totalShips)/((double)gameMap.getPlanets().size()));
-				if(freeAgents.size()>=split){
-					for(int i=0;i<split;++i){
-						targetPlanets.put(freeAgents.pop().getId(), planet.getId());
-					}
-				}else{
-					for(Group group: freeAgents){
-						targetPlanets.put(group.getId(), planet.getId());
-					}
-					freeAgents.clear();
-				}
-			}
-		}
-		if(!freeAgents.isEmpty()){
-			throw new IllegalStateException("How do we still have unassigned ships: "+freeAgents.size()); //Fail Fast
-		}
+		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Add Map Border Obstacle
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
