@@ -60,6 +60,12 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
+		//Define Obstacles
+		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
+		//Define processList
+		List<Integer> undockedShips = new ArrayList<Integer>();
+		//Add Map Border Obstacle
+		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
 		//Calculate Tasks
 		List<Task> taskRequests = new ArrayList<Task>();
 		for(Planet planet: GameMap.INSTANCE.getPlanets()){
@@ -78,32 +84,22 @@ public class AdvancedStrategy implements Strategy {
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
 					taskRequests.add(new DefendDockedShipTask());
+					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
+				}else {
+					undockedShips.add(ship.getId());
 				}
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
 					taskRequests.add(new AttackEnemyTask());
 				}else{
-					taskRequests.add(new AttackDockedEnemyTask());
+					taskRequests.add(new AttackDockedEnemyTask(ship));
+					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				}
 			}
 		}
-		//Define Obstacles
-		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
-		//Define processList
-		List<Integer> undockedShips = new ArrayList<Integer>();
-		//Add Map Border Obstacle
-		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
 		//Add Planets to Obstacles
 		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
 			obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius())));
-		}
-		//Add Docked Ships to Obstacles
-		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
-			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
-				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
-			}else {
-				undockedShips.add(ship.getId());
-			}
 		}
 		//Add Enemy Ship Movements to Obstacles
 		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {

@@ -12,9 +12,9 @@ public class StaticObstacle implements Obstacle {
 	@Override
 	public boolean willCollide(Vector position, Vector velocity, double buffer) {
 		if(Vector.ZERO.equals(velocity)) {
-			return circle.getPosition().getDistanceSquared(position)<=(circle.getRadius()+buffer)*(circle.getRadius()+buffer);
+			return circle.getPosition().getDistanceSquared(position)<=(circle.getRadius()+buffer)*(circle.getRadius()+buffer+0.01);
 		}else {
-			return Geometry.segmentCircleIntersection(position, position.add(velocity), circle.getPosition(), buffer+circle.getRadius());
+			return Geometry.segmentCircleIntersection(position, position.add(velocity), circle.getPosition(), buffer+circle.getRadius()+0.01);
 		}
 	}
 }
