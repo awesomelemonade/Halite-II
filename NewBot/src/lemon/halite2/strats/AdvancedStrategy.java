@@ -4,26 +4,21 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 
 import hlt.DebugLog;
-import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
+import hlt.Move;
 import hlt.Planet;
 import hlt.Vector;
 import hlt.Ship;
-import hlt.ThrustPlan;
 import hlt.Ship.DockingStatus;
+import hlt.ThrustMove;
 import lemon.halite2.benchmark.Benchmark;
-import lemon.halite2.micro.Group;
-import lemon.halite2.micro.MicroGame;
 import lemon.halite2.pathfinding.DynamicObstacle;
 import lemon.halite2.pathfinding.EnemyShipObstacle;
 import lemon.halite2.pathfinding.MapBorderObstacle;
@@ -70,7 +65,6 @@ public class AdvancedStrategy implements Strategy {
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
 		//Calculate Tasks
-		Map<Integer, Task> taskMap = new HashMap<Integer, Task>();
 		List<Task> taskRequests = new ArrayList<Task>();
 		for(Planet planet: gameMap.getPlanets()){
 			if(planet.isOwned()){
@@ -87,33 +81,20 @@ public class AdvancedStrategy implements Strategy {
 		for(Ship ship: gameMap.getShips()){
 			if(ship.getOwner()==gameMap.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
-					taskRequests.add(new DefendDockedShipTask(ship));
+					taskRequests.add(new DefendDockedShipTask());
 				}
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
-					taskRequests.add(new AttackEnemyTask(ship));
+					taskRequests.add(new AttackEnemyTask());
 				}else{
-					taskRequests.add(new AttackDockedEnemyTask(ship));
+					taskRequests.add(new AttackDockedEnemyTask());
 				}
 			}
-		}
-		for(Ship ship: gameMap.getMyPlayer().getShips()){
-			Task bestTask = null;
-			double bestScore = Double.MIN_VALUE;
-			for(Task task: taskRequests){
-				double score = task.getScore(ship);
-				if(bestScore<=score){
-					bestScore = score;
-					bestTask = task;
-				}
-			}
-			bestTask.accept(ship);
-			taskMap.put(ship.getId(), bestTask);
 		}
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
-		//Define queue
-		Deque<Integer> queue = new ArrayDeque<Integer>();
+		//Define processList
+		List<Integer> undockedShips = new ArrayList<Integer>();
 		//Add Map Border Obstacle
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
 		//Add Planets to Obstacles
@@ -125,7 +106,7 @@ public class AdvancedStrategy implements Strategy {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 			}else {
-				queue.add(ship.getId());
+				undockedShips.add(ship.getId());
 			}
 		}
 		//Add Enemy Ship Movements to Obstacles
@@ -145,7 +126,7 @@ public class AdvancedStrategy implements Strategy {
 		//Add Uncertain Obstacles
 		BiMap<Integer, Obstacle> uncertainObstacles = new BiMap<Integer, Obstacle>();
 		Map<Integer, Pathfinder> pathfinders = new HashMap<Integer, Pathfinder>();
-		for(int shipId: queue) {
+		for(int shipId: undockedShips) {
 			Circle circle = new Circle(gameMap.getMyPlayer().getShip(shipId).getPosition(), GameConstants.SHIP_RADIUS);
 			Obstacle obstacle = new StaticObstacle(circle);
 			uncertainObstacles.put(shipId, obstacle);
@@ -153,6 +134,28 @@ public class AdvancedStrategy implements Strategy {
 			Pathfinder pathfinder = new Pathfinder(circle.getPosition(), circle.getRadius(), obstacles,
 					o->o.equals(uncertainObstacles.getValue(shipId))); //Weird use of Lambdas :)
 			pathfinders.put(shipId, pathfinder);
+		}
+		Map<Integer, Task> taskMap = new HashMap<Integer, Task>();
+		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
+		while(!undockedShips.isEmpty()) {
+			double bestScore = Double.MIN_VALUE;
+			Ship bestShip = null;
+			Task bestTask = null;
+			for(int shipId: undockedShips) {
+				for(Task task: taskRequests) {
+					Ship ship = gameMap.getMyPlayer().getShip(shipId);
+					double score = task.getScore(ship);
+					if(score>bestScore) {
+						bestScore = score;
+						bestTask = task;
+						bestShip = ship;
+					}
+				}
+			}
+			bestTask.accept(bestShip);
+			taskMap.put(bestShip.getId(), bestTask);
+			undockedShips.remove((Object)bestShip.getId());
+			queue.add(bestShip.getId());
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
 		do {
@@ -165,73 +168,35 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 			if(biggestSize>0) {
-				Group group = Group.getGroup(biggestSet);
-				Pathfinder pathfinder = pathfinders.get(group.getId());
-				pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
-				
+				Ship ship = gameMap.getMyPlayer().getShip(biggestSet);
+				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
+				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
+				for(int shipId: blameMap.get(ship.getId())) {
+					queue.add(shipId);
+				}
+				blameMap.remove(ship.getId());
 			}
-			while(!groupQueue.isEmpty()&&checkInterruption()) {
-				Group group = Group.getGroup(groupQueue.poll());
-				Pathfinder pathfinder = pathfinders.get(group.getId());
-				pathfinder.clearObstacles(UNCERTAIN_SHIP_PRIORITY);
-				Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(group.getId()));
-				Ship enemyShip = null;
-				if(targetPlanet.getOwner()==gameMap.getMyPlayerId()) {
-					enemyShip = findEnemyShip(targetPlanet, group.getCircle().getPosition());
-				}else {
-					enemyShip = findEnemyDockedShip(targetPlanet, group.getCircle().getPosition());
-				}
-				ThrustPlan plan;
-				if(enemyShip==null) {
-					plan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS);
-				}else {
-					plan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
-				}
-				if(plan==null) {
-					DebugLog.log(String.format("\tCan't Move: %d", group.getId()));
-				}else {
-					Obstacle candidate = pathfinder.getCandidate(plan);
-					DebugLog.log("Evaluating Candidate for "+group.getId()+": "+candidate.getPriority()+" - "+uncertainObstacles.getKey(candidate));
-					if(candidate==null||candidate==Pathfinder.NO_CONFLICT) {
-						group.move(gameMap, moveQueue, plan);
-						obstacles.addObstacle(ObstacleType.PERMANENT, new DynamicObstacle(group.getCircle(), plan));
-						obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(group.getId()));
-						if(blameMap.containsKey(group.getId())) {
-							for(int groupId: blameMap.get(group.getId())) {
-								groupQueue.push(groupId);
-							}
-							blameMap.get(group.getId()).clear();
+			while(!queue.isEmpty()&&checkInterruption()) {
+				Ship ship = gameMap.getMyPlayer().getShip(queue.poll());
+				Task task = taskMap.get(ship.getId());
+				Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
+				if(move!=null) {
+					moveQueue.add(move);
+					if(blameMap.containsKey(ship.getId())) {
+						for(int shipId: blameMap.get(ship.getId())) {
+							queue.add(shipId);
 						}
-					}else if(candidate.getPriority()==UNCERTAIN_SHIP_PRIORITY) {
-						int groupId = uncertainObstacles.getKey(candidate);
-						if(!blameMap.containsKey(groupId)) {
-							blameMap.put(groupId, new HashSet<Integer>());
-						}
-						blameMap.get(groupId).add(group.getId());
-					}else if(candidate.getPriority()==ENEMY_SHIP_PRIORITY){
-						ThrustPlan newPlan;
-						if(enemyShip==null) {
-							newPlan = pathfinder.getGreedyPlan(targetPlanet.getPosition(), targetPlanet.getRadius(), targetPlanet.getRadius()+GameConstants.DOCK_RADIUS, ENEMY_SHIP_PRIORITY);
-						}else {
-							newPlan = pathfinder.getGreedyPlan(enemyShip.getPosition(), GameConstants.SHIP_RADIUS, GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS, ENEMY_SHIP_PRIORITY);
-						}
-						if(newPlan==null) {
-							group.move(gameMap, moveQueue, plan);
-							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), plan));
-						}else {
-							group.move(gameMap, moveQueue, newPlan);
-							obstacles.addObstacle(new DynamicObstacle(group.getCircle(), newPlan));
-						}
-						obstacles.removeObstacle(uncertainObstacles.getValue(group.getId()));
-						if(blameMap.containsKey(group.getId())) {
-							for(int groupId: blameMap.get(group.getId())) {
-								groupQueue.push(groupId);
-							}
-							blameMap.remove(group.getId());
-						}
-					}else {
-						DebugLog.log(String.format("\tConflict? %d %d", group.getId()));
+						blameMap.remove(ship.getId());
 					}
+					if(move instanceof ThrustMove) {
+						ThrustMove thrustMove = (ThrustMove)move;
+						obstacles.addObstacle(ObstacleType.PERMANENT, new DynamicObstacle(
+								new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), thrustMove.getThrustPlan()));
+					}else {
+						obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(
+								new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
+					}
+					obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
 				}
 			}
 		}while((!blameMap.isEmpty())&&checkInterruption());
