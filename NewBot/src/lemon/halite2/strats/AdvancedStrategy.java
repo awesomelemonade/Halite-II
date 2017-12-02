@@ -71,11 +71,11 @@ public class AdvancedStrategy implements Strategy {
 				if(planet.getOwner()==gameMap.getMyPlayerId()){
 					int dockingSpotsLeft = planet.getDockingSpots()-planet.getDockedShips().size();
 					if(dockingSpotsLeft>0){
-						taskRequests.add(new DockTask(planet));
+						taskRequests.add(new DockTask(planet, dockingSpotsLeft));
 					}
 				}
 			}else{
-				taskRequests.add(new DockTask(planet));
+				taskRequests.add(new DockTask(planet, planet.getDockingSpots()));
 			}
 		}
 		for(Ship ship: gameMap.getShips()){

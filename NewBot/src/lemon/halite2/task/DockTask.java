@@ -18,21 +18,20 @@ public class DockTask implements Task {
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
-	public DockTask(Planet planet){
+	private int acceptedShipCount;
+	private int dockSpaces;
+	public DockTask(Planet planet, int dockSpaces){
 		this.planet = planet;
 		this.innerBufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS);
 		this.outerBufferSquared = (innerBufferSquared+GameConstants.MAX_SPEED);
 		innerBufferSquared = innerBufferSquared*innerBufferSquared;
 		outerBufferSquared = outerBufferSquared*outerBufferSquared;
+		acceptedShipCount = 0;
+		this.dockSpaces = dockSpaces;
 	}
 	@Override
 	public void accept(Ship ship) {
-		if(ship.getPosition().getDistanceSquared(planet.getPosition())<=
-				(planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)*
-				(planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)){
-			//try greediest
-			
-		}
+		acceptedShipCount++;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -112,6 +111,9 @@ public class DockTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
+		if(acceptedShipCount>=dockSpaces) {
+			return -Double.MAX_VALUE;
+		}
 		return -ship.getPosition().getDistanceSquared(planet.getPosition());
 	}
 }
