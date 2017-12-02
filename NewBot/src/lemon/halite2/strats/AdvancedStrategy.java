@@ -38,10 +38,6 @@ import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
-	private GameMap gameMap;
-	public AdvancedStrategy(GameMap gameMap) {
-		this.gameMap = gameMap;
-	}
 	@Override
 	public void init() {
 		//Initialize Pathfinder
@@ -50,7 +46,7 @@ public class AdvancedStrategy implements Strategy {
 	public List<Integer> getClosestPlanets(Vector position){
 		List<Integer> planets = new ArrayList<Integer>();
 		final Map<Integer, Double> distances = new HashMap<Integer, Double>();
-		for(Planet planet: gameMap.getPlanets()) {
+		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
 			planets.add(planet.getId());
 			distances.put(planet.getId(), position.getDistanceTo(planet.getPosition())-planet.getRadius());
 		}
@@ -66,9 +62,9 @@ public class AdvancedStrategy implements Strategy {
 	public void newTurn(MoveQueue moveQueue) {
 		//Calculate Tasks
 		List<Task> taskRequests = new ArrayList<Task>();
-		for(Planet planet: gameMap.getPlanets()){
+		for(Planet planet: GameMap.INSTANCE.getPlanets()){
 			if(planet.isOwned()){
-				if(planet.getOwner()==gameMap.getMyPlayerId()){
+				if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 					int dockingSpotsLeft = planet.getDockingSpots()-planet.getDockedShips().size();
 					if(dockingSpotsLeft>0){
 						taskRequests.add(new DockTask(planet, dockingSpotsLeft));
@@ -78,8 +74,8 @@ public class AdvancedStrategy implements Strategy {
 				taskRequests.add(new DockTask(planet, planet.getDockingSpots()));
 			}
 		}
-		for(Ship ship: gameMap.getShips()){
-			if(ship.getOwner()==gameMap.getMyPlayerId()){
+		for(Ship ship: GameMap.INSTANCE.getShips()){
+			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
 					taskRequests.add(new DefendDockedShipTask());
 				}
@@ -96,13 +92,13 @@ public class AdvancedStrategy implements Strategy {
 		//Define processList
 		List<Integer> undockedShips = new ArrayList<Integer>();
 		//Add Map Border Obstacle
-		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
+		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
 		//Add Planets to Obstacles
-		for(Planet planet: gameMap.getPlanets()) {
+		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
 			obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius())));
 		}
 		//Add Docked Ships to Obstacles
-		for(Ship ship: gameMap.getMyPlayer().getShips()) {
+		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 			}else {
@@ -110,15 +106,15 @@ public class AdvancedStrategy implements Strategy {
 			}
 		}
 		//Add Enemy Ship Movements to Obstacles
-		for(Ship ship: gameMap.getMyPlayer().getShips()) {
-			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
+			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				continue;
 			}
 			Planet closestPlanet = getClosestOwnedPlanet(ship.getPosition());
 			if(closestPlanet==null) {
 				continue;
 			}else {
-				if(closestPlanet.getOwner()!=gameMap.getMyPlayerId()) {
+				if(closestPlanet.getOwner()!=GameMap.INSTANCE.getMyPlayerId()) {
 					obstacles.addObstacle(ObstacleType.ENEMY, new EnemyShipObstacle(ship.getPosition()));
 				}
 			}
@@ -127,7 +123,7 @@ public class AdvancedStrategy implements Strategy {
 		BiMap<Integer, Obstacle> uncertainObstacles = new BiMap<Integer, Obstacle>();
 		Map<Integer, Pathfinder> pathfinders = new HashMap<Integer, Pathfinder>();
 		for(int shipId: undockedShips) {
-			Circle circle = new Circle(gameMap.getMyPlayer().getShip(shipId).getPosition(), GameConstants.SHIP_RADIUS);
+			Circle circle = new Circle(GameMap.INSTANCE.getMyPlayer().getShip(shipId).getPosition(), GameConstants.SHIP_RADIUS);
 			Obstacle obstacle = new StaticObstacle(circle);
 			uncertainObstacles.put(shipId, obstacle);
 			obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
@@ -144,7 +140,7 @@ public class AdvancedStrategy implements Strategy {
 			Task bestTask = null;
 			for(int shipId: undockedShips) {
 				for(Task task: taskRequests) {
-					Ship ship = gameMap.getMyPlayer().getShip(shipId);
+					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
 					double score = task.getScore(ship);
 					if(score>bestScore) {
 						bestScore = score;
@@ -170,7 +166,7 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 			if(biggestSize>0) {
-				Ship ship = gameMap.getMyPlayer().getShip(biggestSet);
+				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(biggestSet);
 				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
 				for(int shipId: blameMap.get(ship.getId())) {
@@ -179,7 +175,7 @@ public class AdvancedStrategy implements Strategy {
 				blameMap.clear(ship.getId());
 			}
 			while(!queue.isEmpty()&&checkInterruption()) {
-				Ship ship = gameMap.getMyPlayer().getShip(queue.poll());
+				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(queue.poll());
 				Task task = taskMap.get(ship.getId());
 				Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
 				if(move!=null) {
@@ -216,8 +212,8 @@ public class AdvancedStrategy implements Strategy {
 	public int countEnemyShips(Vector position, double buffer) {
 		buffer = buffer*buffer; //compares against distanceSquared
 		int count = 0;
-		for(Ship ship: gameMap.getShips()) {
-			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+		for(Ship ship: GameMap.INSTANCE.getShips()) {
+			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				continue;
 			}
 			double distanceSquared = ship.getPosition().getDistanceSquared(position);
@@ -230,7 +226,7 @@ public class AdvancedStrategy implements Strategy {
 	public Planet getClosestOwnedPlanet(Vector position) {
 		Planet closestPlanet = null;
 		double closestDistance = Double.MAX_VALUE;
-		for(Planet planet: gameMap.getPlanets()) {
+		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
 			if(!planet.isOwned()) {
 				continue;
 			}
@@ -242,18 +238,6 @@ public class AdvancedStrategy implements Strategy {
 		}
 		return closestPlanet;
 	}
-	public boolean isSafeToDock(Planet planet) {
-		for(Ship ship: gameMap.getShips()) {
-			if(ship.getOwner()==gameMap.getMyPlayerId()) {
-				continue;
-			}
-			//Check if there are any enemy ships nearby planet
-			if(ship.getPosition().getDistanceSquared(planet.getPosition())<(planet.getRadius()+GameConstants.DOCK_RADIUS*2)*(planet.getRadius()+GameConstants.DOCK_RADIUS*2)) {
-				return false;
-			}
-		}
-		return true;
-	}
 	public Ship findEnemyShip(Planet planet, Vector position) {
 		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
 		bufferSquared = bufferSquared*bufferSquared;
@@ -262,8 +246,8 @@ public class AdvancedStrategy implements Strategy {
 		double shortestDirection = Double.MAX_VALUE;
 		Ship shortestShip = null;
 		
-		for(Ship ship: gameMap.getShips()) {
-			if(ship.getOwner()==gameMap.getMyPlayerId()) {
+		for(Ship ship: GameMap.INSTANCE.getShips()) {
+			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				continue;
 			}
 			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {
@@ -285,8 +269,8 @@ public class AdvancedStrategy implements Strategy {
 		double shortestDirection = Double.MAX_VALUE;
 		Ship shortestShip = null;
 		
-		for(Ship ship: gameMap.getShips()) {
-			if(ship.getOwner()==gameMap.getMyPlayerId()||ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+		for(Ship ship: GameMap.INSTANCE.getShips()) {
+			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()||ship.getDockingStatus()==DockingStatus.UNDOCKED) {
 				continue;
 			}
 			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {

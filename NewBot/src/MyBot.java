@@ -25,12 +25,12 @@ public class MyBot {
 			AdvancedStrategy.benchmark = benchmark;
 			benchmark.push();
 			Date currentDate = new Date();
-			GameMap gameMap = Networking.initialize();
-			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), gameMap.getMyPlayerId()));
+			Networking.initialize();
+			DebugLog.initialize(String.format("logs/%s-%d.log", FILENAME_DATE_FORMAT.format(currentDate), GameMap.INSTANCE.getMyPlayerId()));
 			DebugLog.log("Initialization - "+READABLE_DATE_FORMAT.format(currentDate));
 			MoveQueue moveQueue = new MoveQueue();
 			
-			Strategy strategy = new AdvancedStrategy(gameMap);
+			Strategy strategy = new AdvancedStrategy();
 			strategy.init();
 			
 			Thread mainThread = Thread.currentThread();
@@ -72,8 +72,8 @@ public class MyBot {
 			long lastBenchmarkTime = 0;
 			while (true) {
 				benchmark.push();
-				DebugLog.log("New Turn: "+gameMap.getTurnNumber());
-				gameMap.updateMap(Networking.readLineIntoMetadata());
+				DebugLog.log("New Turn: "+GameMap.INSTANCE.getTurnNumber());
+				GameMap.INSTANCE.updateMap(Networking.readLineIntoMetadata());
 				benchmark.push();
 				millis = Math.max(0, (int)(timeout-lastBenchmarkTime*1.2-Math.ceil(benchmark.peek()/1000000.0)));
 				strategy.newTurn(moveQueue);

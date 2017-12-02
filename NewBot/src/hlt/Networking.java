@@ -58,15 +58,14 @@ public class Networking {
 	public static Metadata readLineIntoMetadata() {
 		return new Metadata(readLine().trim());
 	}
-	public static GameMap initialize() {
+	public static void initialize() {
 		int myId = Integer.parseInt(readLine());
 		Metadata inputStringMapSize = readLineIntoMetadata();
 		int width = Integer.parseInt(inputStringMapSize.pop());
 		int height = Integer.parseInt(inputStringMapSize.pop());
-		GameMap gameMap = new GameMap(width, height, myId);
+		GameMap.INSTANCE.init(width, height, myId);
 		Metadata inputStringMetadata = readLineIntoMetadata();
-		gameMap.updateMap(inputStringMetadata);
-		return gameMap;
+		GameMap.INSTANCE.updateMap(inputStringMetadata);
 	}
 	public static void finalizeInitialization(String botName) {
 		writer.println(botName);

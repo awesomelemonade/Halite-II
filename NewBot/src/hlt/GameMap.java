@@ -7,7 +7,8 @@ import java.util.TreeMap;
 import java.util.Collections;
 import java.util.Collection;
 
-public class GameMap {
+public enum GameMap {
+	INSTANCE; //Singleton
 	private int turnNumber;
 	private int width, height;
 	private int playerId;
@@ -19,8 +20,8 @@ public class GameMap {
 	private Vector centerPosition;
 	// used only during parsing to reduce memory allocations
 	private List<Ship> currentShips;
-
-	public GameMap(int width, int height, int playerId) {
+	
+	public void init(int width, int height, int playerId) {
 		this.width = width;
 		this.height = height;
 		this.playerId = playerId;
