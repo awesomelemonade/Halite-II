@@ -4,6 +4,7 @@ import lemon.halite2.strats.Strategy;
 import lemon.halite2.util.MoveQueue;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 import hlt.DebugLog;
@@ -88,7 +89,7 @@ public class MyBot {
 			}
 		}catch(Exception ex) {
 			DebugLog.log(ex);
-			System.out.println(ex.getMessage());
+			System.out.println(Arrays.toString(ex.getStackTrace()));
 		}
 	}
 }

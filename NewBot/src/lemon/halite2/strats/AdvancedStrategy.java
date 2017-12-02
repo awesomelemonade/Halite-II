@@ -7,7 +7,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import hlt.DebugLog;
 import hlt.GameConstants;
@@ -29,6 +28,7 @@ import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.pathfinding.StaticObstacle;
 import lemon.halite2.task.AttackDockedEnemyTask;
 import lemon.halite2.task.AttackEnemyTask;
+import lemon.halite2.task.BlameMap;
 import lemon.halite2.task.DefendDockedShipTask;
 import lemon.halite2.task.DockTask;
 import lemon.halite2.task.Task;
@@ -137,8 +137,9 @@ public class AdvancedStrategy implements Strategy {
 		}
 		Map<Integer, Task> taskMap = new HashMap<Integer, Task>();
 		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
+		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+taskRequests.size()+" tasks");
 		while(!undockedShips.isEmpty()) {
-			double bestScore = Double.MIN_VALUE;
+			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
 			Task bestTask = null;
 			for(int shipId: undockedShips) {
@@ -152,12 +153,13 @@ public class AdvancedStrategy implements Strategy {
 					}
 				}
 			}
+			DebugLog.log("Assigning Task: "+bestShip.getId()+" - "+bestTask.getClass().getSimpleName());
 			bestTask.accept(bestShip);
 			taskMap.put(bestShip.getId(), bestTask);
 			undockedShips.remove((Object)bestShip.getId());
 			queue.add(bestShip.getId());
 		}
-		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
+		BlameMap blameMap = new BlameMap();
 		do {
 			int biggestSet = 0;
 			int biggestSize = 0;
@@ -174,7 +176,7 @@ public class AdvancedStrategy implements Strategy {
 				for(int shipId: blameMap.get(ship.getId())) {
 					queue.add(shipId);
 				}
-				blameMap.remove(ship.getId());
+				blameMap.clear(ship.getId());
 			}
 			while(!queue.isEmpty()&&checkInterruption()) {
 				Ship ship = gameMap.getMyPlayer().getShip(queue.poll());
@@ -186,7 +188,7 @@ public class AdvancedStrategy implements Strategy {
 						for(int shipId: blameMap.get(ship.getId())) {
 							queue.add(shipId);
 						}
-						blameMap.remove(ship.getId());
+						blameMap.clear(ship.getId());
 					}
 					if(move instanceof ThrustMove) {
 						ThrustMove thrustMove = (ThrustMove)move;

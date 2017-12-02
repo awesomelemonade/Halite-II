@@ -29,6 +29,7 @@ public class Pathfinder {
 		this.position = position;
 		this.buffer = buffer;
 		this.exceptions = exceptions;
+		this.obstacles = obstacles;
 	}
 	public Vector getVector() {
 		return position;

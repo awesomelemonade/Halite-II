@@ -1,8 +1,5 @@
 package lemon.halite2.task;
 
-import java.util.Map;
-import java.util.Set;
-
 import hlt.Move;
 import hlt.Ship;
 import lemon.halite2.pathfinding.Obstacle;
@@ -15,7 +12,7 @@ public class AttackEnemyTask implements Task {
 		// TODO Auto-generated method stub
 	}
 	@Override
-	public Move execute(Ship ship, Pathfinder pathfinder, Map<Integer, Set<Integer>> blameMap,
+	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles) {
 		// TODO Auto-generated method stub
 		return null;
@@ -23,6 +20,6 @@ public class AttackEnemyTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		// TODO Auto-generated method stub
-		return Integer.MIN_VALUE;
+		return -Integer.MAX_VALUE;
 	}
 }
