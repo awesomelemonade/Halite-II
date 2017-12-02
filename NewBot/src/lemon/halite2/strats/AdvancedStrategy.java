@@ -112,6 +112,8 @@ public class AdvancedStrategy implements Strategy {
 		}
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
+		//Define queue
+		Deque<Integer> queue = new ArrayDeque<Integer>();
 		//Add Map Border Obstacle
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(gameMap.getWidth(), gameMap.getHeight())));
 		//Add Planets to Obstacles
@@ -122,6 +124,8 @@ public class AdvancedStrategy implements Strategy {
 		for(Ship ship: gameMap.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
+			}else {
+				queue.add(ship.getId());
 			}
 		}
 		//Add Enemy Ship Movements to Obstacles
@@ -138,58 +142,17 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}
-		Deque<Integer> groupQueue = new ArrayDeque<Integer>(); //Queue of Group IDs
-		Deque<Integer> resolved = new ArrayDeque<Integer>();
-		//Add all to queue
-		for(int groupId: targetPlanets.keySet()) {
-			groupQueue.push(groupId);
-		}
-		DebugLog.log(String.format("Resolving %d Groups", groupQueue.size()));
-		//Resolve Docking; Adds docking ship to static obstacles
-		while(!groupQueue.isEmpty()&&checkInterruption()) {
-			Group group = Group.getGroup(groupQueue.peek());
-			Planet targetPlanet = gameMap.getPlanet(targetPlanets.get(groupQueue.poll()));
-			if(isSafeToDock(targetPlanet)&&!targetPlanet.isFull()) {
-				if(group.getSize()>1) {
-					micro.getGroups().remove(group);
-					for(int shipId: group.getShips().keySet()) {
-						Group newGroup = new Group(gameMap.getMyPlayer().getShip(shipId));
-						groupQueue.push(newGroup.getId());
-						micro.getGroups().add(newGroup);
-					}
-				}else {
-					for(int shipId: group.getShips().keySet()) {
-						if(gameMap.getMyPlayer().getShip(shipId).canDock(targetPlanet)) {
-							DebugLog.log("\tDocking Ship "+shipId+" to Planet "+targetPlanet.getId());
-							moveQueue.add(new DockMove(shipId, targetPlanet.getId()));
-							obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(group.getCircle()));
-						}else {
-							resolved.push(group.getId());
-						}
-					}
-				}
-			}else {
-				resolved.push(group.getId());
-			}
-		}
-		while(!resolved.isEmpty()&&checkInterruption()) {
-			groupQueue.push(resolved.poll());
-		}
 		//Add Uncertain Obstacles
 		BiMap<Integer, Obstacle> uncertainObstacles = new BiMap<Integer, Obstacle>();
-		for(int groupId: groupQueue) {
-			Obstacle obstacle = new StaticObstacle(Group.getGroup(groupId).getCircle());
-			uncertainObstacles.put(groupId, obstacle);
-			obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
-		}
-		//Resolve Micro
-		//	Merging
 		Map<Integer, Pathfinder> pathfinders = new HashMap<Integer, Pathfinder>();
-		for(int groupId: groupQueue) { //Attach a pathfinder to all groups that are left
-			Group group = Group.getGroup(groupId);
-			Pathfinder pathfinder = new Pathfinder(group.getCircle().getPosition(), group.getCircle().getRadius(), obstacles,
-					o->o.equals(uncertainObstacles.getValue(groupId))); //Weird use of Lambdas :)
-			pathfinders.put(groupId, pathfinder);
+		for(int shipId: queue) {
+			Circle circle = new Circle(gameMap.getMyPlayer().getShip(shipId).getPosition(), GameConstants.SHIP_RADIUS);
+			Obstacle obstacle = new StaticObstacle(circle);
+			uncertainObstacles.put(shipId, obstacle);
+			obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
+			Pathfinder pathfinder = new Pathfinder(circle.getPosition(), circle.getRadius(), obstacles,
+					o->o.equals(uncertainObstacles.getValue(shipId))); //Weird use of Lambdas :)
+			pathfinders.put(shipId, pathfinder);
 		}
 		Map<Integer, Set<Integer>> blameMap = new HashMap<Integer, Set<Integer>>();
 		do {
