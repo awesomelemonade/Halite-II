@@ -2,6 +2,7 @@ package lemon.halite2.task;
 
 import hlt.DockMove;
 import hlt.GameConstants;
+import hlt.GameMap;
 import hlt.Move;
 import hlt.Planet;
 import hlt.RoundPolicy;
@@ -51,7 +52,7 @@ public class DockTask implements Task {
 					int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
 					int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
 					if(ship.getPosition().add(Pathfinder.velocityVector[i-1][candidateA]).getDistanceSquared(planet.getPosition())<=innerBufferSquared) {
-						if(pathfinder.getCandidate(i, candidateA, ObstacleType.PERMANENT)==null) {
+						if(pathfinder.getCandidate(i, candidateA, ObstacleType.PERMANENT, ObstacleType.ENEMY)==null) {
 							Obstacle obstacle = pathfinder.getCandidate(i, candidateA, ObstacleType.UNCERTAIN);
 							if(obstacle==null) {
 								return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateA));
@@ -62,7 +63,7 @@ public class DockTask implements Task {
 						}
 					}
 					if(ship.getPosition().add(Pathfinder.velocityVector[i-1][candidateB]).getDistanceSquared(planet.getPosition())<=innerBufferSquared) {
-						if(pathfinder.getCandidate(i, candidateB, ObstacleType.PERMANENT)==null) {
+						if(pathfinder.getCandidate(i, candidateB, ObstacleType.PERMANENT, ObstacleType.ENEMY)==null) {
 							Obstacle obstacle = pathfinder.getCandidate(i, candidateB, ObstacleType.UNCERTAIN);
 							if(obstacle==null) {
 								return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateB));
@@ -73,6 +74,41 @@ public class DockTask implements Task {
 						}
 					}
 				}
+			}
+		}
+		//try candidates
+		for(int i=7;i>0;--i) {
+			for(int j=0;j<=MathUtil.PI_DEGREES;++j) {
+				int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
+				int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
+				if(pathfinder.getCandidate(i, candidateA, ObstacleType.PERMANENT, ObstacleType.ENEMY)==null) {
+					Obstacle obstacle = pathfinder.getCandidate(i, candidateA, ObstacleType.UNCERTAIN);
+					if(obstacle==null) {
+						return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateA));
+					}else {
+						blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+						return null;
+					}
+				}
+				if(pathfinder.getCandidate(i, candidateB, ObstacleType.PERMANENT, ObstacleType.ENEMY)==null) {
+					Obstacle obstacle = pathfinder.getCandidate(i, candidateB, ObstacleType.UNCERTAIN);
+					if(obstacle==null) {
+						return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateB));
+					}else {
+						blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+						return null;
+					}
+				}
+			}
+		}
+		//try still candidate
+		if(pathfinder.getStillCandidate(ObstacleType.ENEMY)==null) {
+			Obstacle obstacle = pathfinder.getStillCandidate(ObstacleType.UNCERTAIN);
+			if(obstacle==null) {
+				return new ThrustMove(ship.getId(), new ThrustPlan(0, 0));
+			}else {
+				blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+				return null;
 			}
 		}
 		//try candidates
@@ -100,7 +136,6 @@ public class DockTask implements Task {
 				}
 			}
 		}
-		//try still candidate
 		Obstacle obstacle = pathfinder.getStillCandidate(ObstacleType.UNCERTAIN);
 		if(obstacle==null) {
 			return new ThrustMove(ship.getId(), new ThrustPlan(0, 0));
@@ -113,6 +148,14 @@ public class DockTask implements Task {
 	public double getScore(Ship ship) {
 		if(acceptedShipCount>=dockSpaces) {
 			return -Double.MAX_VALUE;
+		}
+		for(Ship s: GameMap.INSTANCE.getShips()) {
+			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				continue;
+			}
+			if(s.getPosition().getDistanceSquared(ship.getPosition())<GameConstants.WEAPON_RADIUS*GameConstants.WEAPON_RADIUS) {
+				return -Double.MAX_VALUE;
+			}
 		}
 		return -ship.getPosition().getDistanceSquared(planet.getPosition());
 	}

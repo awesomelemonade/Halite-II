@@ -90,7 +90,7 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
-					taskRequests.add(new AttackEnemyTask());
+					taskRequests.add(new AttackEnemyTask(ship));
 				}else{
 					taskRequests.add(new AttackDockedEnemyTask(ship));
 					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
