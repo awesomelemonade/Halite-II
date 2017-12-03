@@ -76,10 +76,10 @@ public class Pathfinder {
 		return getCandidate(plan.getThrust(), plan.getAngle(), type);
 	}
 	public Obstacle getCandidate(int thrust, int angle, ObstacleType type) {
-		Vector velocity = velocityVector[thrust-1][angle];
 		if(thrust==0){
 			return getStillCandidate(type);
 		}else{
+			Vector velocity = velocityVector[thrust-1][angle];
 			for(Obstacle obstacle: obstacles.getObstacles(type)){
 				if(exceptions.test(obstacle)){
 					continue;

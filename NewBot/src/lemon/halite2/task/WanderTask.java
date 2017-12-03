@@ -20,12 +20,12 @@ public class WanderTask implements Task {
 		int randomMagnitude = (int)(7*Math.random());
 		int randomDirection = (int)(360*Math.random());
 		if(pathfinder.getCandidate(randomMagnitude, randomDirection, ObstacleType.PERMANENT, ObstacleType.UNCERTAIN)==null) {
-			return new ThrustMove(ship.getId(), new ThrustPlan(0, 0));
+			return new ThrustMove(ship.getId(), new ThrustPlan(randomMagnitude, randomDirection));
 		}
 		return new ThrustMove(ship.getId(), new ThrustPlan(0, 0));
 	}
 	@Override
 	public double getScore(Ship ship) {
-		return -Double.MAX_VALUE+Double.MIN_VALUE;
+		return -Double.MAX_VALUE+Math.ulp(Double.MAX_VALUE);
 	}
 }

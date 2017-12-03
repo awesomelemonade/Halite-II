@@ -21,6 +21,6 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		// TODO Auto-generated method stub
-		return -Integer.MAX_VALUE;
+		return -Double.MAX_VALUE;
 	}
 }

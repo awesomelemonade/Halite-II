@@ -93,7 +93,7 @@ public class AttackEnemyTask implements Task {
 			}
 			return score;
 		}
-		return -Integer.MAX_VALUE;
+		return -Double.MAX_VALUE;
 	}
 	public boolean willCollide(Vector position, int thrust, int angle) {
 		return Geometry.segmentCircleIntersection(position, position.add(Pathfinder.velocityVector[thrust-1][angle]), enemyShip.getPosition(), 2*GameConstants.SHIP_RADIUS);
