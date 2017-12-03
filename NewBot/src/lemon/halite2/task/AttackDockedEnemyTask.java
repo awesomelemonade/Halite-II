@@ -99,9 +99,10 @@ public class AttackDockedEnemyTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
+		double score = -ship.getPosition().getDistanceSquared(enemyShip.getPosition());
 		if(counter>2) {
-			return -Integer.MAX_VALUE;
+			score-=Math.pow(-score, (counter-2));
 		}
-		return -ship.getPosition().getDistanceSquared(enemyShip.getPosition());
+		return score;
 	}
 }
