@@ -102,19 +102,12 @@ public class AdvancedStrategy implements Strategy {
 			obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(planet.getPosition(), planet.getRadius())));
 		}
 		//Add Enemy Ship Movements to Obstacles
-		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
+		for(Ship ship: GameMap.INSTANCE.getShips()) {
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				continue;
 			}
-			Planet closestPlanet = getClosestOwnedPlanet(ship.getPosition());
-			if(closestPlanet==null) {
-				continue;
-			}else {
-				if(closestPlanet.getOwner()!=GameMap.INSTANCE.getMyPlayerId()) {
-					if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
-						obstacles.addObstacle(ObstacleType.ENEMY, new EnemyShipObstacle(ship.getPosition()));
-					}
-				}
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+				obstacles.addObstacle(ObstacleType.ENEMY, new EnemyShipObstacle(ship.getPosition()));
 			}
 		}
 		//Add Uncertain Obstacles
@@ -147,7 +140,6 @@ public class AdvancedStrategy implements Strategy {
 					}
 				}
 			}
-			DebugLog.log("Assigning Task: "+bestShip.getId()+" - "+bestTask.getClass().getSimpleName());
 			bestTask.accept(bestShip);
 			taskMap.put(bestShip.getId(), bestTask);
 			undockedShips.remove((Object)bestShip.getId());
@@ -165,6 +157,7 @@ public class AdvancedStrategy implements Strategy {
 			}
 			if(biggestSize>0) {
 				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(biggestSet);
+				DebugLog.log("Forcing Move: "+ship.getId());
 				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
 				for(int shipId: blameMap.get(ship.getId())) {
