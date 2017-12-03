@@ -111,7 +111,9 @@ public class AdvancedStrategy implements Strategy {
 				continue;
 			}else {
 				if(closestPlanet.getOwner()!=GameMap.INSTANCE.getMyPlayerId()) {
-					obstacles.addObstacle(ObstacleType.ENEMY, new EnemyShipObstacle(ship.getPosition()));
+					if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+						obstacles.addObstacle(ObstacleType.ENEMY, new EnemyShipObstacle(ship.getPosition()));
+					}
 				}
 			}
 		}
