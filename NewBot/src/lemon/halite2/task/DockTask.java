@@ -16,6 +16,7 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DockTask implements Task {
+	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED;
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
@@ -153,7 +154,7 @@ public class DockTask implements Task {
 			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				continue;
 			}
-			if(s.getPosition().getDistanceSquared(ship.getPosition())<GameConstants.WEAPON_RADIUS*GameConstants.WEAPON_RADIUS) {
+			if(s.getPosition().getDistanceSquared(ship.getPosition())<buffer*buffer) {
 				return -Double.MAX_VALUE;
 			}
 		}

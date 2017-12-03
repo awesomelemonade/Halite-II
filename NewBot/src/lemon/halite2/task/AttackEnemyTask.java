@@ -7,10 +7,12 @@ import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
+import hlt.Vector;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.util.BiMap;
+import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class AttackEnemyTask implements Task {
@@ -47,22 +49,26 @@ public class AttackEnemyTask implements Task {
 			for(int j=0;j<=MathUtil.PI_DEGREES;++j) {
 				int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
 				int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
-				if(pathfinder.getCandidate(i, candidateA, ObstacleType.PERMANENT)==null) {
-					Obstacle obstacle = pathfinder.getCandidate(i, candidateA, ObstacleType.UNCERTAIN);
-					if(obstacle==null) {
-						return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateA));
-					}else {
-						blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
-						return null;
+				if(!willCollide(ship.getPosition(), i, candidateA)) {
+					if(pathfinder.getCandidate(i, candidateA, ObstacleType.PERMANENT)==null) {
+						Obstacle obstacle = pathfinder.getCandidate(i, candidateA, ObstacleType.UNCERTAIN);
+						if(obstacle==null) {
+							return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateA));
+						}else {
+							blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+							return null;
+						}
 					}
 				}
-				if(pathfinder.getCandidate(i, candidateB, ObstacleType.PERMANENT)==null) {
-					Obstacle obstacle = pathfinder.getCandidate(i, candidateB, ObstacleType.UNCERTAIN);
-					if(obstacle==null) {
-						return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateB));
-					}else {
-						blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
-						return null;
+				if(!willCollide(ship.getPosition(), i, candidateB)) {
+					if(pathfinder.getCandidate(i, candidateB, ObstacleType.PERMANENT)==null) {
+						Obstacle obstacle = pathfinder.getCandidate(i, candidateB, ObstacleType.UNCERTAIN);
+						if(obstacle==null) {
+							return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateB));
+						}else {
+							blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+							return null;
+						}
 					}
 				}
 			}
@@ -82,5 +88,8 @@ public class AttackEnemyTask implements Task {
 			return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/2;
 		}
 		return -Integer.MAX_VALUE;
+	}
+	public boolean willCollide(Vector position, int thrust, int angle) {
+		return Geometry.segmentCircleIntersection(position, position.add(Pathfinder.velocityVector[thrust-1][angle]), enemyShip.getPosition(), 2*GameConstants.SHIP_RADIUS);
 	}
 }
