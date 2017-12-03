@@ -12,14 +12,20 @@ public class EnemyShipObstacle implements Obstacle {
 	}
 	@Override
 	public boolean willCollide(Vector position, Vector velocity, double buffer) {
-		if(Geometry.segmentCircleIntersection(position, position.add(velocity), this.position, buffer+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED)) {
-			for(int i=0;i<MathUtil.TAU_DEGREES;++i) {
-				if(MathUtil.getMinDistanceSquared(this.position, Pathfinder.velocityVector[GameConstants.MAX_SPEED-1][i], position, velocity)
-						<=(GameConstants.WEAPON_RADIUS+GameConstants.SHIP_RADIUS+buffer)*(GameConstants.WEAPON_RADIUS+GameConstants.SHIP_RADIUS+buffer)){
-					return true;
+		if(velocity.equals(Vector.ZERO)) {
+			return this.position.getDistanceSquared(position)<=
+					(buffer+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED)*
+					(buffer+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED);
+		}else {
+			if(Geometry.segmentCircleIntersection(position, position.add(velocity), this.position, buffer+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED)) {
+				for(int i=0;i<MathUtil.TAU_DEGREES;++i) {
+					if(MathUtil.getMinDistanceSquared(this.position, Pathfinder.velocityVector[GameConstants.MAX_SPEED-1][i], position, velocity)
+							<=(GameConstants.WEAPON_RADIUS+GameConstants.SHIP_RADIUS+buffer)*(GameConstants.WEAPON_RADIUS+GameConstants.SHIP_RADIUS+buffer)){
+						return true;
+					}
 				}
 			}
+			return false;
 		}
-		return false;
 	}
 }

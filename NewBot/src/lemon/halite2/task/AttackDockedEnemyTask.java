@@ -13,12 +13,14 @@ import lemon.halite2.util.MathUtil;
 
 public class AttackDockedEnemyTask implements Task {
 	private Ship enemyShip;
+	private int counter;
 	public AttackDockedEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
+		this.counter = 0;
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		counter++;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -97,6 +99,9 @@ public class AttackDockedEnemyTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
+		if(counter>2) {
+			return -Integer.MAX_VALUE;
+		}
 		return -ship.getPosition().getDistanceSquared(enemyShip.getPosition());
 	}
 }

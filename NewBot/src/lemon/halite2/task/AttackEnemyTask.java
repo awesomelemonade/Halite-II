@@ -16,9 +16,10 @@ import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class AttackEnemyTask implements Task {
-	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED;
+	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*1.4;
 	private Ship enemyShip;
 	private boolean activate;
+	private int counter;
 	public AttackEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
 		int count = 0;
@@ -32,10 +33,11 @@ public class AttackEnemyTask implements Task {
 			}
 		}
 		this.activate = count>0;
+		this.counter = 0;
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		counter++;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -85,6 +87,9 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
+			if(counter>4) {
+				return -Integer.MAX_VALUE;
+			}
 			return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/2;
 		}
 		return -Integer.MAX_VALUE;
