@@ -32,6 +32,7 @@ import lemon.halite2.task.BlameMap;
 import lemon.halite2.task.DefendDockedShipTask;
 import lemon.halite2.task.DockTask;
 import lemon.halite2.task.Task;
+import lemon.halite2.task.WanderTask;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
@@ -68,6 +69,8 @@ public class AdvancedStrategy implements Strategy {
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
 		//Calculate Tasks
 		List<Task> taskRequests = new ArrayList<Task>();
+		//Add Wander Task
+		taskRequests.add(new WanderTask());
 		for(Planet planet: GameMap.INSTANCE.getPlanets()){
 			if(planet.isOwned()){
 				if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
