@@ -16,7 +16,7 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DockTask implements Task {
-	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED;
+	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*5;
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
