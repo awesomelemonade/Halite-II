@@ -21,10 +21,18 @@ public class DynamicObstacle implements Obstacle {
 	}
 	@Override
 	public boolean willCollide(Vector position, Vector velocity, double buffer) {
-		if(Vector.ZERO.equals(velocity)) {
-			return Geometry.segmentCircleIntersection(circle.getPosition(), endPoint, position, buffer+circle.getRadius());
+		if(this.velocity.equals(Vector.ZERO)) {
+			if(velocity.equals(Vector.ZERO)) {
+				return circle.getPosition().getDistanceSquared(position)<=(circle.getRadius()+buffer)*(circle.getRadius()+buffer);
+			}else {
+				return Geometry.segmentCircleIntersection(position, position.add(velocity), circle.getPosition(), buffer+circle.getRadius());
+			}
 		}else {
-			return MathUtil.getMinDistanceSquared(circle.getPosition(), this.velocity, position, velocity)<=(buffer+circle.getRadius())*(buffer+circle.getRadius());
+			if(velocity.equals(Vector.ZERO)) {
+				return Geometry.segmentCircleIntersection(circle.getPosition(), endPoint, position, buffer+circle.getRadius());
+			}else {
+				return MathUtil.getMinDistanceSquared(circle.getPosition(), this.velocity, position, velocity)<=(buffer+circle.getRadius())*(buffer+circle.getRadius());
+			}
 		}
 	}
 }
