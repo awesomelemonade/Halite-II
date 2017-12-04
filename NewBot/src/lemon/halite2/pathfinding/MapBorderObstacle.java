@@ -13,6 +13,6 @@ public class MapBorderObstacle implements Obstacle {
 	public boolean willCollide(Vector position, Vector velocity, double buffer) {
 		double endX = position.getX()+velocity.getX();
 		double endY = position.getY()+velocity.getY();
-		return endX<=min.getX()||endX>=max.getX()||endY<=min.getY()||endY>=max.getY();
+		return endX-buffer<=min.getX()||endX+buffer>=max.getX()||endY-buffer<=min.getY()||endY+buffer>=max.getY();
 	}
 }
