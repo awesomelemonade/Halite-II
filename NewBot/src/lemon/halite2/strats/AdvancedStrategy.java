@@ -86,7 +86,7 @@ public class AdvancedStrategy implements Strategy {
 		for(Ship ship: GameMap.INSTANCE.getShips()){
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
-					taskRequests.add(new DefendDockedShipTask());
+					taskRequests.add(new DefendDockedShipTask(ship));
 					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				}else {
 					undockedShips.add(ship.getId());
@@ -121,7 +121,7 @@ public class AdvancedStrategy implements Strategy {
 			Obstacle obstacle = new StaticObstacle(circle);
 			uncertainObstacles.put(shipId, obstacle);
 			obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
-			Pathfinder pathfinder = new Pathfinder(circle.getPosition(), circle.getRadius(), obstacles,
+			Pathfinder pathfinder = new Pathfinder(circle.getPosition(), circle.getRadius()+0.001, obstacles,
 					o->o.equals(uncertainObstacles.getValue(shipId))); //Weird use of Lambdas :)
 			pathfinders.put(shipId, pathfinder);
 		}
