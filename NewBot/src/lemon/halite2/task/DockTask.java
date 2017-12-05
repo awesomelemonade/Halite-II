@@ -48,7 +48,7 @@ public class DockTask implements Task {
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;
 		if(distanceSquared<=outerBufferSquared) {
 			//try greediest
-			for(int i=1;i<=7;++i) {
+			for(int i=7;i>0;--i) {
 				for(int j=0;j<MathUtil.PI_DEGREES;++j) {
 					int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
 					int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
