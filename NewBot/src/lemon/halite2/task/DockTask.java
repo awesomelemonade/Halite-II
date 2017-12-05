@@ -158,6 +158,8 @@ public class DockTask implements Task {
 				return -Double.MAX_VALUE;
 			}
 		}
-		return -ship.getPosition().getDistanceSquared(planet.getPosition());
+		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();
+		score = score*score;
+		return -score;
 	}
 }
