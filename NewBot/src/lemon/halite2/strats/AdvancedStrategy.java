@@ -164,7 +164,9 @@ public class AdvancedStrategy implements Strategy {
 				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
 				for(int shipId: blameMap.get(ship.getId())) {
-					queue.add(shipId);
+					if(!moveQueue.hasMoved(shipId)) {
+						queue.add(shipId);
+					}
 				}
 				blameMap.clear(ship.getId());
 			}
@@ -176,7 +178,9 @@ public class AdvancedStrategy implements Strategy {
 					moveQueue.add(move);
 					if(blameMap.containsKey(ship.getId())) {
 						for(int shipId: blameMap.get(ship.getId())) {
-							queue.add(shipId);
+							if(!moveQueue.hasMoved(ship.getId())) {
+								queue.add(shipId);
+							}
 						}
 						blameMap.clear(ship.getId());
 					}
