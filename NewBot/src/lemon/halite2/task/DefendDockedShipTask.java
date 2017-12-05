@@ -35,7 +35,7 @@ public class DefendDockedShipTask implements Task {
 				double distanceSquared = s.getPosition().getDistanceSquared(ship.getPosition());
 				if(distanceSquared<=DETECTION_RADIUS_SQUARED) {
 					if(distanceSquared<closestDistanceSquared) {
-						distanceSquared = closestDistanceSquared;
+						closestDistanceSquared = distanceSquared;
 					}
 					enemyShipCount++;
 				}
@@ -90,7 +90,7 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		if(counter>0) {
-			return -(ship.getPosition().getDistanceSquared(this.ship.getPosition())*0.6)-closestDistanceSquared*1.2;
+			return -(ship.getPosition().getDistanceSquared(this.ship.getPosition())*0.4)-closestDistanceSquared*0.7;
 		}else {
 			return -Double.MAX_VALUE;
 		}
