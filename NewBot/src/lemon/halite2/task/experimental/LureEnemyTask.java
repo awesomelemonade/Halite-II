@@ -25,6 +25,6 @@ public class LureEnemyTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
-		return 0;
+		return -Double.MAX_VALUE;
 	}
 }
