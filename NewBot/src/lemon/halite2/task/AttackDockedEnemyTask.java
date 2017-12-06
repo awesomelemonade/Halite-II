@@ -1,10 +1,13 @@
 package lemon.halite2.task;
 
+import hlt.GameConstants;
+import hlt.GameMap;
 import hlt.Move;
 import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
+import hlt.Ship.DockingStatus;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
@@ -12,11 +15,25 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class AttackDockedEnemyTask implements Task {
+	private static final double DETECTION_SQUARED = (2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)*
+			(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED);
 	private Ship enemyShip;
 	private int counter;
+	private double enemyShipPenalty;
 	public AttackDockedEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
 		this.counter = 0;
+		this.enemyShipPenalty = 0;
+		for(Ship ship: GameMap.INSTANCE.getShips()) {
+			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				continue;
+			}
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+				if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<=DETECTION_SQUARED) {
+					enemyShipPenalty+=10;
+				}
+			}
+		}
 	}
 	@Override
 	public void accept(Ship ship) {
@@ -103,6 +120,6 @@ public class AttackDockedEnemyTask implements Task {
 		if(counter>2) {
 			score-=Math.pow(-score, (counter-2));
 		}
-		return score;
+		return score-enemyShipPenalty;
 	}
 }
