@@ -1,5 +1,8 @@
 package lemon.halite2.task;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -16,23 +19,28 @@ import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class AttackEnemyTask implements Task {
-	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*1.4;
+	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED)*
+			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED);
+	private static final double MAX_RATIO = 2.0;
 	private Ship enemyShip;
 	private boolean activate;
+	private Set<Integer> allowedShips;
+	private int enemyCount;
 	private int counter;
 	public AttackEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
-		int count = 0;
+		this.allowedShips = new HashSet<Integer>();
+		enemyCount = 0;
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
-			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<buffer*buffer) {
+			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
 				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-					count++;
+					allowedShips.add(ship.getId());
 				}else {
-					count--;
+					enemyCount++;
 				}
 			}
 		}
-		this.activate = count>0;
+		this.activate = allowedShips.size()>enemyCount;
 		this.counter = 0;
 	}
 	@Override
@@ -87,11 +95,11 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
-			double score = -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/2;
-			if(counter>4) {
-				score-=Math.pow(-score, (counter-4));
+			if(allowedShips.contains(ship.getId())){
+				if(((double)counter+1.0)/((double)enemyCount)<=MAX_RATIO){
+					return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/4;
+				}
 			}
-			return score;
 		}
 		return -Double.MAX_VALUE;
 	}
