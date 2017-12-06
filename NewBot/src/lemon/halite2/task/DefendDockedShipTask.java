@@ -54,6 +54,11 @@ public class DefendDockedShipTask implements Task {
 		double directionDegrees = Math.toDegrees(direction);
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;
+		//try greediest
+		if(ship.getPosition().getDistanceSquared(this.ship.getPosition())<=(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)*
+				(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)){
+			//TODO
+		}
 		//try candidates
 		for(int i=7;i>0;--i) {
 			for(int j=0;j<=MathUtil.PI_DEGREES;++j) {

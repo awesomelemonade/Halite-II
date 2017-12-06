@@ -8,14 +8,15 @@ import lemon.halite2.task.BlameMap;
 import lemon.halite2.task.Task;
 import lemon.halite2.util.BiMap;
 
-public class AbandonTask implements Task {
-	public AbandonTask(){
-		//Check if we should abandon getting #1
-		//Find targets of #3 and #4
+public class LureEnemyTask implements Task {
+	public LureEnemyTask(Ship ship){
+		//Detect if the ships around you have an extreme density of enemies
+		//Figure out a common enemy if it is a 4-player game
+		//Fall back on opposite side of map
 	}
 	@Override
 	public void accept(Ship ship) {
-		//Assign to ship from team #3 or #4 (using a map)
+		
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,

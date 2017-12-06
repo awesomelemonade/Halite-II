@@ -33,6 +33,7 @@ import lemon.halite2.task.DefendDockedShipTask;
 import lemon.halite2.task.DockTask;
 import lemon.halite2.task.Task;
 import lemon.halite2.task.WanderTask;
+import lemon.halite2.task.experimental.FindEnemyTask;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
@@ -93,6 +94,7 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
+					taskRequests.add(new FindEnemyTask(ship));
 					taskRequests.add(new AttackEnemyTask(ship));
 				}else{
 					taskRequests.add(new AttackDockedEnemyTask(ship));

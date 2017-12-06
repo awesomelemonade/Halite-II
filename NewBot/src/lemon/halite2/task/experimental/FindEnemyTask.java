@@ -19,12 +19,14 @@ import lemon.halite2.util.MathUtil;
 public class FindEnemyTask implements Task {
 	private static final double FACTOR = 3.5;
 	private Ship enemyShip;
+	private int counter;
 	public FindEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
+		this.counter = 0;
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		counter++;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -109,6 +111,9 @@ public class FindEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		double score = ship.getPosition().getDistanceTo(enemyShip.getPosition())*FACTOR;
 		score = score*score;
+		if(counter>3){
+			score+=Math.pow(score, counter-3);
+		}
 		return -score;
 	}
 	public boolean willCollide(Vector position, int thrust, int angle) {
