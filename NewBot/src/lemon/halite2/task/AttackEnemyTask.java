@@ -86,7 +86,7 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
-			return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/4;
+			return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
 		}
 		return -Double.MAX_VALUE;
 	}
