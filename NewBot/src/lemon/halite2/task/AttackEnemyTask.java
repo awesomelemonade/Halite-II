@@ -1,8 +1,5 @@
 package lemon.halite2.task;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -19,33 +16,27 @@ import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class AttackEnemyTask implements Task {
-	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED)*
-			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED);
-	private static final double MAX_RATIO = 2.0;
+	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*1.4)*
+			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*1.4);
 	private Ship enemyShip;
 	private boolean activate;
-	private Set<Integer> allowedShips;
-	private int enemyCount;
-	private int counter;
 	public AttackEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
-		this.allowedShips = new HashSet<Integer>();
-		enemyCount = 0;
+		int count = 0;
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
 			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
 				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-					allowedShips.add(ship.getId());
+					count++;
 				}else {
-					enemyCount++;
+					count--;
 				}
 			}
 		}
-		this.activate = allowedShips.size()>enemyCount;
-		this.counter = 0;
+		this.activate = count>0;
 	}
 	@Override
 	public void accept(Ship ship) {
-		counter++;
+		
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -95,11 +86,7 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
-			if(allowedShips.contains(ship.getId())){
-				if(((double)counter+1.0)/((double)enemyCount)<=MAX_RATIO){
-					return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/4;
-				}
-			}
+			return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())/4;
 		}
 		return -Double.MAX_VALUE;
 	}
