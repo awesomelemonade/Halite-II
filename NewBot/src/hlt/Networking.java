@@ -24,7 +24,7 @@ public class Networking {
 		case THRUST:
 			ThrustMove thrustMove = (ThrustMove)move;
 			if(thrustMove.getThrustPlan().getThrust()!=0){
-				Networking.writeThrustMoveEncoding(builder, thrustMove, 0);
+				Networking.writeThrustMoveEncoding(builder, thrustMove, -1);
 			}
 			break;
 		}
@@ -32,7 +32,7 @@ public class Networking {
 	public static void writeThrustMoveEncoding(StringBuilder builder, ThrustMove move, int encoding) {
 		builder.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
 				.append(move.getThrustPlan().getThrust()).append(' ')
-				.append(move.getThrustPlan().getAngle()+MathUtil.TAU_DEGREES*encoding).append(' ');
+				.append(move.getThrustPlan().getAngle()+MathUtil.TAU_DEGREES*(encoding+1)).append(' ');
 	}
 	public static void send(String string) {
 		writer.print(string);

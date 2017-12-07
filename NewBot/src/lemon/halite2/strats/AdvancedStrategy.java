@@ -51,6 +51,7 @@ public class AdvancedStrategy implements Strategy {
 		//Initialize Pathfinder
 		Pathfinder.init();
 		//Initialize classId for Chlorine Viewer
+		classId = new HashMap<Class<? extends Task>, Integer>();
 		classId.put(DockTask.class, 71);
 		classId.put(AttackDockedEnemyTask.class, 72);
 		classId.put(AttackEnemyTask.class, 73);
