@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import hlt.DebugLog;
 import hlt.GameConstants;
@@ -29,7 +31,6 @@ import lemon.halite2.pathfinding.StaticObstacle;
 import lemon.halite2.task.AttackDockedEnemyTask;
 import lemon.halite2.task.AttackEnemyTask;
 import lemon.halite2.task.BlameMap;
-import lemon.halite2.task.DefendDockedShipTask;
 import lemon.halite2.task.DockTask;
 import lemon.halite2.task.Task;
 import lemon.halite2.task.WanderTask;
@@ -151,6 +152,7 @@ public class AdvancedStrategy implements Strategy {
 			undockedShips.remove((Object)bestShip.getId());
 			queue.add(bestShip.getId());
 		}
+		Set<Integer> forcedShips = new HashSet<Integer>();
 		BlameMap blameMap = new BlameMap();
 		do {
 			int biggestSet = 0;
@@ -163,12 +165,18 @@ public class AdvancedStrategy implements Strategy {
 			}
 			if(biggestSize>0) {
 				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(biggestSet);
+				forcedShips.add(ship.getId());
 				DebugLog.log("Forcing Move: "+ship.getId());
-				obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
-				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
+				Obstacle uncertainObstacle = uncertainObstacles.getValue(ship.getId());
+				obstacles.addObstacle(ObstacleType.PERMANENT, uncertainObstacle);
+				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacle);
 				for(int shipId: blameMap.get(ship.getId())) {
-					if(!moveQueue.hasMoved(shipId)) {
-						queue.add(shipId);
+					queue.add(shipId);
+					if(forcedShips.contains(shipId)) {
+						Obstacle obstacle = uncertainObstacles.getValue(ship.getId());
+						obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
+						obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
+						forcedShips.remove(shipId);
 					}
 				}
 				blameMap.clear(ship.getId());
@@ -181,8 +189,12 @@ public class AdvancedStrategy implements Strategy {
 					moveQueue.add(move);
 					if(blameMap.containsKey(ship.getId())) {
 						for(int shipId: blameMap.get(ship.getId())) {
-							if(!moveQueue.hasMoved(ship.getId())) {
-								queue.add(shipId);
+							queue.add(shipId);
+							if(forcedShips.contains(shipId)) {
+								Obstacle obstacle = uncertainObstacles.getValue(ship.getId());
+								obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
+								obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
+								forcedShips.remove(shipId);
 							}
 						}
 						blameMap.clear(ship.getId());
