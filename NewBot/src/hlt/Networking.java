@@ -2,6 +2,8 @@ package hlt;
 
 import java.io.PrintWriter;
 
+import lemon.halite2.util.MathUtil;
+
 public class Networking {
 	private static final PrintWriter writer;
 	private static final char UNDOCK_KEY = 'u';
@@ -20,14 +22,17 @@ public class Networking {
 					.append(((DockMove) move).getPlanetId()).append(' ');
 			break;
 		case THRUST:
-			ThrustPlan plan = ((ThrustMove)move).getThrustPlan();
-			if(plan.getThrust()!=0){
-				builder.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
-						.append(plan.getThrust()).append(' ')
-						.append(plan.getAngle()).append(' ');
+			ThrustMove thrustMove = (ThrustMove)move;
+			if(thrustMove.getThrustPlan().getThrust()!=0){
+				Networking.writeThrustMoveEncoding(builder, thrustMove, 0);
 			}
 			break;
 		}
+	}
+	public static void writeThrustMoveEncoding(StringBuilder builder, ThrustMove move, int encoding) {
+		builder.append(THRUST_KEY).append(' ').append(move.getShipId()).append(' ')
+				.append(move.getThrustPlan().getThrust()).append(' ')
+				.append(move.getThrustPlan().getAngle()+MathUtil.TAU_DEGREES*encoding).append(' ');
 	}
 	public static void send(String string) {
 		writer.print(string);

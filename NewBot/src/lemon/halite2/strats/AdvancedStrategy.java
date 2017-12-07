@@ -31,20 +31,36 @@ import lemon.halite2.pathfinding.StaticObstacle;
 import lemon.halite2.task.AttackDockedEnemyTask;
 import lemon.halite2.task.AttackEnemyTask;
 import lemon.halite2.task.BlameMap;
+import lemon.halite2.task.DefendDockedShipTask;
 import lemon.halite2.task.DockTask;
 import lemon.halite2.task.Task;
 import lemon.halite2.task.WanderTask;
+import lemon.halite2.task.experimental.AbandonTask;
 import lemon.halite2.task.experimental.FindEnemyTask;
+import lemon.halite2.task.experimental.LureEnemyTask;
+import lemon.halite2.task.experimental.RushTask;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
+	private Map<Class<? extends Task>, Integer> classId;
 	@Override
 	public void init() {
 		//Initialize Pathfinder
 		Pathfinder.init();
+		//Initialize classId for Chlorine Viewer
+		classId.put(DockTask.class, 71);
+		classId.put(AttackDockedEnemyTask.class, 72);
+		classId.put(AttackEnemyTask.class, 73);
+		classId.put(DefendDockedShipTask.class, 74);
+		classId.put(WanderTask.class, 75);
+		//Experimental Tasks
+		classId.put(AbandonTask.class, 91);
+		classId.put(FindEnemyTask.class, 92);
+		classId.put(LureEnemyTask.class, 93);
+		classId.put(RushTask.class, 94);
 	}
 	public List<Integer> getClosestPlanets(Vector position){
 		List<Integer> planets = new ArrayList<Integer>();
@@ -186,7 +202,6 @@ public class AdvancedStrategy implements Strategy {
 				Task task = taskMap.get(ship.getId());
 				Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
 				if(move!=null) {
-					moveQueue.add(move);
 					if(blameMap.containsKey(ship.getId())) {
 						for(int shipId: blameMap.get(ship.getId())) {
 							queue.add(shipId);
@@ -203,9 +218,11 @@ public class AdvancedStrategy implements Strategy {
 						ThrustMove thrustMove = (ThrustMove)move;
 						obstacles.addObstacle(ObstacleType.PERMANENT, new DynamicObstacle(
 								new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), thrustMove.getThrustPlan()));
+						moveQueue.add(thrustMove, classId.getOrDefault(task.getClass(), 32));
 					}else {
 						obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(
 								new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
+						moveQueue.add(move);
 					}
 					obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
 				}
