@@ -15,33 +15,30 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
-	private static final double DETECTION_RADIUS_SQUARED = (2*GameConstants.SHIP_RADIUS+5*GameConstants.MAX_SPEED)*
-			(2*GameConstants.SHIP_RADIUS+5*GameConstants.MAX_SPEED);
 	private Ship ship;
 	private int counter;
-	private double closestDistanceSquared;
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
-		this.closestDistanceSquared = Double.MAX_VALUE;
-		int enemyShipCount = 0;
+		double closestFriendlyDistanceSquared = Double.MAX_VALUE;
+		double closestEnemyDistanceSquared = Double.MAX_VALUE;
 		for(Ship s: GameMap.INSTANCE.getShips()) {
+			if(s.getDockingStatus()!=DockingStatus.UNDOCKED) {
+				continue;
+			}
+			double distanceSquared = ship.getPosition().getDistanceSquared(s.getPosition());
 			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-				if(s.getDockingStatus()==DockingStatus.UNDOCKED) {
-					if(s.getPosition().getDistanceSquared(ship.getPosition())<=DETECTION_RADIUS_SQUARED) {
-						enemyShipCount--;
-					}
+				if(distanceSquared<closestFriendlyDistanceSquared) {
+					closestFriendlyDistanceSquared = distanceSquared;
 				}
 			}else {
-				double distanceSquared = s.getPosition().getDistanceSquared(ship.getPosition());
-				if(distanceSquared<=DETECTION_RADIUS_SQUARED) {
-					if(distanceSquared<closestDistanceSquared) {
-						closestDistanceSquared = distanceSquared;
-					}
-					enemyShipCount++;
+				if(distanceSquared<closestEnemyDistanceSquared) {
+					closestEnemyDistanceSquared = distanceSquared;
 				}
 			}
 		}
-		this.counter = enemyShipCount;
+		if(closestEnemyDistanceSquared-78.0<closestFriendlyDistanceSquared) { //estimation
+			counter = 1;
+		}
 	}
 	@Override
 	public void accept(Ship ship) {
@@ -57,7 +54,28 @@ public class DefendDockedShipTask implements Task {
 		//try greediest
 		if(ship.getPosition().getDistanceSquared(this.ship.getPosition())<=(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)*
 				(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)){
-			//TODO
+			int bestCandidateThrust = 0;
+			int bestCandidateAngle = 0;
+			double bestCandidateDistanceSquared = ship.getPosition().getDistanceSquared(this.ship.getPosition());
+			for(int i=1;i<=7;++i) {
+				for(int j=0;j<MathUtil.TAU_DEGREES;++j) {
+					if(pathfinder.getCandidate(i, j, ObstacleType.PERMANENT)==null) {
+						double distanceSquared = ship.getPosition().add(Pathfinder.velocityVector[i-1][j]).getDistanceSquared(this.ship.getPosition());
+						if(distanceSquared<bestCandidateDistanceSquared) {
+							bestCandidateDistanceSquared = distanceSquared;
+							bestCandidateThrust = i;
+							bestCandidateAngle = j;
+						}
+					}
+				}
+			}
+			Obstacle obstacle = pathfinder.getCandidate(bestCandidateThrust, bestCandidateAngle, ObstacleType.UNCERTAIN);
+			if(obstacle==null) {
+				return new ThrustMove(ship.getId(), new ThrustPlan(bestCandidateThrust, bestCandidateAngle));
+			}else {
+				blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+				return null;
+			}
 		}
 		//try candidates
 		for(int i=7;i>0;--i) {
@@ -95,7 +113,7 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		if(counter>0) {
-			return -(ship.getPosition().getDistanceSquared(this.ship.getPosition())*0.4)-closestDistanceSquared*0.7;
+			return -ship.getPosition().getDistanceSquared(this.ship.getPosition())*0.9;
 		}else {
 			return -Double.MAX_VALUE;
 		}
