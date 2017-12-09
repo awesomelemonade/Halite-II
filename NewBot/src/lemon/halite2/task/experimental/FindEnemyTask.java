@@ -17,7 +17,7 @@ import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class FindEnemyTask implements Task {
-	private static final double FACTOR = 3.5;
+	private static final double FACTOR = 7.5;
 	private Ship enemyShip;
 	private int counter;
 	public FindEnemyTask(Ship enemyShip) {

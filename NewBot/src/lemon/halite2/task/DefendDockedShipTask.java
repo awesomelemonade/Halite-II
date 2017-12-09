@@ -7,6 +7,7 @@ import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
+import hlt.Vector;
 import hlt.Ship.DockingStatus;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
@@ -17,8 +18,10 @@ import lemon.halite2.util.MathUtil;
 public class DefendDockedShipTask implements Task {
 	private Ship ship;
 	private int counter;
+	private Vector targetPosition;
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
+		Vector closestEnemyPosition = null;
 		double closestFriendlyDistanceSquared = Double.MAX_VALUE;
 		double closestEnemyDistanceSquared = Double.MAX_VALUE;
 		for(Ship s: GameMap.INSTANCE.getShips()) {
@@ -33,11 +36,13 @@ public class DefendDockedShipTask implements Task {
 			}else {
 				if(distanceSquared<closestEnemyDistanceSquared) {
 					closestEnemyDistanceSquared = distanceSquared;
+					closestEnemyPosition = s.getPosition();
 				}
 			}
 		}
-		if(closestEnemyDistanceSquared-78.0<closestFriendlyDistanceSquared) { //estimation
+		if(closestEnemyDistanceSquared-120.0<closestFriendlyDistanceSquared) { //estimation
 			counter = 1;
+			targetPosition = ship.getPosition().addPolar(1.15, ship.getPosition().getDirectionTowards(closestEnemyPosition));
 		}
 	}
 	@Override
@@ -47,7 +52,7 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles) {
-		double direction = ship.getPosition().getDirectionTowards(this.ship.getPosition());
+		double direction = ship.getPosition().getDirectionTowards(targetPosition);
 		double directionDegrees = Math.toDegrees(direction);
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;
@@ -113,7 +118,7 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		if(counter>0) {
-			return -ship.getPosition().getDistanceSquared(this.ship.getPosition())*0.9;
+			return -ship.getPosition().getDistanceSquared(targetPosition)*0.9;
 		}else {
 			return -Double.MAX_VALUE;
 		}
