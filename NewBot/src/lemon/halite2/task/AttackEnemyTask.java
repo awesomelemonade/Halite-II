@@ -1,5 +1,8 @@
 package lemon.halite2.task;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -22,20 +25,21 @@ public class AttackEnemyTask implements Task {
 	private Ship enemyShip;
 	private boolean activate;
 	private int counter;
+	private Set<Integer> allowedShips;
 	private int enemyCount;
 	public AttackEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
-		int friendlyCount = 0;
+		this.allowedShips = new HashSet<Integer>();
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
 			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
 				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-					friendlyCount++;
+					allowedShips.add(ship.getId());
 				}else {
 					enemyCount++;
 				}
 			}
 		}
-		this.activate = friendlyCount>enemyCount;
+		this.activate = allowedShips.size()>enemyCount;
 		this.counter = 0;
 	}
 	@Override
@@ -90,8 +94,10 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
-			if(((double)(counter+1))/((double)enemyCount)<=MAX_RATIO) {
-				return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
+			if(allowedShips.contains(ship.getId())) {
+				if(((double)(counter+1))/((double)enemyCount)<=MAX_RATIO) {
+					return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
+				}
 			}
 		}
 		return -Double.MAX_VALUE;
