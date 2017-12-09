@@ -11,6 +11,7 @@ import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
 import hlt.Vector;
+import hlt.Ship.DockingStatus;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
@@ -32,7 +33,7 @@ public class AttackEnemyTask implements Task {
 		this.allowedShips = new HashSet<Integer>();
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
 			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
-				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()&&ship.getDockingStatus()==DockingStatus.UNDOCKED) {
 					allowedShips.add(ship.getId());
 				}else {
 					enemyCount++;

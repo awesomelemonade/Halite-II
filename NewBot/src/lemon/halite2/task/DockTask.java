@@ -1,5 +1,8 @@
 package lemon.halite2.task;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
@@ -9,6 +12,8 @@ import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
+import hlt.Vector;
+import hlt.Ship.DockingStatus;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
@@ -16,24 +21,31 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DockTask implements Task {
-	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*2;
+	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*8)*
+			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*8);
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
-	private int acceptedShipCount;
 	private int dockSpaces;
-	public DockTask(Planet planet, int dockSpaces){
+	private Set<Integer> acceptedShips;
+	public DockTask(Planet planet){
 		this.planet = planet;
 		this.innerBufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS);
 		this.outerBufferSquared = (innerBufferSquared+GameConstants.MAX_SPEED);
 		innerBufferSquared = innerBufferSquared*innerBufferSquared;
 		outerBufferSquared = outerBufferSquared*outerBufferSquared;
-		acceptedShipCount = 0;
-		this.dockSpaces = dockSpaces;
+		acceptedShips = new HashSet<Integer>();
+		if(planet.isOwned()) {
+			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				this.dockSpaces = planet.getDockingSpots()-planet.getDockedShips().size();
+			}
+		}else {
+			this.dockSpaces = planet.getDockingSpots();
+		}
 	}
 	@Override
 	public void accept(Ship ship) {
-		acceptedShipCount++;
+		acceptedShips.add(ship.getId());
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -147,16 +159,37 @@ public class DockTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
-		if(acceptedShipCount>=dockSpaces) {
+		//check if enemy is closer than friendly, rather than a distSquared check?
+		if(acceptedShips.size()>=dockSpaces) {
 			return -Double.MAX_VALUE;
 		}
+		Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
+				planet.getPosition().getDirectionTowards(ship.getPosition()));
+		double closestFriendlyDistanceSquared = Double.MAX_VALUE;
+		double closestEnemyDistanceSquared = Double.MAX_VALUE;
 		for(Ship s: GameMap.INSTANCE.getShips()) {
-			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+			if(s.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				continue;
 			}
-			if(s.getPosition().getDistanceSquared(ship.getPosition())<(buffer+planet.getRadius())*(buffer+planet.getRadius())) {
-				return -Double.MAX_VALUE;
+			if(s.equals(ship)) {
+				continue;
 			}
+			if(acceptedShips.contains(s.getId())) {
+				continue;
+			}
+			double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
+			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				if(distanceSquared<closestFriendlyDistanceSquared) {
+					closestFriendlyDistanceSquared = distanceSquared;
+				}
+			}else {
+				if(distanceSquared<closestEnemyDistanceSquared) {
+					closestEnemyDistanceSquared = distanceSquared;
+				}
+			}
+		}
+		if(closestEnemyDistanceSquared<=DETECT_RADIUS_SQUARED&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
+			return -Double.MAX_VALUE;
 		}
 		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();
 		score = score*score;
