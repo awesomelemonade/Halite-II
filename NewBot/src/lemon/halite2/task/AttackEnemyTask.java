@@ -18,25 +18,29 @@ import lemon.halite2.util.MathUtil;
 public class AttackEnemyTask implements Task {
 	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*1.4)*
 			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED*1.4);
+	private static final double MAX_RATIO = 2.0;
 	private Ship enemyShip;
 	private boolean activate;
+	private int counter;
+	private int enemyCount;
 	public AttackEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
-		int count = 0;
+		int friendlyCount = 0;
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
 			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
 				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-					count++;
+					friendlyCount++;
 				}else {
-					count--;
+					enemyCount++;
 				}
 			}
 		}
-		this.activate = count>0;
+		this.activate = friendlyCount>enemyCount;
+		this.counter = 0;
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		counter++;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -86,7 +90,9 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
-			return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
+			if(((double)(counter+1))/((double)enemyCount)<=MAX_RATIO) {
+				return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
+			}
 		}
 		return -Double.MAX_VALUE;
 	}
