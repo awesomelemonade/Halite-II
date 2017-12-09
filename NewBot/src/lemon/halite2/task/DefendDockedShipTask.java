@@ -40,7 +40,7 @@ public class DefendDockedShipTask implements Task {
 				}
 			}
 		}
-		if(closestEnemyDistanceSquared-120.0<closestFriendlyDistanceSquared) { //estimation
+		if(closestEnemyDistanceSquared-256.0<closestFriendlyDistanceSquared) { //estimation
 			counter = 1;
 			targetPosition = ship.getPosition().addPolar(1.15, ship.getPosition().getDirectionTowards(closestEnemyPosition));
 		}
