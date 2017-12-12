@@ -37,7 +37,7 @@ public class FindProjectedDockedEnemyTask implements Task {
 				bestProjection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SHIP_RADIUS, planet.getPosition().getDirectionTowards(enemyShip.getPosition()));
 			}
 		}
-		if(bestProjection==null){
+		if(bestProjection!=null){
 			this.activate = true;
 			this.projection = bestProjection;
 			this.distance = bestDistance;

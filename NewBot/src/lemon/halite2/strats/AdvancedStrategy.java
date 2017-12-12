@@ -39,6 +39,7 @@ import lemon.halite2.task.experimental.AbandonTask;
 import lemon.halite2.task.experimental.FindEnemyTask;
 import lemon.halite2.task.experimental.LureEnemyTask;
 import lemon.halite2.task.experimental.RushTask;
+import lemon.halite2.task.projection.FindProjectedDockedEnemyTask;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
@@ -62,6 +63,8 @@ public class AdvancedStrategy implements Strategy {
 		classId.put(FindEnemyTask.class, 92);
 		classId.put(LureEnemyTask.class, 93);
 		classId.put(RushTask.class, 94);
+		//Projection
+		classId.put(FindProjectedDockedEnemyTask.class, 113);
 	}
 	public List<Integer> getClosestPlanets(Vector position){
 		List<Integer> planets = new ArrayList<Integer>();
@@ -103,7 +106,7 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
-					taskRequests.add(new FindEnemyTask(ship));
+					taskRequests.add(new FindProjectedDockedEnemyTask(ship));
 					taskRequests.add(new AttackEnemyTask(ship));
 				}else{
 					taskRequests.add(new AttackDockedEnemyTask(ship));

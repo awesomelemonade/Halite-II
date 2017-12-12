@@ -21,6 +21,8 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DockTask implements Task {
+	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED*8)*
+			(GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED*8);
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
@@ -186,7 +188,7 @@ public class DockTask implements Task {
 				}
 			}
 		}
-		if(closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
+		if(closestEnemyDistanceSquared<=DETECT_RADIUS_SQUARED&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
 			return -Double.MAX_VALUE;
 		}
 		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();
