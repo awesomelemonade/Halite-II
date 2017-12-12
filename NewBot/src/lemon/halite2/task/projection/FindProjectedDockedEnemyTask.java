@@ -127,8 +127,8 @@ public class FindProjectedDockedEnemyTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		if(activate){
-			double distanceSquared = projection.getDistanceSquared(ship.getPosition());
-			return -distanceSquared;
+			double distance = Math.max(projection.getDistanceTo(ship.getPosition())-this.distance, 0);
+			return -distance*distance;
 		}
 		return -Double.MAX_VALUE;
 	}
