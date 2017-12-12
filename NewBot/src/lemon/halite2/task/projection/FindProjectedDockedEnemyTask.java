@@ -25,19 +25,23 @@ public class FindProjectedDockedEnemyTask implements Task {
 	public FindProjectedDockedEnemyTask(Ship enemyShip){
 		this.enemyShip = enemyShip;
 		//Find Projection
+		Planet bestPlanet = null;
 		double bestDistance = Double.MAX_VALUE;
 		Vector bestProjection = null;
 		for(Planet planet: GameMap.INSTANCE.getPlanets()){
-			if(planet.isOwned()){
-				continue;
+			if(planet.isOwned()) {
+				if(planet.isFull()) {
+					continue;
+				}
 			}
 			double distance = planet.getPosition().getDistanceTo(enemyShip.getPosition())-planet.getRadius()-GameConstants.SHIP_RADIUS;
 			if(distance<bestDistance){
+				bestPlanet = planet;
 				bestDistance = distance;
 				bestProjection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SHIP_RADIUS, planet.getPosition().getDirectionTowards(enemyShip.getPosition()));
 			}
 		}
-		if(bestProjection!=null){
+		if(bestPlanet!=null&&(!bestPlanet.isOwned())){
 			this.activate = true;
 			this.projection = bestProjection;
 			this.distance = bestDistance;
@@ -127,8 +131,7 @@ public class FindProjectedDockedEnemyTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		if(activate){
-			double distance = Math.max(projection.getDistanceTo(ship.getPosition())-this.distance, 0);
-			return -distance*distance;
+			return -projection.getDistanceSquared(ship.getPosition());
 		}
 		return -Double.MAX_VALUE;
 	}
