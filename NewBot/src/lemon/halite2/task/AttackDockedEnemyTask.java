@@ -30,12 +30,9 @@ public class AttackDockedEnemyTask implements Task {
 			}
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
 				if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<=DETECTION_SQUARED) {
-					enemyShipPenalty+=10;
+					enemyShipPenalty+=25;
 				}
 			}
-		}
-		if(enemyShipPenalty==0) {
-			enemyShipPenalty = -(GameConstants.MAX_SPEED*3)*(GameConstants.MAX_SPEED*3);
 		}
 	}
 	@Override
