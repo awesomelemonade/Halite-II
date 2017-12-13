@@ -23,7 +23,7 @@ public class Geometry {
 		// Check if (x, y) is between start and end
 		if ((xTest||Math.abs(end.getX()-start.getX())<0.01)&&
 				(yTest||Math.abs(end.getY()-start.getY())<0.01)) {
-			return projection.getDistanceTo(point);
+			return projection.getDistanceSquared(point);
 		} else {
 			double i = point.getDistanceSquared(start);
 			double j = point.getDistanceSquared(end);

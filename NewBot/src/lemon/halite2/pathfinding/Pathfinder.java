@@ -31,8 +31,11 @@ public class Pathfinder {
 		this.exceptions = exceptions;
 		this.obstacles = obstacles;
 	}
-	public Vector getVector() {
+	public Vector getPosition() {
 		return position;
+	}
+	public double getBuffer() {
+		return buffer;
 	}
 	public Obstacle getStillCandidate(ObstacleType... types) {
 		for(ObstacleType type: types) {
