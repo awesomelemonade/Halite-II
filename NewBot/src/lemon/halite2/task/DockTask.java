@@ -21,6 +21,8 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DockTask implements Task {
+	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED*5)*
+			(GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED*5);
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
@@ -165,27 +167,56 @@ public class DockTask implements Task {
 		double closestFriendlyDistanceSquared = Double.MAX_VALUE;
 		double closestEnemyDistanceSquared = Double.MAX_VALUE;
 		for(Ship s: GameMap.INSTANCE.getShips()) {
-			if(s.getDockingStatus()!=DockingStatus.UNDOCKED) {
-				continue;
-			}
 			if(s.equals(ship)) {
 				continue;
 			}
 			if(acceptedShips.contains(s.getId())) {
 				continue;
 			}
-			double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
-			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()&&
+					s.getDockingStatus()!=DockingStatus.UNDOCKED) {
+				double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
 				if(distanceSquared<closestFriendlyDistanceSquared) {
 					closestFriendlyDistanceSquared = distanceSquared;
 				}
 			}else {
-				if(distanceSquared<closestEnemyDistanceSquared) {
+				if(s.getDockingStatus()==DockingStatus.UNDOCKED){
+					double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
+					if(distanceSquared<closestEnemyDistanceSquared) {
+						closestEnemyDistanceSquared = distanceSquared;
+					}
+				}else{
+					double distanceSquared = projectedLanding.getDistanceTo(s.getPosition())+
+							GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED;
+					distanceSquared = distanceSquared*distanceSquared;
+					if(distanceSquared<closestEnemyDistanceSquared) {
+						closestEnemyDistanceSquared = distanceSquared;
+					}
+				}
+			}
+		}
+		//Project ships that would be created in the future
+		for(Planet planet: GameMap.INSTANCE.getPlanets()){
+			if(!planet.isOwned()){
+				continue;
+			}
+			//calculate number of turns it would take to create a new ship
+			int turns = (int)Math.ceil(((double)planet.getRemainingProduction())/((double)GameConstants.BASE_PRODUCTION*planet.getDockedShips().size()));
+			Vector projection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
+					planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
+			double distanceSquared = projectedLanding.getDistanceTo(projection)+turns*GameConstants.MAX_SPEED;
+			distanceSquared = distanceSquared*distanceSquared;
+			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
+				if(distanceSquared<closestFriendlyDistanceSquared){
+					closestFriendlyDistanceSquared = distanceSquared;
+				}
+			}else{
+				if(distanceSquared<closestEnemyDistanceSquared){
 					closestEnemyDistanceSquared = distanceSquared;
 				}
 			}
 		}
-		if(closestEnemyDistanceSquared!=Double.MAX_VALUE&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
+		if(closestEnemyDistanceSquared<=DETECT_RADIUS_SQUARED&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
 			return -Double.MAX_VALUE;
 		}
 		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();

@@ -34,6 +34,9 @@ public class AttackDockedEnemyTask implements Task {
 				}
 			}
 		}
+		if(enemyShipPenalty==0) {
+			enemyShipPenalty = -(GameConstants.MAX_SPEED*3)*(GameConstants.MAX_SPEED*3);
+		}
 	}
 	@Override
 	public void accept(Ship ship) {
