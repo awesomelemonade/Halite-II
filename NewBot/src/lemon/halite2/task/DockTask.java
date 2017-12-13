@@ -21,8 +21,6 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DockTask implements Task {
-	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED*5)*
-			(GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED*5);
 	private Planet planet;
 	private double innerBufferSquared;
 	private double outerBufferSquared;
@@ -201,8 +199,28 @@ public class DockTask implements Task {
 				continue;
 			}
 			//calculate number of turns it would take to create a new ship
-			int turns = (int)Math.ceil(((double)(GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction()))/
-					((double)GameConstants.BASE_PRODUCTION*planet.getDockedShips().size()));
+			int remainingProduction = GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction();
+			int[] dockedProgress = new int[planet.getDockedShips().size()+1];
+			int turns = 0;
+			for(int i=0;i<dockedProgress.length-1;++i) {
+				Ship s = GameMap.INSTANCE.getShip(planet.getOwner(), planet.getDockedShips().get(i));
+				if(s.getDockingStatus()==DockingStatus.DOCKED) {
+					dockedProgress[i] = 0;
+				}else if(s.getDockingStatus()==DockingStatus.DOCKING) {
+					dockedProgress[i] = s.getDockingProgress();
+				}
+			}
+			dockedProgress[dockedProgress.length-1] = GameConstants.DOCK_TURNS+
+					(int)Math.ceil(((double)(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()))/7.0);
+			while(remainingProduction>0) {
+				for(int i=0;i<dockedProgress.length;++i) {
+					if(dockedProgress[i]>0) {
+						dockedProgress[i]--;
+					}else {
+						remainingProduction-=GameConstants.BASE_PRODUCTION;
+					}
+				}
+			}
 			Vector projection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
 					planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
 			double distanceSquared = projectedLanding.getDistanceTo(projection)+turns*GameConstants.MAX_SPEED;
@@ -217,7 +235,7 @@ public class DockTask implements Task {
 				}
 			}
 		}
-		if(closestEnemyDistanceSquared<=DETECT_RADIUS_SQUARED&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
+		if(closestEnemyDistanceSquared!=Double.MAX_VALUE&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
 			return -Double.MAX_VALUE;
 		}
 		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();
