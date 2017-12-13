@@ -201,7 +201,8 @@ public class DockTask implements Task {
 				continue;
 			}
 			//calculate number of turns it would take to create a new ship
-			int turns = (int)Math.ceil(((double)planet.getRemainingProduction())/((double)GameConstants.BASE_PRODUCTION*planet.getDockedShips().size()));
+			int turns = (int)Math.ceil(((double)(GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction()))/
+					((double)GameConstants.BASE_PRODUCTION*planet.getDockedShips().size()));
 			Vector projection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
 					planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
 			double distanceSquared = projectedLanding.getDistanceTo(projection)+turns*GameConstants.MAX_SPEED;

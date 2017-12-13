@@ -32,7 +32,7 @@ public class MetadataParser {
 		double radius = Double.parseDouble(metadata.pop());
 		int dockingSpots = Integer.parseInt(metadata.pop());
 		int currentProduction = Integer.parseInt(metadata.pop());
-		int remainingProduction = Integer.parseInt(metadata.pop());
+		metadata.pop(); //Deprecated - remainingProduction
 		int hasOwner = Integer.parseInt(metadata.pop());
 		int ownerCandidate = Integer.parseInt(metadata.pop());
 		int owner;
@@ -45,8 +45,7 @@ public class MetadataParser {
 		for (int i = 0; i < dockedShipCount; ++i) {
 			dockedShips.add(Integer.parseInt(metadata.pop()));
 		}
-		return new Planet(owner, id, new Vector(xPos, yPos), health, radius, dockingSpots, currentProduction,
-				remainingProduction, dockedShips);
+		return new Planet(owner, id, new Vector(xPos, yPos), health, radius, dockingSpots, currentProduction, dockedShips);
 	}
 	public static int parsePlayerNum(Metadata metadata) {
 		return Integer.parseInt(metadata.pop());
