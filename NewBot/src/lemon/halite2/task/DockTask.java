@@ -174,7 +174,7 @@ public class DockTask implements Task {
 				continue;
 			}
 			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()&&
-					s.getDockingStatus()!=DockingStatus.UNDOCKED) {
+					s.getDockingStatus()==DockingStatus.UNDOCKED) {
 				double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
 				if(distanceSquared<closestFriendlyDistanceSquared) {
 					closestFriendlyDistanceSquared = distanceSquared;
