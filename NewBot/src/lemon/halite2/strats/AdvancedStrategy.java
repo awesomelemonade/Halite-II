@@ -34,6 +34,7 @@ import lemon.halite2.task.BlameMap;
 import lemon.halite2.task.DefendDockedShipTask;
 import lemon.halite2.task.DockTask;
 import lemon.halite2.task.Task;
+import lemon.halite2.task.TaskManager;
 import lemon.halite2.task.WanderTask;
 import lemon.halite2.task.experimental.AbandonTask;
 import lemon.halite2.task.experimental.FindEnemyTask;
@@ -51,6 +52,8 @@ public class AdvancedStrategy implements Strategy {
 	public void init() {
 		//Initialize Pathfinder
 		Pathfinder.init();
+		//Initialize TaskManager
+		TaskManager.INSTANCE.init();
 		//Initialize classId for Chlorine Viewer
 		classId = new HashMap<Class<? extends Task>, Integer>();
 		classId.put(DockTask.class, 71);
@@ -85,31 +88,21 @@ public class AdvancedStrategy implements Strategy {
 	public void newTurn(MoveQueue moveQueue) {
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
-		//Define processList
+		//Define ships to be processed
 		List<Integer> undockedShips = new ArrayList<Integer>();
 		//Add Map Border Obstacle
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
-		//Calculate Tasks
-		List<Task> taskRequests = new ArrayList<Task>();
 		//Add Wander Task
-		taskRequests.add(new WanderTask());
-		for(Planet planet: GameMap.INSTANCE.getPlanets()){
-			taskRequests.add(new DockTask(planet));
-		}
+		TaskManager.INSTANCE.update();
 		for(Ship ship: GameMap.INSTANCE.getShips()){
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
-					taskRequests.add(new DefendDockedShipTask(ship));
 					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				}else {
 					undockedShips.add(ship.getId());
 				}
 			}else{
-				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
-					taskRequests.add(new FindProjectedDockedEnemyTask(ship));
-					taskRequests.add(new AttackEnemyTask(ship));
-				}else{
-					taskRequests.add(new AttackDockedEnemyTask(ship));
+				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
 					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
 				}
 			}
@@ -141,13 +134,13 @@ public class AdvancedStrategy implements Strategy {
 		}
 		Map<Integer, Task> taskMap = new HashMap<Integer, Task>();
 		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
-		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+taskRequests.size()+" tasks");
+		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
 		while(!undockedShips.isEmpty()) {
 			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
 			Task bestTask = null;
 			for(int shipId: undockedShips) {
-				for(Task task: taskRequests) {
+				for(Task task: TaskManager.INSTANCE.getTasks()) {
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
 					double score = task.getScore(ship);
 					if(score>bestScore) {
