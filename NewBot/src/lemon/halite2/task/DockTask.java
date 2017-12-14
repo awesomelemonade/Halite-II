@@ -220,6 +220,7 @@ public class DockTask implements Task {
 						remainingProduction-=GameConstants.BASE_PRODUCTION;
 					}
 				}
+				turns++;
 			}
 			Vector projection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
 					planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
