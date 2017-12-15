@@ -19,6 +19,7 @@ public class DefendDockedShipTask implements Task {
 	private Ship ship;
 	private int counter;
 	private Vector targetPosition;
+	private double priority;
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
 		Vector closestEnemyPosition = null;
@@ -43,6 +44,7 @@ public class DefendDockedShipTask implements Task {
 		if(closestEnemyDistanceSquared-256.0<closestFriendlyDistanceSquared) { //estimation
 			counter = 1;
 			targetPosition = ship.getPosition().addPolar(1.15, ship.getPosition().getDirectionTowards(closestEnemyPosition));
+			priority = closestEnemyDistanceSquared;
 		}
 	}
 	@Override
@@ -118,7 +120,7 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public double getScore(Ship ship) {
 		if(counter>0) {
-			return -ship.getPosition().getDistanceSquared(targetPosition)*0.9;
+			return -ship.getPosition().getDistanceSquared(targetPosition)*0.9-priority*0.3;
 		}else {
 			return -Double.MAX_VALUE;
 		}
