@@ -1,17 +1,16 @@
 package lemon.halite2.task;
 
 import hlt.GameConstants;
-import hlt.GameMap;
 import hlt.Move;
 import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
 import hlt.Vector;
-import hlt.Ship.DockingStatus;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
+import lemon.halite2.task.projection.Projection;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
@@ -22,29 +21,13 @@ public class DefendDockedShipTask implements Task {
 	private double priority;
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
-		Vector closestEnemyPosition = null;
-		double closestFriendlyDistanceSquared = Double.MAX_VALUE;
-		double closestEnemyDistanceSquared = Double.MAX_VALUE;
-		for(Ship s: GameMap.INSTANCE.getShips()) {
-			if(s.getDockingStatus()!=DockingStatus.UNDOCKED) {
-				continue;
-			}
-			double distanceSquared = ship.getPosition().getDistanceSquared(s.getPosition());
-			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-				if(distanceSquared<closestFriendlyDistanceSquared) {
-					closestFriendlyDistanceSquared = distanceSquared;
-				}
-			}else {
-				if(distanceSquared<closestEnemyDistanceSquared) {
-					closestEnemyDistanceSquared = distanceSquared;
-					closestEnemyPosition = s.getPosition();
-				}
-			}
-		}
-		if(closestEnemyDistanceSquared-256.0<closestFriendlyDistanceSquared) { //estimation
+		Projection projection = new Projection(ship.getPosition());
+		projection.calculate(s->true);
+		if(projection.getClosestEnemyDistanceSquared()-256.0<projection.getClosestFriendlyDistanceSquared()) { //estimation
 			counter = 1;
-			targetPosition = ship.getPosition().addPolar(1.15, ship.getPosition().getDirectionTowards(closestEnemyPosition));
-			priority = closestEnemyDistanceSquared;
+			targetPosition = ship.getPosition().addPolar(1.15,
+					ship.getPosition().getDirectionTowards(projection.getEnemySource()));
+			priority = projection.getClosestEnemyDistanceSquared();
 		}
 	}
 	@Override

@@ -15,10 +15,14 @@ public class Projection {
 	private Vector target;
 	private double closestFriendlyDistanceSquared;
 	private double closestEnemyDistanceSquared;
+	private Vector friendlySource;
+	private Vector enemySource;
 	public Projection(Vector target){
 		this.target = target;
 		this.closestFriendlyDistanceSquared = Double.MAX_VALUE;
 		this.closestEnemyDistanceSquared = Double.MAX_VALUE;
+		this.friendlySource = null;
+		this.enemySource = null;
 	}
 	public Vector getTarget(){
 		return target;
@@ -28,6 +32,12 @@ public class Projection {
 	}
 	public double getClosestEnemyDistanceSquared(){
 		return closestEnemyDistanceSquared;
+	}
+	public Vector getFriendlySource(){
+		return friendlySource;
+	}
+	public Vector getEnemySource(){
+		return enemySource;
 	}
 	public void calculate(Predicate<Ship> shipExceptions){
 		for(Ship s: GameMap.INSTANCE.getShips()) {
@@ -39,6 +49,7 @@ public class Projection {
 					double distanceSquared = target.getDistanceSquared(s.getPosition());
 					if(distanceSquared<closestFriendlyDistanceSquared) {
 						closestFriendlyDistanceSquared = distanceSquared;
+						friendlySource = s.getPosition();
 					}
 				}
 			}else {
@@ -46,6 +57,7 @@ public class Projection {
 					double distanceSquared = target.getDistanceSquared(s.getPosition());
 					if(distanceSquared<closestEnemyDistanceSquared) {
 						closestEnemyDistanceSquared = distanceSquared;
+						enemySource = s.getPosition();
 					}
 				}else{
 					double distanceSquared = target.getDistanceTo(s.getPosition())+
@@ -53,6 +65,7 @@ public class Projection {
 					distanceSquared = distanceSquared*distanceSquared;
 					if(distanceSquared<closestEnemyDistanceSquared) {
 						closestEnemyDistanceSquared = distanceSquared;
+						enemySource = s.getPosition();
 					}
 				}
 			}
@@ -78,7 +91,7 @@ public class Projection {
 			for(int i=0;i<acceptedShips.size();++i) {
 				Ship s = GameMap.INSTANCE.getMyPlayer().getShip(acceptedShips.get(i));
 				dockedProgress[planet.getDockedShips().size()+i] = GameConstants.DOCK_TURNS+
-						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.SPAWN_RADIUS, 0))/7.0);
+						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0))/7.0);
 			}
 			while(remainingProduction>0) {
 				for(int i=0;i<dockedProgress.length;++i) {
@@ -93,14 +106,17 @@ public class Projection {
 			Vector projection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
 					planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
 			double distanceSquared = target.getDistanceTo(projection)+turns*GameConstants.MAX_SPEED;
+			Vector source = target.addPolar(distanceSquared, target.getDirectionTowards(projection)); //Fake a source
 			distanceSquared = distanceSquared*distanceSquared;
 			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(distanceSquared<closestFriendlyDistanceSquared){
 					closestFriendlyDistanceSquared = distanceSquared;
+					friendlySource = source;
 				}
 			}else{
 				if(distanceSquared<closestEnemyDistanceSquared){
 					closestEnemyDistanceSquared = distanceSquared;
+					enemySource = source;
 				}
 			}
 		}
