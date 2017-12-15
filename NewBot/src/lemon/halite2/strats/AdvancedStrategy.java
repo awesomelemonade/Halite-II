@@ -132,7 +132,6 @@ public class AdvancedStrategy implements Strategy {
 					o->o.equals(uncertainObstacles.getValue(shipId))); //Weird use of Lambdas :)
 			pathfinders.put(shipId, pathfinder);
 		}
-		Map<Integer, Task> taskMap = new HashMap<Integer, Task>();
 		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
 		while(!undockedShips.isEmpty()) {
@@ -152,7 +151,7 @@ public class AdvancedStrategy implements Strategy {
 			}
 			DebugLog.log("Assign: "+bestShip.getId()+" - "+bestTask.getClass().getSimpleName());
 			bestTask.accept(bestShip);
-			taskMap.put(bestShip.getId(), bestTask);
+			TaskManager.INSTANCE.assignTask(bestShip.getId(), bestTask);
 			undockedShips.remove((Object)bestShip.getId());
 			queue.add(bestShip.getId());
 		}
@@ -187,7 +186,7 @@ public class AdvancedStrategy implements Strategy {
 			}
 			while(!queue.isEmpty()&&checkInterruption()) {
 				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(queue.poll());
-				Task task = taskMap.get(ship.getId());
+				Task task = TaskManager.INSTANCE.getTask(ship.getId());
 				Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
 				if(move!=null) {
 					if(blameMap.containsKey(ship.getId())) {

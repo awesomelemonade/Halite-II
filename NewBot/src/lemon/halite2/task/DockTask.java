@@ -45,6 +45,9 @@ public class DockTask implements Task {
 	public void accept(Ship ship) {
 		acceptedShips.add(ship.getId());
 	}
+	public List<Integer> getAcceptedShips(){
+		return acceptedShips;
+	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles) {
@@ -201,6 +204,7 @@ public class DockTask implements Task {
 			}
 			//calculate number of turns it would take to create a new ship
 			int remainingProduction = GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction();
+			List<Integer> acceptedShips = TaskManager.INSTANCE.getDockTask(planet.getId()).getAcceptedShips();
 			int[] dockedProgress = new int[planet.getDockedShips().size()+acceptedShips.size()+1];
 			int turns = 0;
 			for(int i=0;i<planet.getDockedShips().size();++i) {
