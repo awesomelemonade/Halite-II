@@ -1,7 +1,7 @@
 package lemon.halite2.task;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import hlt.DockMove;
 import hlt.GameConstants;
@@ -25,14 +25,14 @@ public class DockTask implements Task {
 	private double innerBufferSquared;
 	private double outerBufferSquared;
 	private int dockSpaces;
-	private Set<Integer> acceptedShips;
+	private List<Integer> acceptedShips;
 	public DockTask(Planet planet){
 		this.planet = planet;
 		this.innerBufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS);
 		this.outerBufferSquared = (innerBufferSquared+GameConstants.MAX_SPEED);
 		innerBufferSquared = innerBufferSquared*innerBufferSquared;
 		outerBufferSquared = outerBufferSquared*outerBufferSquared;
-		acceptedShips = new HashSet<Integer>();
+		acceptedShips = new ArrayList<Integer>();
 		if(planet.isOwned()) {
 			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				this.dockSpaces = planet.getDockingSpots()-planet.getDockedShips().size();
@@ -200,9 +200,9 @@ public class DockTask implements Task {
 			}
 			//calculate number of turns it would take to create a new ship
 			int remainingProduction = GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction();
-			int[] dockedProgress = new int[planet.getDockedShips().size()+1];
+			int[] dockedProgress = new int[planet.getDockedShips().size()+acceptedShips.size()+1];
 			int turns = 0;
-			for(int i=0;i<dockedProgress.length-1;++i) {
+			for(int i=0;i<planet.getDockedShips().size();++i) {
 				Ship s = GameMap.INSTANCE.getShip(planet.getOwner(), planet.getDockedShips().get(i));
 				if(s.getDockingStatus()==DockingStatus.DOCKED) {
 					dockedProgress[i] = 0;
@@ -210,8 +210,13 @@ public class DockTask implements Task {
 					dockedProgress[i] = s.getDockingProgress();
 				}
 			}
+			for(int i=0;i<acceptedShips.size();++i) {
+				Ship s = GameMap.INSTANCE.getMyPlayer().getShip(acceptedShips.get(i));
+				dockedProgress[planet.getDockedShips().size()+i] = GameConstants.DOCK_TURNS+
+						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.SPAWN_RADIUS, 0))/7.0);
+			}
 			dockedProgress[dockedProgress.length-1] = GameConstants.DOCK_TURNS+
-					(int)Math.ceil(((double)(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()))/7.0);
+					(int)Math.ceil(((double)Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.SPAWN_RADIUS, 0))/7.0);
 			while(remainingProduction>0) {
 				for(int i=0;i<dockedProgress.length;++i) {
 					if(dockedProgress[i]>0) {
