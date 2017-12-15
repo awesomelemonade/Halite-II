@@ -13,10 +13,10 @@ import hlt.Ship;
 import hlt.ThrustMove;
 import hlt.ThrustPlan;
 import hlt.Vector;
-import hlt.Ship.DockingStatus;
 import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
+import lemon.halite2.task.projection.Projection;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
@@ -165,88 +165,13 @@ public class DockTask implements Task {
 		}
 		Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
 				planet.getPosition().getDirectionTowards(ship.getPosition()));
-		double closestFriendlyDistanceSquared = Double.MAX_VALUE;
-		double closestEnemyDistanceSquared = Double.MAX_VALUE;
-		for(Ship s: GameMap.INSTANCE.getShips()) {
-			if(s.equals(ship)) {
-				continue;
-			}
-			if(acceptedShips.contains(s.getId())) {
-				continue;
-			}
-			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-				if(s.getDockingStatus()==DockingStatus.UNDOCKED) {
-					double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
-					if(distanceSquared<closestFriendlyDistanceSquared) {
-						closestFriendlyDistanceSquared = distanceSquared;
-					}
-				}
-			}else {
-				if(s.getDockingStatus()==DockingStatus.UNDOCKED){
-					double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
-					if(distanceSquared<closestEnemyDistanceSquared) {
-						closestEnemyDistanceSquared = distanceSquared;
-					}
-				}else{
-					double distanceSquared = projectedLanding.getDistanceTo(s.getPosition())+
-							GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED;
-					distanceSquared = distanceSquared*distanceSquared;
-					if(distanceSquared<closestEnemyDistanceSquared) {
-						closestEnemyDistanceSquared = distanceSquared;
-					}
-				}
-			}
-		}
-		//Project ships that would be created in the future
-		for(Planet planet: GameMap.INSTANCE.getPlanets()){
-			if(!planet.isOwned()){
-				continue;
-			}
-			//calculate number of turns it would take to create a new ship
-			int remainingProduction = GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction();
-			List<Integer> acceptedShips = TaskManager.INSTANCE.getDockTask(planet.getId()).getAcceptedShips();
-			int[] dockedProgress = new int[planet.getDockedShips().size()+acceptedShips.size()+1];
-			int turns = 0;
-			for(int i=0;i<planet.getDockedShips().size();++i) {
-				Ship s = GameMap.INSTANCE.getShip(planet.getOwner(), planet.getDockedShips().get(i));
-				if(s.getDockingStatus()==DockingStatus.DOCKED) {
-					dockedProgress[i] = 0;
-				}else if(s.getDockingStatus()==DockingStatus.DOCKING) {
-					dockedProgress[i] = s.getDockingProgress();
-				}
-			}
-			for(int i=0;i<acceptedShips.size();++i) {
-				Ship s = GameMap.INSTANCE.getMyPlayer().getShip(acceptedShips.get(i));
-				dockedProgress[planet.getDockedShips().size()+i] = GameConstants.DOCK_TURNS+
-						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.SPAWN_RADIUS, 0))/7.0);
-			}
-			dockedProgress[dockedProgress.length-1] = GameConstants.DOCK_TURNS+
-					(int)Math.ceil(((double)Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.SPAWN_RADIUS, 0))/7.0);
-			while(remainingProduction>0) {
-				for(int i=0;i<dockedProgress.length;++i) {
-					if(dockedProgress[i]>0) {
-						dockedProgress[i]--;
-					}else {
-						remainingProduction-=GameConstants.BASE_PRODUCTION;
-					}
-				}
-				turns++;
-			}
-			Vector projection = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
-					planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
-			double distanceSquared = projectedLanding.getDistanceTo(projection)+turns*GameConstants.MAX_SPEED;
-			distanceSquared = distanceSquared*distanceSquared;
-			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
-				if(distanceSquared<closestFriendlyDistanceSquared){
-					closestFriendlyDistanceSquared = distanceSquared;
-				}
-			}else{
-				if(distanceSquared<closestEnemyDistanceSquared){
-					closestEnemyDistanceSquared = distanceSquared;
-				}
-			}
-		}
-		if(closestEnemyDistanceSquared!=Double.MAX_VALUE&&closestEnemyDistanceSquared-120.0<=closestFriendlyDistanceSquared) {
+		Projection projection = new Projection(projectedLanding);
+		//Fake acceptance for projection calculation purposes
+		acceptedShips.add(ship.getId());
+		projection.calculate(s->s.equals(ship)||TaskManager.INSTANCE.isAssignedTask(s.getId()));
+		acceptedShips.remove((Object)ship.getId());
+		if(projection.getClosestEnemyDistanceSquared()!=Double.MAX_VALUE&&
+				projection.getClosestEnemyDistanceSquared()-120.0<=projection.getClosestFriendlyDistanceSquared()) {
 			return -Double.MAX_VALUE;
 		}
 		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();
