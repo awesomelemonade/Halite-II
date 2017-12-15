@@ -32,8 +32,11 @@ public class AttackEnemyTask implements Task {
 		this.enemyShip = enemyShip;
 		this.allowedShips = new HashSet<Integer>();
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
+			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
+				continue;
+			}
 			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
-				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()&&ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+				if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 					allowedShips.add(ship.getId());
 				}else {
 					enemyCount++;
@@ -95,10 +98,8 @@ public class AttackEnemyTask implements Task {
 	public double getScore(Ship ship) {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
-			if(allowedShips.contains(ship.getId())) {
-				if(((double)(counter+1))/((double)enemyCount)<=MAX_RATIO) {
-					return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
-				}
+			if(((double)(counter+1))/((double)enemyCount)<=MAX_RATIO) {
+				return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
 			}
 		}
 		return -Double.MAX_VALUE;
