@@ -22,7 +22,7 @@ public class DefendDockedShipTask implements Task {
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
 		Projection projection = new Projection(ship.getPosition());
-		projection.calculate(s->true);
+		projection.calculate(s->false);
 		if(projection.getClosestEnemyDistanceSquared()-256.0<projection.getClosestFriendlyDistanceSquared()) { //estimation
 			counter = 1;
 			targetPosition = ship.getPosition().addPolar(1.15,
