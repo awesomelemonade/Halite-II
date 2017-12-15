@@ -9,6 +9,7 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Ship;
 import hlt.Ship.DockingStatus;
+import lemon.halite2.task.experimental.FindEnemyTask;
 import lemon.halite2.task.projection.FindProjectedDockedEnemyTask;
 
 public enum TaskManager {
@@ -36,6 +37,7 @@ public enum TaskManager {
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
 					tasks.add(new FindProjectedDockedEnemyTask(ship));
+					tasks.add(new FindEnemyTask(ship));
 					tasks.add(new AttackEnemyTask(ship));
 				}else{
 					tasks.add(new AttackDockedEnemyTask(ship));
