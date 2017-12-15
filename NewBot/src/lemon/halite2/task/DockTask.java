@@ -171,11 +171,12 @@ public class DockTask implements Task {
 			if(acceptedShips.contains(s.getId())) {
 				continue;
 			}
-			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()&&
-					s.getDockingStatus()==DockingStatus.UNDOCKED) {
-				double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
-				if(distanceSquared<closestFriendlyDistanceSquared) {
-					closestFriendlyDistanceSquared = distanceSquared;
+			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				if(s.getDockingStatus()==DockingStatus.UNDOCKED) {
+					double distanceSquared = projectedLanding.getDistanceSquared(s.getPosition());
+					if(distanceSquared<closestFriendlyDistanceSquared) {
+						closestFriendlyDistanceSquared = distanceSquared;
+					}
 				}
 			}else {
 				if(s.getDockingStatus()==DockingStatus.UNDOCKED){
