@@ -13,7 +13,24 @@ public class Geometry {
 		double y = (a * (-b * point.getX() + a * point.getY()) - b * c) / (a * a + b * b);
 		return new Vector(x, y);
 	}
-	// Segment - Point Distance
+	/** Get point on segment closest to other point */
+	public static Vector segmentPoint(Vector start, Vector end, Vector point){
+		Vector projection = projectPointToLine(start, end, point);
+		boolean xTest = ((start.getX() <= projection.getX() && projection.getX() <= end.getX()) ||
+				(start.getX() >= projection.getX() && projection.getX() >= end.getX()));
+		boolean yTest = ((start.getY() <= projection.getY() && projection.getY() <= end.getY()) ||
+				(start.getY() >= projection.getY() && projection.getY() >= end.getY()));
+		// Check if (x, y) is between start and end
+		if ((xTest||Math.abs(end.getX()-start.getX())<0.01)&&
+				(yTest||Math.abs(end.getY()-start.getY())<0.01)) {
+			return projection;
+		} else {
+			double i = point.getDistanceSquared(start);
+			double j = point.getDistanceSquared(end);
+			return i < j ? start : end;
+		}
+	}
+	/** Segment Point Distance */
 	public static double segmentPointDistanceSquared(Vector start, Vector end, Vector point) {
 		Vector projection = projectPointToLine(start, end, point);
 		boolean xTest = ((start.getX() <= projection.getX() && projection.getX() <= end.getX()) ||
