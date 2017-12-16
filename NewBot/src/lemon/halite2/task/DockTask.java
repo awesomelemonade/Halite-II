@@ -1,7 +1,9 @@
 package lemon.halite2.task;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import hlt.DockMove;
 import hlt.GameConstants;
@@ -17,6 +19,7 @@ import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.task.projection.Projection;
+import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
@@ -26,6 +29,7 @@ public class DockTask implements Task {
 	private double outerBufferSquared;
 	private int dockSpaces;
 	private List<Integer> acceptedShips;
+	private Map<Integer, Projection> projections;
 	public DockTask(Planet planet){
 		this.planet = planet;
 		this.innerBufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS);
@@ -33,6 +37,7 @@ public class DockTask implements Task {
 		innerBufferSquared = innerBufferSquared*innerBufferSquared;
 		outerBufferSquared = outerBufferSquared*outerBufferSquared;
 		acceptedShips = new ArrayList<Integer>();
+		projections = new HashMap<Integer, Projection>();
 		if(planet.isOwned()) {
 			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				this.dockSpaces = planet.getDockingSpots()-planet.getDockedShips().size();
@@ -44,6 +49,7 @@ public class DockTask implements Task {
 	@Override
 	public void accept(Ship ship) {
 		acceptedShips.add(ship.getId());
+		ProjectionManager.INSTANCE.reserveProjection(projections.get(ship.getId()));
 	}
 	public List<Integer> getAcceptedShips(){
 		return acceptedShips;
@@ -177,11 +183,11 @@ public class DockTask implements Task {
 		if(enemyCount>2){
 			return -Double.MAX_VALUE;
 		}
-		Projection projection = new Projection(projectedLanding);
 		//Fake acceptance for projection calculation purposes
 		acceptedShips.add(ship.getId());
-		projection.calculate(s->s.equals(ship)||TaskManager.INSTANCE.isAssignedTask(s.getId()));
+		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding);
 		acceptedShips.remove((Object)ship.getId());
+		projections.put(ship.getId(), projection);
 		if(projection.getClosestEnemyDistanceSquared()!=Double.MAX_VALUE&&
 				projection.getClosestEnemyDistanceSquared()-120.0<=projection.getClosestFriendlyDistanceSquared()) {
 			return -Double.MAX_VALUE;

@@ -89,14 +89,16 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
+		//Update Managers
+		TaskManager.INSTANCE.update();
+		ProjectionManager.INSTANCE.update();
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Define ships to be processed
 		List<Integer> undockedShips = new ArrayList<Integer>();
 		//Add Map Border Obstacle
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
-		//Add Wander Task
-		TaskManager.INSTANCE.update();
+		//Add Ship Obstacles
 		for(Ship ship: GameMap.INSTANCE.getShips()){
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
