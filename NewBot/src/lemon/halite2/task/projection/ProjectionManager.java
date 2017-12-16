@@ -14,17 +14,20 @@ import hlt.Vector;
 import hlt.Ship.DockingStatus;
 import lemon.halite2.task.TaskManager;
 
-public class ProjectionManager {
+public enum ProjectionManager {
+	INSTANCE(GameMap.INSTANCE); // Singleton
 	private GameMap gameMap;
 	private Map<Integer, Vector> spawnPositions;
 	private Map<Integer, Integer> spawnCount;
 	private List<Integer> ships;
-	
-	public ProjectionManager(GameMap gameMap) {
+	private ProjectionManager(GameMap gameMap) {
 		this.gameMap = gameMap;
 		this.spawnPositions = new HashMap<Integer, Vector>();
 		this.spawnCount = new HashMap<Integer, Integer>();
 		this.ships = new ArrayList<Integer>();
+		
+	}
+	public void init(){
 		for(Planet planet: gameMap.getPlanets()){
 			Vector projectedSpawn = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
 					planet.getPosition().getDirectionTowards(gameMap.getCenterPosition()));

@@ -41,6 +41,7 @@ import lemon.halite2.task.experimental.FindEnemyTask;
 import lemon.halite2.task.experimental.LureEnemyTask;
 import lemon.halite2.task.experimental.RushTask;
 import lemon.halite2.task.projection.FindProjectedDockedEnemyTask;
+import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
 import lemon.halite2.util.MathUtil;
@@ -54,6 +55,8 @@ public class AdvancedStrategy implements Strategy {
 		Pathfinder.init();
 		//Initialize TaskManager
 		TaskManager.INSTANCE.init();
+		//Initialize ProjectionManager
+		ProjectionManager.INSTANCE.init();
 		//Initialize classId for Chlorine Viewer
 		classId = new HashMap<Class<? extends Task>, Integer>();
 		classId.put(DockTask.class, 71);
