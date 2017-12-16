@@ -165,6 +165,18 @@ public class DockTask implements Task {
 		}
 		Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
 				planet.getPosition().getDirectionTowards(ship.getPosition()));
+		int enemyCount = 0;
+		for(Ship s: GameMap.INSTANCE.getShips()){
+			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
+				continue;
+			}
+			if(s.getPosition().getDistanceSquared(ship.getPosition())<(GameConstants.MAX_SPEED*3)*(GameConstants.MAX_SPEED*3)){
+				enemyCount++;
+			}
+		}
+		if(enemyCount>2){
+			return -Double.MAX_VALUE;
+		}
 		Projection projection = new Projection(projectedLanding);
 		//Fake acceptance for projection calculation purposes
 		acceptedShips.add(ship.getId());
@@ -174,7 +186,7 @@ public class DockTask implements Task {
 				projection.getClosestEnemyDistanceSquared()-120.0<=projection.getClosestFriendlyDistanceSquared()) {
 			return -Double.MAX_VALUE;
 		}
-		double score = ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius();
+		double score = Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0);
 		score = score*score;
 		return -score;
 	}

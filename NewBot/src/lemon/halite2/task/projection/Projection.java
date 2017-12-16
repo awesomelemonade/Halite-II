@@ -15,14 +15,20 @@ public class Projection {
 	private Vector target;
 	private double closestFriendlyDistanceSquared;
 	private double closestEnemyDistanceSquared;
+	private int friendlySourceShipId;
+	private int enemySourceShipId;
 	private Vector friendlySource;
 	private Vector enemySource;
+	private boolean projectedFriendlySource;
+	private boolean projectedEnemySource;
 	public Projection(Vector target){
 		this.target = target;
 		this.closestFriendlyDistanceSquared = Double.MAX_VALUE;
 		this.closestEnemyDistanceSquared = Double.MAX_VALUE;
 		this.friendlySource = null;
 		this.enemySource = null;
+		this.projectedFriendlySource = false;
+		this.projectedEnemySource = false;
 	}
 	public Vector getTarget(){
 		return target;
@@ -39,6 +45,18 @@ public class Projection {
 	public Vector getEnemySource(){
 		return enemySource;
 	}
+	public int getFriendlySourceShipId(){
+		return friendlySourceShipId;
+	}
+	public int getEnemySourceShipId(){
+		return enemySourceShipId;
+	}
+	public boolean isProjectedFriendlySource(){
+		return projectedFriendlySource;
+	}
+	public boolean isProjectedEnemySource(){
+		return projectedEnemySource;
+	}
 	public void calculate(Predicate<Ship> shipExceptions){
 		for(Ship s: GameMap.INSTANCE.getShips()) {
 			if(shipExceptions.test(s)){
@@ -50,6 +68,8 @@ public class Projection {
 					if(distanceSquared<closestFriendlyDistanceSquared) {
 						closestFriendlyDistanceSquared = distanceSquared;
 						friendlySource = s.getPosition();
+						friendlySourceShipId = s.getId();
+						projectedFriendlySource = false;
 					}
 				}
 			}else {
@@ -58,6 +78,8 @@ public class Projection {
 					if(distanceSquared<closestEnemyDistanceSquared) {
 						closestEnemyDistanceSquared = distanceSquared;
 						enemySource = s.getPosition();
+						enemySourceShipId = s.getId();
+						projectedEnemySource = false;
 					}
 				}else{
 					double distanceSquared = target.getDistanceTo(s.getPosition())+
@@ -66,6 +88,8 @@ public class Projection {
 					if(distanceSquared<closestEnemyDistanceSquared) {
 						closestEnemyDistanceSquared = distanceSquared;
 						enemySource = s.getPosition();
+						enemySourceShipId = s.getId();
+						projectedEnemySource = false;
 					}
 				}
 			}
@@ -112,11 +136,15 @@ public class Projection {
 				if(distanceSquared<closestFriendlyDistanceSquared){
 					closestFriendlyDistanceSquared = distanceSquared;
 					friendlySource = source;
+					friendlySourceShipId = -1;
+					projectedFriendlySource = true;
 				}
 			}else{
 				if(distanceSquared<closestEnemyDistanceSquared){
 					closestEnemyDistanceSquared = distanceSquared;
 					enemySource = source;
+					enemySourceShipId = -1;
+					projectedEnemySource = true;
 				}
 			}
 		}

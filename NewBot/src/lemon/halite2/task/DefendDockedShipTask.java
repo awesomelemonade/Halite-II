@@ -12,27 +12,19 @@ import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.task.projection.Projection;
 import lemon.halite2.util.BiMap;
+import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
 	private Ship ship;
-	private int counter;
-	private Vector targetPosition;
-	private double priority;
+	private int targetShipId;
+	private Vector enemyPosition;
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
-		Projection projection = new Projection(ship.getPosition());
-		projection.calculate(s->false);
-		if(projection.getClosestEnemyDistanceSquared()-256.0<projection.getClosestFriendlyDistanceSquared()) { //estimation
-			counter = 1;
-			targetPosition = ship.getPosition().addPolar(1.15,
-					ship.getPosition().getDirectionTowards(projection.getEnemySource()));
-			priority = projection.getClosestEnemyDistanceSquared();
-		}
 	}
 	@Override
 	public void accept(Ship ship) {
-		counter--;
+		
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -102,8 +94,26 @@ public class DefendDockedShipTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
+		Projection projection = new Projection(ship.getPosition());
+		projection.calculate(s->TaskManager.INSTANCE.isAssignedTask(s.getId()));
+		if((!projection.isProjectedFriendlySource())&&
+				projection.getClosestEnemyDistanceSquared()-256.0<
+				projection.getClosestFriendlyDistanceSquared()) { //estimation
+			targetShipId = projection.getFriendlySourceShipId();
+			enemyPosition = projection.getEnemySource();
+		}else{
+			targetShipId = -1;
+		}
+		if(targetShipId==-1){
+			return -Double.MAX_VALUE;
+		}else{
+			return -ship.getPosition().getDistanceSquared(projection);
+		}
+		Vector projection;
+		double distanceSquared = Geometry.segmentPointDistanceSquared(this.ship.getPosition(), enemyPosition, ship.getPosition());
+		
 		if(counter>0) {
-			return -ship.getPosition().getDistanceSquared(targetPosition)*0.9-priority*0.3;
+			return -ship.getPosition().getDistanceSquared(projection);
 		}else {
 			return -Double.MAX_VALUE;
 		}
