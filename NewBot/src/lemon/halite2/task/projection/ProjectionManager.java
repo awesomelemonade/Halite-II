@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import hlt.GameConstants;
 import hlt.GameMap;
@@ -48,11 +49,14 @@ public enum ProjectionManager {
 					spawnCount.getOrDefault(projection.getFriendlySourcePlanetId(), 0)+1);
 		}
 	}
-	public Projection calculate(Vector target) {
+	public Projection calculate(Vector target, Predicate<Ship> shipExceptions) {
 		Projection projection = new Projection(target);
 		// Friendly Ships
 		for(int shipId: ships){
 			Ship ship = gameMap.getMyPlayer().getShip(shipId);
+			if(shipExceptions.test(ship)) {
+				continue;
+			}
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
 				projection.compareFriendlyShip(distanceSquared, ship.getId(), ship.getPosition());

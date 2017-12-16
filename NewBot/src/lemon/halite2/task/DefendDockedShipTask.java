@@ -11,25 +11,28 @@ import lemon.halite2.pathfinding.Obstacle;
 import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.task.projection.Projection;
+import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
 	private Ship ship;
-	private int targetShipId;
-	private Vector enemyPosition;
+	private Vector intersection;
+	private boolean accepted;
 	public DefendDockedShipTask(Ship ship) {
 		this.ship = ship;
+		this.intersection = null;
+		this.accepted = false;
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		accepted = true;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles) {
-		double direction = ship.getPosition().getDirectionTowards(targetPosition);
+		double direction = ship.getPosition().getDirectionTowards(intersection);
 		double directionDegrees = Math.toDegrees(direction);
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;
@@ -94,26 +97,17 @@ public class DefendDockedShipTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship) {
-		Projection projection = new Projection(ship.getPosition());
-		projection.calculate(s->TaskManager.INSTANCE.isAssignedTask(s.getId()));
-		if((!projection.isProjectedFriendlySource())&&
-				projection.getClosestEnemyDistanceSquared()-256.0<
-				projection.getClosestFriendlyDistanceSquared()) { //estimation
-			targetShipId = projection.getFriendlySourceShipId();
-			enemyPosition = projection.getEnemySource();
-		}else{
-			targetShipId = -1;
+		if(accepted) {
+			return - Double.MAX_VALUE;
 		}
-		if(targetShipId==-1){
+		Projection projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), s->false);
+		if(projection.getFriendlySourceShipId()!=ship.getId()) {
 			return -Double.MAX_VALUE;
-		}else{
-			return -ship.getPosition().getDistanceSquared(projection);
 		}
-		Vector projection;
-		double distanceSquared = Geometry.segmentPointDistanceSquared(this.ship.getPosition(), enemyPosition, ship.getPosition());
-		
-		if(counter>0) {
-			return -ship.getPosition().getDistanceSquared(projection);
+		if(projection.getClosestEnemyDistanceSquared()-256.0<
+				projection.getClosestFriendlyDistanceSquared()) { //estimation
+			this.intersection = Geometry.segmentPoint(this.ship.getPosition(), projection.getEnemySource(), projection.getFriendlySource());
+			return -intersection.getDistanceSquared(ship.getPosition());
 		}else {
 			return -Double.MAX_VALUE;
 		}

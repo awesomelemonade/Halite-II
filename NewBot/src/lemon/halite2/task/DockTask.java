@@ -185,7 +185,7 @@ public class DockTask implements Task {
 		}
 		//Fake acceptance for projection calculation purposes
 		acceptedShips.add(ship.getId());
-		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding);
+		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, s->s.getId()==ship.getId());
 		acceptedShips.remove((Object)ship.getId());
 		projections.put(ship.getId(), projection);
 		if(projection.getClosestEnemyDistanceSquared()!=Double.MAX_VALUE&&
