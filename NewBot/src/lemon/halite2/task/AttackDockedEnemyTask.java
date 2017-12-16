@@ -123,6 +123,6 @@ public class AttackDockedEnemyTask implements Task {
 		if(counter>2) {
 			score-=Math.pow(-score, (counter-2));
 		}
-		return score-enemyShipPenalty;
+		return Math.min(score-enemyShipPenalty, 0);
 	}
 }

@@ -13,7 +13,6 @@ import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.task.projection.Projection;
 import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
-import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
@@ -38,15 +37,15 @@ public class DefendDockedShipTask implements Task {
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;
 		//try greediest
-		if(ship.getPosition().getDistanceSquared(this.ship.getPosition())<=(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)*
+		if(ship.getPosition().getDistanceSquared(intersection)<=(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)*
 				(2*GameConstants.SHIP_RADIUS+GameConstants.MAX_SPEED)){
 			int bestCandidateThrust = 0;
 			int bestCandidateAngle = 0;
-			double bestCandidateDistanceSquared = ship.getPosition().getDistanceSquared(this.ship.getPosition());
+			double bestCandidateDistanceSquared = ship.getPosition().getDistanceSquared(intersection);
 			for(int i=1;i<=7;++i) {
 				for(int j=0;j<MathUtil.TAU_DEGREES;++j) {
 					if(pathfinder.getCandidate(i, j, ObstacleType.PERMANENT)==null) {
-						double distanceSquared = ship.getPosition().add(Pathfinder.velocityVector[i-1][j]).getDistanceSquared(this.ship.getPosition());
+						double distanceSquared = ship.getPosition().add(Pathfinder.velocityVector[i-1][j]).getDistanceSquared(intersection);
 						if(distanceSquared<bestCandidateDistanceSquared) {
 							bestCandidateDistanceSquared = distanceSquared;
 							bestCandidateThrust = i;
@@ -109,8 +108,18 @@ public class DefendDockedShipTask implements Task {
 		}
 		if(projection.getClosestEnemyDistanceSquared()-256.0<
 				projection.getClosestFriendlyDistanceSquared()) { //estimation
-			this.intersection = Geometry.segmentPoint(this.ship.getPosition(), projection.getEnemySource(), projection.getFriendlySource());
-			return 1.0/intersection.getDistanceSquared(ship.getPosition());
+			if(projection.getClosestFriendlyDistanceSquared()<projection.getClosestEnemyDistanceSquared()) {
+				double angle = MathUtil.angleBetweenRadians(projection.getEnemySource().getDirectionTowards(projection.getFriendlySource()),
+						projection.getEnemySource().getDirectionTowards(projection.getTarget()));
+				double magnitude = Math.sin(angle)/(Math.sin(Math.PI-2*angle)/
+						projection.getFriendlySource().getDistanceTo(projection.getEnemySource())); //Law of Sines
+				this.intersection = projection.getFriendlySource().addPolar(magnitude,
+						projection.getFriendlySource().getDirectionTowards(projection.getEnemySource())+angle);
+				return 1.0/(magnitude*magnitude);
+			}else {
+				this.intersection = projection.getTarget();
+				return 1.0/intersection.getDistanceSquared(ship.getPosition());
+			}
 		}else {
 			return -Double.MAX_VALUE;
 		}
