@@ -18,6 +18,7 @@ import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
 	private Ship ship;
+	private Projection projection;
 	private Vector intersection;
 	private boolean accepted;
 	public DefendDockedShipTask(Ship ship) {
@@ -95,19 +96,21 @@ public class DefendDockedShipTask implements Task {
 			return null;
 		}
 	}
+	public void updateProjection() {
+		projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), s->false); 
+	}
 	@Override
 	public double getScore(Ship ship) {
 		if(accepted) {
-			return - Double.MAX_VALUE;
+			return -Double.MAX_VALUE;
 		}
-		Projection projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), s->false);
 		if(projection.getFriendlySourceShipId()!=ship.getId()) {
 			return -Double.MAX_VALUE;
 		}
 		if(projection.getClosestEnemyDistanceSquared()-256.0<
 				projection.getClosestFriendlyDistanceSquared()) { //estimation
 			this.intersection = Geometry.segmentPoint(this.ship.getPosition(), projection.getEnemySource(), projection.getFriendlySource());
-			return -intersection.getDistanceSquared(ship.getPosition());
+			return 1.0/intersection.getDistanceSquared(ship.getPosition());
 		}else {
 			return -Double.MAX_VALUE;
 		}

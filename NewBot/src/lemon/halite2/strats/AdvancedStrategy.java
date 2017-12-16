@@ -48,9 +48,15 @@ import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
+	private Benchmark benchmark;
 	private Map<Class<? extends Task>, Integer> classId;
+	private Map<Class<? extends Task>, Long> taskTime;
 	@Override
 	public void init() {
+		//Initialize Benchmark
+		benchmark = new Benchmark();
+		//Initialize taskTime
+		taskTime = new HashMap<Class<? extends Task>, Long>();
 		//Initialize Pathfinder
 		Pathfinder.init();
 		//Initialize TaskManager
@@ -89,6 +95,8 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
+		//Clear taskTime
+		taskTime.clear();
 		//Update Managers
 		TaskManager.INSTANCE.update();
 		ProjectionManager.INSTANCE.update();
@@ -140,13 +148,20 @@ public class AdvancedStrategy implements Strategy {
 		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
 		while(!undockedShips.isEmpty()) {
+			benchmark.push();
+			for(DefendDockedShipTask task: TaskManager.INSTANCE.getDefendTasks()) {
+				task.updateProjection();
+			}
+			taskTime.put(DefendDockedShipTask.class, taskTime.getOrDefault(DefendDockedShipTask.class, 0L)+benchmark.pop());
 			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
 			Task bestTask = null;
 			for(int shipId: undockedShips) {
 				for(Task task: TaskManager.INSTANCE.getTasks()) {
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
+					benchmark.push();
 					double score = task.getScore(ship);
+					taskTime.put(task.getClass(), taskTime.getOrDefault(task.getClass(), 0L)+benchmark.pop());
 					if(score>bestScore) {
 						bestScore = score;
 						bestTask = task;
@@ -220,15 +235,11 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 		}while((!blameMap.isEmpty())&&checkInterruption());
-		if(Thread.currentThread().isInterrupted()){
-			DebugLog.log("Exiting Function: "+(benchmark.peek()/1000000.0));
+		for(Class<? extends Task> clazz: taskTime.keySet()) {
+			DebugLog.log("Scoring of "+clazz.getSimpleName()+" time: "+Benchmark.format(taskTime.get(clazz))+"s");
 		}
 	}
-	public static Benchmark benchmark;
 	public boolean checkInterruption() {
-		if(Thread.currentThread().isInterrupted()){
-			DebugLog.log("Received Interruption: "+(benchmark.peek()/1000000.0));
-		}
 		return !Thread.currentThread().isInterrupted();
 	}
 	public int countEnemyShips(Vector position, double buffer) {

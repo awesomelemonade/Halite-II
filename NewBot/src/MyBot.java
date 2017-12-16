@@ -22,7 +22,6 @@ public class MyBot {
 		}
 		try {
 			Benchmark benchmark = new Benchmark();
-			AdvancedStrategy.benchmark = benchmark;
 			benchmark.push();
 			Date currentDate = new Date();
 			Networking.initialize();
