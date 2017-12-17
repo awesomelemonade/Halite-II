@@ -1,75 +1,86 @@
 package lemon.halite2.task.projection;
 
+import java.util.Iterator;
+import java.util.TreeSet;
+
+import hlt.DebugLog;
 import hlt.Vector;
 
 public class Projection {
 	private Vector target;
 	private int size;
-	private ProjectionItem[] friendlyProjectionItems;
-	private ProjectionItem[] enemyProjectionItems;
+	private TreeSet<ProjectionItem> friendlyProjectionItems; //Cannot use "Set" because we need "set.last()"
+	private TreeSet<ProjectionItem> enemyProjectionItems;
 	public Projection(Vector target, int size){
 		this.target = target;
 		this.size = size;
-		this.friendlyProjectionItems = new ProjectionItem[size];
-		this.enemyProjectionItems = new ProjectionItem[size];
-		for(int i=0;i<size;++i) {
-			friendlyProjectionItems[i] = new ProjectionItem();
-			enemyProjectionItems[i] = new ProjectionItem();
-		}
+		friendlyProjectionItems = new TreeSet<ProjectionItem>();
+		enemyProjectionItems = new TreeSet<ProjectionItem>();
 	}
 	public boolean isSafe(int margin) {
-		for(int i=0;i<size;++i) {
-			if(enemyProjectionItems[i].getDistanceSquared()==Double.MAX_VALUE) {
+		Iterator<ProjectionItem> friendlyIterator = friendlyProjectionItems.iterator();
+		Iterator<ProjectionItem> enemyIterator = enemyProjectionItems.iterator();
+		while(friendlyIterator.hasNext()&&enemyIterator.hasNext()) {
+			ProjectionItem friendly = friendlyIterator.next();
+			ProjectionItem enemy = enemyIterator.next();
+			if(enemy.getDistanceSquared()==Double.MAX_VALUE) {
 				continue;
 			}
-			if(enemyProjectionItems[i].getDistanceSquared()-margin<friendlyProjectionItems[i].getDistanceSquared()) {
+			if(enemy.getDistanceSquared()-margin<friendly.getDistanceSquared()) {
 				return false;
 			}
+		}
+		return !enemyIterator.hasNext();
+	}
+	private boolean add(TreeSet<ProjectionItem> items, ProjectionItem item) {
+		//DebugLog.log((items.equals(friendlyProjectionItems)?"Friendly":"Enemy")+"Adding: "+item.toString());
+		if(items.size()>=size&&item.compareTo(items.last())>0) {
+			return false;
+		}
+		items.add(item);
+		if(items.size()>size) {
+			items.remove(items.last());
 		}
 		return true;
 	}
 	public boolean compareFriendlyShip(double distanceSquared, int shipId, Vector position) {
-		for(ProjectionItem item: friendlyProjectionItems) {
-			if(item.compareShip(distanceSquared, shipId, position)) {
-				return true;
-			}
-		}
-		return false;
+		return add(friendlyProjectionItems, new ProjectionItem(distanceSquared, shipId, -1, position));
 	}
 	public boolean compareEnemyShip(double distanceSquared, int shipId, Vector position) {
-		for(ProjectionItem item: enemyProjectionItems) {
-			if(item.compareShip(distanceSquared, shipId, position)) {
-				return true;
-			}
-		}
-		return false;
+		return add(enemyProjectionItems, new ProjectionItem(distanceSquared, shipId, -1, position));
 	}
 	public boolean compareFriendlyPlanet(double distanceSquared, int planetId, Vector position) {
-		for(ProjectionItem item: friendlyProjectionItems) {
-			if(item.comparePlanet(distanceSquared, planetId, position)) {
-				return true;
-			}
-		}
-		return false;
+		return add(friendlyProjectionItems, new ProjectionItem(distanceSquared, -1, planetId, position));
 	}
 	public boolean compareEnemyPlanet(double distanceSquared, int planetId, Vector position) {
-		for(ProjectionItem item: enemyProjectionItems) {
-			if(item.comparePlanet(distanceSquared, planetId, position)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	public ProjectionItem getFriendlyProjectionItem(int index) {
-		return friendlyProjectionItems[index];
-	}
-	public ProjectionItem getEnemyProjectionItem(int index) {
-		return enemyProjectionItems[index];
+		return add(enemyProjectionItems, new ProjectionItem(distanceSquared, -1, planetId, position));
 	}
 	public Vector getTarget(){
 		return target;
 	}
 	public int getSize() {
 		return size;
+	}
+	public TreeSet<ProjectionItem> getFriendlyProjectionItems(){
+		return friendlyProjectionItems;
+	}
+	public TreeSet<ProjectionItem> getEnemyProjectionItems(){
+		return enemyProjectionItems;
+	}
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append(String.format("Projection - Target=%s\n", target.toString()));
+		Iterator<ProjectionItem> friendlyIterator = friendlyProjectionItems.iterator();
+		Iterator<ProjectionItem> enemyIterator = enemyProjectionItems.iterator();
+		for(int i=0;i<size;++i) {
+			builder.append(String.format("\tFriendly=%s - Enemy=%s",
+					friendlyIterator.hasNext()?friendlyIterator.next().toString():"null",
+					enemyIterator.hasNext()?enemyIterator.next().toString():"null"));
+			if(i!=size-1) {
+				builder.append('\n');
+			}
+		}
+		return builder.toString();
 	}
 }

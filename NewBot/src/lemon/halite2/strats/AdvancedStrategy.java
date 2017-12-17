@@ -162,6 +162,7 @@ public class AdvancedStrategy implements Strategy {
 					benchmark.push();
 					double score = task.getScore(ship);
 					taskTime.put(task.getClass(), taskTime.getOrDefault(task.getClass(), 0L)+benchmark.pop());
+					//DebugLog.log(task.getClass().getSimpleName()+" Score: "+score);
 					if(score>bestScore) {
 						bestScore = score;
 						bestTask = task;

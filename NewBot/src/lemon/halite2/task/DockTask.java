@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import hlt.DebugLog;
 import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
@@ -188,6 +189,8 @@ public class DockTask implements Task {
 		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, 3, s->s.getId()==ship.getId());
 		acceptedShips.remove((Object)ship.getId());
 		projections.put(ship.getId(), projection);
+		//DebugLog.log("Dock Task: shipId="+ship.getId()+", planetId="+planet.getId());
+		//DebugLog.log("DockTask Projection: "+projection.toString());
 		if(!projection.isSafe(120)) {
 			return -Double.MAX_VALUE;
 		}

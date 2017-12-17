@@ -2,6 +2,7 @@ package lemon.halite2.task.projection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -41,16 +42,17 @@ public enum ProjectionManager {
 		}
 	}
 	public void reserveProjection(Projection projection){
-		for(int i=0;i<projection.getSize();++i) {
-			if(projection.getEnemyProjectionItem(i).getDistanceSquared()!=Double.MAX_VALUE) {
-				ProjectionItem item = projection.getFriendlyProjectionItem(i);
-				if(item.getSourceShipId()!=-1) {
-					ships.remove((Object)item.getSourceShipId());
-				}
-				if(item.getSourcePlanetId()!=-1) {
-					spawnCount.put(item.getSourcePlanetId(), spawnCount.getOrDefault(item.getSourcePlanetId(), 0)+1);
-				}
+		Iterator<ProjectionItem> friendlyIterator = projection.getFriendlyProjectionItems().iterator();
+		int enemyCount = projection.getEnemyProjectionItems().size();
+		while(friendlyIterator.hasNext()&&enemyCount>0) {
+			ProjectionItem item = friendlyIterator.next();
+			if(item.getSourceShipId()!=-1) {
+				ships.remove((Object)item.getSourceShipId());
 			}
+			if(item.getSourcePlanetId()!=-1) {
+				spawnCount.put(item.getSourcePlanetId(), spawnCount.getOrDefault(item.getSourcePlanetId(), 0)+1);
+			}
+			enemyCount--;
 		}
 	}
 	public Projection calculate(Vector target, int size, Predicate<Ship> shipExceptions) {
@@ -78,14 +80,14 @@ public enum ProjectionManager {
 		}
 		// Project ships that would be created in the future
 		for(Planet planet: gameMap.getPlanets()){
-			if(!planet.isOwned()){
-				continue;
-			}
 			// Calculate number of turns it would take to create a new ship
 			int remainingProduction = (spawnCount.getOrDefault(planet.getId(), 0)+1)*
 					GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction();
 			List<Integer> acceptedShips = TaskManager.INSTANCE.getDockTask(planet.getId()).getAcceptedShips();
 			int[] dockedProgress = new int[planet.getDockedShips().size()+acceptedShips.size()];
+			if(dockedProgress.length==0) {
+				continue;
+			}
 			int turns = 0;
 			for(int i=0;i<planet.getDockedShips().size();++i) {
 				Ship s = gameMap.getShip(planet.getOwner(), planet.getDockedShips().get(i));
@@ -115,7 +117,7 @@ public enum ProjectionManager {
 						planet.getPosition().getDirectionTowards(gameMap.getCenterPosition()));
 				double distanceSquared = target.getDistanceTo(projectedSpawn)+turns*GameConstants.MAX_SPEED;
 				distanceSquared = distanceSquared*distanceSquared;
-				if(planet.getOwner()==gameMap.getMyPlayerId()){
+				if((!planet.isOwned())||planet.getOwner()==gameMap.getMyPlayerId()){
 					if(projection.compareFriendlyPlanet(distanceSquared, planet.getId(), projectedSpawn)) {
 						remainingProduction+=GameConstants.TOTAL_PRODUCTION;
 					}

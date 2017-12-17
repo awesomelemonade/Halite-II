@@ -103,7 +103,7 @@ public class DefendDockedShipTask implements Task {
 		if(accepted) {
 			return -Double.MAX_VALUE;
 		}
-		if(projection.getFriendlyProjectionItem(0).getSourceShipId()!=ship.getId()) {
+		if(projection.getFriendlyProjectionItems().first().getSourceShipId()!=ship.getId()) {
 			return -Double.MAX_VALUE;
 		}
 		if(!projection.isSafe(256)) {
