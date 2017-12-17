@@ -2,7 +2,6 @@ package lemon.halite2.task.projection;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -39,20 +38,6 @@ public enum ProjectionManager {
 		spawnCount.clear();
 		for(Ship ship: gameMap.getMyPlayer().getShips()){
 			ships.add(ship.getId());
-		}
-	}
-	public void reserveProjection(Projection projection){
-		Iterator<ProjectionItem> friendlyIterator = projection.getFriendlyProjectionItems().iterator();
-		int enemyCount = projection.getEnemyProjectionItems().size();
-		while(friendlyIterator.hasNext()&&enemyCount>0) {
-			ProjectionItem item = friendlyIterator.next();
-			if(item.getSourceShipId()!=-1) {
-				ships.remove((Object)item.getSourceShipId());
-			}
-			if(item.getSourcePlanetId()!=-1) {
-				spawnCount.put(item.getSourcePlanetId(), spawnCount.getOrDefault(item.getSourcePlanetId(), 0)+1);
-			}
-			enemyCount--;
 		}
 	}
 	public Projection calculate(Vector target, int size, Predicate<Ship> shipExceptions) {

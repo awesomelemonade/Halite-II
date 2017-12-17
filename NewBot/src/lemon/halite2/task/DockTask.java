@@ -1,11 +1,8 @@
 package lemon.halite2.task;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import hlt.DebugLog;
 import hlt.DockMove;
 import hlt.GameConstants;
 import hlt.GameMap;
@@ -30,7 +27,6 @@ public class DockTask implements Task {
 	private double outerBufferSquared;
 	private int dockSpaces;
 	private List<Integer> acceptedShips;
-	private Map<Integer, Projection> projections;
 	public DockTask(Planet planet){
 		this.planet = planet;
 		this.innerBufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS);
@@ -38,7 +34,6 @@ public class DockTask implements Task {
 		innerBufferSquared = innerBufferSquared*innerBufferSquared;
 		outerBufferSquared = outerBufferSquared*outerBufferSquared;
 		acceptedShips = new ArrayList<Integer>();
-		projections = new HashMap<Integer, Projection>();
 		if(planet.isOwned()) {
 			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				this.dockSpaces = planet.getDockingSpots()-planet.getDockedShips().size();
@@ -50,7 +45,6 @@ public class DockTask implements Task {
 	@Override
 	public void accept(Ship ship) {
 		acceptedShips.add(ship.getId());
-		ProjectionManager.INSTANCE.reserveProjection(projections.get(ship.getId()));
 	}
 	public List<Integer> getAcceptedShips(){
 		return acceptedShips;
@@ -188,7 +182,6 @@ public class DockTask implements Task {
 		acceptedShips.add(ship.getId());
 		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, 3, s->s.getId()==ship.getId());
 		acceptedShips.remove((Object)ship.getId());
-		projections.put(ship.getId(), projection);
 		//DebugLog.log("Dock Task: shipId="+ship.getId()+", planetId="+planet.getId());
 		//DebugLog.log("DockTask Projection: "+projection.toString());
 		if(!projection.isSafe(120)) {

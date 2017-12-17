@@ -3,7 +3,6 @@ package lemon.halite2.task.projection;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-import hlt.DebugLog;
 import hlt.Vector;
 
 public class Projection {
@@ -23,9 +22,6 @@ public class Projection {
 		while(friendlyIterator.hasNext()&&enemyIterator.hasNext()) {
 			ProjectionItem friendly = friendlyIterator.next();
 			ProjectionItem enemy = enemyIterator.next();
-			if(enemy.getDistanceSquared()==Double.MAX_VALUE) {
-				continue;
-			}
 			if(enemy.getDistanceSquared()-margin<friendly.getDistanceSquared()) {
 				return false;
 			}
@@ -33,7 +29,6 @@ public class Projection {
 		return !enemyIterator.hasNext();
 	}
 	private boolean add(TreeSet<ProjectionItem> items, ProjectionItem item) {
-		//DebugLog.log((items.equals(friendlyProjectionItems)?"Friendly":"Enemy")+"Adding: "+item.toString());
 		if(items.size()>=size&&item.compareTo(items.last())>0) {
 			return false;
 		}
