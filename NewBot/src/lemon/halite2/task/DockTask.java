@@ -185,11 +185,10 @@ public class DockTask implements Task {
 		}
 		//Fake acceptance for projection calculation purposes
 		acceptedShips.add(ship.getId());
-		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, s->s.getId()==ship.getId());
+		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, 3, s->s.getId()==ship.getId());
 		acceptedShips.remove((Object)ship.getId());
 		projections.put(ship.getId(), projection);
-		if(projection.getClosestEnemyDistanceSquared()!=Double.MAX_VALUE&&
-				projection.getClosestEnemyDistanceSquared()-120.0<=projection.getClosestFriendlyDistanceSquared()) {
+		if(!projection.isSafe(120)) {
 			return -Double.MAX_VALUE;
 		}
 		double score = Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0);

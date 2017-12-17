@@ -96,26 +96,27 @@ public class DefendDockedShipTask implements Task {
 		}
 	}
 	public void updateProjection() {
-		projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), s->false); 
+		projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), 1, s->false); 
 	}
 	@Override
 	public double getScore(Ship ship) {
 		if(accepted) {
 			return -Double.MAX_VALUE;
 		}
-		if(projection.getFriendlySourceShipId()!=ship.getId()) {
+		if(projection.getFriendlyProjectionItem(0).getSourceShipId()!=ship.getId()) {
 			return -Double.MAX_VALUE;
 		}
-		if(projection.getClosestEnemyDistanceSquared()-256.0<
-				projection.getClosestFriendlyDistanceSquared()) { //estimation
-			if(projection.getClosestFriendlyDistanceSquared()<projection.getClosestEnemyDistanceSquared()) {
-				double angle = MathUtil.angleBetweenRadians(projection.getEnemySource().getDirectionTowards(projection.getFriendlySource()),
+		if(!projection.isSafe(256)) {
+			if(projection.isSafe(0)) {
+				/*double angle = MathUtil.angleBetweenRadians(projection.getEnemySource().getDirectionTowards(projection.getFriendlySource()),
 						projection.getEnemySource().getDirectionTowards(projection.getTarget()));
 				double magnitude = Math.sin(angle)/(Math.sin(Math.PI-2*angle)/
 						projection.getFriendlySource().getDistanceTo(projection.getEnemySource())); //Law of Sines
 				this.intersection = projection.getFriendlySource().addPolar(magnitude,
 						projection.getFriendlySource().getDirectionTowards(projection.getEnemySource())+angle);
-				return 1.0/(magnitude*magnitude);
+				return 1.0/(magnitude*magnitude);*/
+				this.intersection = projection.getTarget();
+				return 1.0/intersection.getDistanceSquared(ship.getPosition());
 			}else {
 				this.intersection = projection.getTarget();
 				return 1.0/intersection.getDistanceSquared(ship.getPosition());

@@ -4,82 +4,72 @@ import hlt.Vector;
 
 public class Projection {
 	private Vector target;
-	private double closestFriendlyDistanceSquared;
-	private double closestEnemyDistanceSquared;
-	private int friendlySourceShipId;
-	private int enemySourceShipId;
-	private int friendlySourcePlanetId;
-	private int enemySourcePlanetId;
-	private Vector friendlySource;
-	private Vector enemySource;
-	public Projection(Vector target){
+	private int size;
+	private ProjectionItem[] friendlyProjectionItems;
+	private ProjectionItem[] enemyProjectionItems;
+	public Projection(Vector target, int size){
 		this.target = target;
-		this.closestFriendlyDistanceSquared = Double.MAX_VALUE;
-		this.closestEnemyDistanceSquared = Double.MAX_VALUE;
-		this.friendlySourceShipId = -1;
-		this.enemySourceShipId = -1;
-		this.friendlySourcePlanetId = -1;
-		this.enemySourcePlanetId = -1;
-		this.friendlySource = null;
-		this.enemySource = null;
-	}
-	public void compareFriendlyShip(double distanceSquared, int shipId, Vector position) {
-		if(distanceSquared<closestFriendlyDistanceSquared) {
-			closestFriendlyDistanceSquared = distanceSquared;
-			friendlySourceShipId = shipId;
-			friendlySourcePlanetId = -1;
-			friendlySource = position;
+		this.size = size;
+		this.friendlyProjectionItems = new ProjectionItem[size];
+		this.enemyProjectionItems = new ProjectionItem[size];
+		for(int i=0;i<size;++i) {
+			friendlyProjectionItems[i] = new ProjectionItem();
+			enemyProjectionItems[i] = new ProjectionItem();
 		}
 	}
-	public void compareEnemyShip(double distanceSquared, int shipId, Vector position) {
-		if(distanceSquared<closestEnemyDistanceSquared) {
-			closestEnemyDistanceSquared = distanceSquared;
-			enemySourceShipId = shipId;
-			enemySourcePlanetId = -1;
-			enemySource = position;
+	public boolean isSafe(int margin) {
+		for(int i=0;i<size;++i) {
+			if(enemyProjectionItems[i].getDistanceSquared()==Double.MAX_VALUE) {
+				continue;
+			}
+			if(enemyProjectionItems[i].getDistanceSquared()-margin<friendlyProjectionItems[i].getDistanceSquared()) {
+				return false;
+			}
 		}
+		return true;
 	}
-	public void compareFriendlyPlanet(double distanceSquared, int planetId, Vector position) {
-		if(distanceSquared<closestFriendlyDistanceSquared) {
-			closestFriendlyDistanceSquared = distanceSquared;
-			friendlySourceShipId = -1;
-			friendlySourcePlanetId = planetId;
-			friendlySource = position;
+	public boolean compareFriendlyShip(double distanceSquared, int shipId, Vector position) {
+		for(ProjectionItem item: friendlyProjectionItems) {
+			if(item.compareShip(distanceSquared, shipId, position)) {
+				return true;
+			}
 		}
+		return false;
 	}
-	public void compareEnemyPlanet(double distanceSquared, int planetId, Vector position) {
-		if(distanceSquared<closestEnemyDistanceSquared) {
-			closestEnemyDistanceSquared = distanceSquared;
-			enemySourceShipId = -1;
-			enemySourcePlanetId = planetId;
-			enemySource = position;
+	public boolean compareEnemyShip(double distanceSquared, int shipId, Vector position) {
+		for(ProjectionItem item: enemyProjectionItems) {
+			if(item.compareShip(distanceSquared, shipId, position)) {
+				return true;
+			}
 		}
+		return false;
+	}
+	public boolean compareFriendlyPlanet(double distanceSquared, int planetId, Vector position) {
+		for(ProjectionItem item: friendlyProjectionItems) {
+			if(item.comparePlanet(distanceSquared, planetId, position)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	public boolean compareEnemyPlanet(double distanceSquared, int planetId, Vector position) {
+		for(ProjectionItem item: enemyProjectionItems) {
+			if(item.comparePlanet(distanceSquared, planetId, position)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	public ProjectionItem getFriendlyProjectionItem(int index) {
+		return friendlyProjectionItems[index];
+	}
+	public ProjectionItem getEnemyProjectionItem(int index) {
+		return enemyProjectionItems[index];
 	}
 	public Vector getTarget(){
 		return target;
 	}
-	public double getClosestFriendlyDistanceSquared(){
-		return closestFriendlyDistanceSquared;
-	}
-	public double getClosestEnemyDistanceSquared(){
-		return closestEnemyDistanceSquared;
-	}
-	public Vector getFriendlySource(){
-		return friendlySource;
-	}
-	public Vector getEnemySource(){
-		return enemySource;
-	}
-	public int getFriendlySourceShipId(){
-		return friendlySourceShipId;
-	}
-	public int getEnemySourceShipId(){
-		return enemySourceShipId;
-	}
-	public int getFriendlySourcePlanetId() {
-		return friendlySourcePlanetId;
-	}
-	public int getEnemySourcePlanetId() {
-		return enemySourcePlanetId;
+	public int getSize() {
+		return size;
 	}
 }

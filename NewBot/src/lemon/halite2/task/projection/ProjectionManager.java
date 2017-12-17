@@ -41,16 +41,20 @@ public enum ProjectionManager {
 		}
 	}
 	public void reserveProjection(Projection projection){
-		if(projection.getFriendlySourceShipId()!=-1){
-			ships.remove((Object)projection.getFriendlySourceShipId());
-		}
-		if(projection.getFriendlySourcePlanetId()!=-1){
-			spawnCount.put(projection.getFriendlySourcePlanetId(),
-					spawnCount.getOrDefault(projection.getFriendlySourcePlanetId(), 0)+1);
+		for(int i=0;i<projection.getSize();++i) {
+			if(projection.getEnemyProjectionItem(i).getDistanceSquared()!=Double.MAX_VALUE) {
+				ProjectionItem item = projection.getFriendlyProjectionItem(i);
+				if(item.getSourceShipId()!=-1) {
+					ships.remove((Object)item.getSourceShipId());
+				}
+				if(item.getSourcePlanetId()!=-1) {
+					spawnCount.put(item.getSourcePlanetId(), spawnCount.getOrDefault(item.getSourcePlanetId(), 0)+1);
+				}
+			}
 		}
 	}
-	public Projection calculate(Vector target, Predicate<Ship> shipExceptions) {
-		Projection projection = new Projection(target);
+	public Projection calculate(Vector target, int size, Predicate<Ship> shipExceptions) {
+		Projection projection = new Projection(target, size);
 		// Friendly Ships
 		for(int shipId: ships){
 			Ship ship = gameMap.getMyPlayer().getShip(shipId);
@@ -69,11 +73,6 @@ public enum ProjectionManager {
 			}
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
-				projection.compareEnemyShip(distanceSquared, ship.getId(), ship.getPosition());
-			}else{
-				double distanceSquared = target.getDistanceTo(ship.getPosition())+
-						GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED;
-				distanceSquared = distanceSquared*distanceSquared;
 				projection.compareEnemyShip(distanceSquared, ship.getId(), ship.getPosition());
 			}
 		}
@@ -102,23 +101,29 @@ public enum ProjectionManager {
 						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0))/7.0);
 			}
 			while(remainingProduction>0) {
-				for(int i=0;i<dockedProgress.length;++i) {
-					if(dockedProgress[i]>0) {
-						dockedProgress[i]--;
-					}else {
-						remainingProduction-=GameConstants.BASE_PRODUCTION;
+				while(remainingProduction>0) {
+					for(int i=0;i<dockedProgress.length;++i) {
+						if(dockedProgress[i]>0) {
+							dockedProgress[i]--;
+						}else {
+							remainingProduction-=GameConstants.BASE_PRODUCTION;
+						}
+					}
+					turns++;
+				}
+				Vector projectedSpawn = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
+						planet.getPosition().getDirectionTowards(gameMap.getCenterPosition()));
+				double distanceSquared = target.getDistanceTo(projectedSpawn)+turns*GameConstants.MAX_SPEED;
+				distanceSquared = distanceSquared*distanceSquared;
+				if(planet.getOwner()==gameMap.getMyPlayerId()){
+					if(projection.compareFriendlyPlanet(distanceSquared, planet.getId(), projectedSpawn)) {
+						remainingProduction+=GameConstants.TOTAL_PRODUCTION;
+					}
+				}else{
+					if(projection.compareEnemyPlanet(distanceSquared, planet.getId(), projectedSpawn)){
+						remainingProduction+=GameConstants.TOTAL_PRODUCTION;
 					}
 				}
-				turns++;
-			}
-			Vector projectedSpawn = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
-					planet.getPosition().getDirectionTowards(gameMap.getCenterPosition()));
-			double distanceSquared = target.getDistanceTo(projectedSpawn)+turns*GameConstants.MAX_SPEED;
-			distanceSquared = distanceSquared*distanceSquared;
-			if(planet.getOwner()==gameMap.getMyPlayerId()){
-				projection.compareFriendlyPlanet(distanceSquared, planet.getId(), projectedSpawn);
-			}else{
-				projection.compareEnemyPlanet(distanceSquared, planet.getId(), projectedSpawn);
 			}
 		}
 		return projection;

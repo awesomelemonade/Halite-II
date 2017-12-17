@@ -47,8 +47,8 @@ public enum TaskManager {
 				}
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
-					tasks.add(new FindProjectedDockedEnemyTask(ship));
-					tasks.add(new FindEnemyTask(ship));
+					//tasks.add(new FindProjectedDockedEnemyTask(ship));
+					//tasks.add(new FindEnemyTask(ship));
 					tasks.add(new AttackEnemyTask(ship));
 				}else{
 					tasks.add(new AttackDockedEnemyTask(ship));
