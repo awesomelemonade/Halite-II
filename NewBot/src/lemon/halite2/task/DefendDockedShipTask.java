@@ -96,7 +96,7 @@ public class DefendDockedShipTask implements Task {
 		}
 	}
 	public void updateProjection() {
-		projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), 1, s->false); 
+		projection = ProjectionManager.INSTANCE.calculate(this.ship.getPosition(), 1, s->TaskManager.INSTANCE.isAssignedTask(s.getId())); 
 	}
 	@Override
 	public double getScore(Ship ship) {

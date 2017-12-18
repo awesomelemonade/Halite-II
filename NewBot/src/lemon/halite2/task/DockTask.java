@@ -180,7 +180,7 @@ public class DockTask implements Task {
 		}
 		//Fake acceptance for projection calculation purposes
 		acceptedShips.add(ship.getId());
-		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, 3, s->s.getId()==ship.getId());
+		Projection projection = ProjectionManager.INSTANCE.calculate(projectedLanding, 3, s->s.getId()==ship.getId()||TaskManager.INSTANCE.isAssignedTask(s.getId()));
 		acceptedShips.remove((Object)ship.getId());
 		//DebugLog.log("Dock Task: shipId="+ship.getId()+", planetId="+planet.getId());
 		//DebugLog.log("DockTask Projection: "+projection.toString());
