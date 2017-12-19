@@ -3,7 +3,6 @@ package lemon.halite2.task;
 import java.util.HashMap;
 import java.util.Map;
 
-import hlt.DebugLog;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -48,10 +47,8 @@ public class DefendDockedShipTask implements Task {
 			double distanceSquared = enemyShip.getPosition().getDistanceSquared(dockedShip.getPosition());
 			Projection projection = ProjectionManager.INSTANCE.calculate(dockedShip.getPosition(), 1, s->false);
 			if(projection.getFriendlyProjectionItems().first().getDistanceSquared()>distanceSquared-72){
-				DebugLog.log(projection.toString());
 				intersection = enemyShip.getPosition();
 				greedyMode = true;
-				DebugLog.log("GreedyMode: "+enemyShip.getId()+" - "+dockedShip.getId());
 			}else {
 				enemyDirection = enemyShip.getPosition().getDirectionTowards(dockedShip.getPosition());
 				if(distanceSquared<GameConstants.MAX_SPEED*GameConstants.MAX_SPEED){
