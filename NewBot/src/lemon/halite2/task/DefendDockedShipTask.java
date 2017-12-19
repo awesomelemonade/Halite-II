@@ -3,6 +3,7 @@ package lemon.halite2.task;
 import java.util.HashMap;
 import java.util.Map;
 
+import hlt.DebugLog;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -25,6 +26,7 @@ public class DefendDockedShipTask implements Task {
 	private double enemyDirection;
 	private Vector enemyPropagated;
 	private boolean activate;
+	private boolean greedyMode;
 	private Vector intersection;
 	private Map<Integer, Double> intersectionDistances;
 	public DefendDockedShipTask(Ship enemyShip) {
@@ -41,13 +43,16 @@ public class DefendDockedShipTask implements Task {
 			}
 		}
 		this.activate = dockedShip!=null;
+		this.greedyMode = false;
 		if(activate){
 			double distanceSquared = enemyShip.getPosition().getDistanceSquared(dockedShip.getPosition());
 			Projection projection = ProjectionManager.INSTANCE.calculate(dockedShip.getPosition(), 1, s->false);
-			if(projection.getFriendlyProjectionItems().first().getDistanceSquared()<distanceSquared-72){
-				activate = false;
-			}
-			if(activate){
+			if(projection.getFriendlyProjectionItems().first().getDistanceSquared()>distanceSquared-72){
+				DebugLog.log(projection.toString());
+				intersection = enemyShip.getPosition();
+				greedyMode = true;
+				DebugLog.log("GreedyMode: "+enemyShip.getId()+" - "+dockedShip.getId());
+			}else {
 				enemyDirection = enemyShip.getPosition().getDirectionTowards(dockedShip.getPosition());
 				if(distanceSquared<GameConstants.MAX_SPEED*GameConstants.MAX_SPEED){
 					enemyPropagated = enemyShip.getPosition().addPolar(Math.sqrt(distanceSquared), enemyDirection);
@@ -59,7 +64,9 @@ public class DefendDockedShipTask implements Task {
 	}
 	@Override
 	public void accept(Ship ship) {
-		intersection = enemyPropagated.addPolar(intersectionDistances.get(ship.getId()), enemyDirection);
+		if(!greedyMode) {
+			intersection = enemyPropagated.addPolar(intersectionDistances.get(ship.getId()), enemyDirection);
+		}
 		activate = false;
 	}
 	@Override
@@ -133,13 +140,17 @@ public class DefendDockedShipTask implements Task {
 		if(!activate) {
 			return -Double.MAX_VALUE;
 		}
-		double theta = MathUtil.angleBetweenRadians(enemyDirection, enemyPropagated.getDirectionTowards(ship.getPosition()));
-		if(theta>=Math.PI/2) {
-			return -Double.MAX_VALUE;
+		if(greedyMode) {
+			return 1.0/ship.getPosition().getDistanceSquared(intersection);
+		}else {
+			double theta = MathUtil.angleBetweenRadians(enemyDirection, enemyPropagated.getDirectionTowards(ship.getPosition()));
+			if(theta>=Math.PI/2) {
+				return -Double.MAX_VALUE;
+			}
+			double distance = ship.getPosition().getDistanceTo(enemyPropagated);
+			double intersectionDistance = Math.sin(theta)/(Math.sin(Math.PI-2*theta)/distance);
+			intersectionDistances.put(ship.getId(), intersectionDistance);
+			return -intersectionDistance*intersectionDistance;
 		}
-		double distance = ship.getPosition().getDistanceTo(enemyPropagated);
-		double intersectionDistance = Math.sin(theta)/(Math.sin(Math.PI-2*theta)/distance);
-		intersectionDistances.put(ship.getId(), intersectionDistance);
-		return intersectionDistance;
 	}
 }

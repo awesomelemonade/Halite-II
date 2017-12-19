@@ -99,7 +99,7 @@ public class AttackEnemyTask implements Task {
 		//Only activate if density of ship of friendly is greater than enemy
 		if(activate) {
 			if(((double)(counter+1))/((double)enemyCount)<=MAX_RATIO) {
-				return -ship.getPosition().getDistanceSquared(enemyShip.getPosition())*0.9;
+				return 81.0/ship.getPosition().getDistanceSquared(enemyShip.getPosition());
 			}
 		}
 		return -Double.MAX_VALUE;

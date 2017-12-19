@@ -98,8 +98,8 @@ public class AdvancedStrategy implements Strategy {
 		//Clear taskTime
 		taskTime.clear();
 		//Update Managers
-		TaskManager.INSTANCE.update();
 		ProjectionManager.INSTANCE.update();
+		TaskManager.INSTANCE.update();
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Define ships to be processed
