@@ -1,47 +1,28 @@
 package lemon.halite2.task.experimental;
 
 import hlt.GameConstants;
-import hlt.GameMap;
 import hlt.Move;
-import hlt.Planet;
+import hlt.RoundPolicy;
 import hlt.Ship;
-import hlt.Vector;
+import hlt.ThrustMove;
+import hlt.ThrustPlan;
 import lemon.halite2.pathfinding.Obstacle;
+import lemon.halite2.pathfinding.ObstacleType;
 import lemon.halite2.pathfinding.Pathfinder;
 import lemon.halite2.task.BlameMap;
 import lemon.halite2.task.Task;
+import lemon.halite2.task.projection.Projection;
+import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
+import lemon.halite2.util.MathUtil;
 
 public class RushTask implements Task {
-	private static final double buffer = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+10*GameConstants.MAX_SPEED;
-	private boolean activate;
-	private Planet targetPlanet;
-	public RushTask(int teamId) {
-		activate = GameMap.INSTANCE.getTurnNumber()<40;
-		if(!activate) {
-			return;
-		}
-		double sumX = 0;
-		double sumY = 0;
-		double count = 0;
-		for(Ship ship: GameMap.INSTANCE.getShips()) {
-			if(ship.getOwner()==teamId) {
-				sumX+=ship.getPosition().getX();
-				sumY+=ship.getPosition().getY();
-				count++;
-			}
-		}
-		Vector average = new Vector(sumX/count, sumY/count);
-		double bestDistance = Double.MAX_VALUE;
-		Planet bestPlanet = null;
-		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
-			double distance = average.getDistanceTo(planet.getPosition())-planet.getRadius();
-			if(distance<bestDistance) {
-				bestDistance = distance;
-				bestPlanet = planet;
-			}
-		}
-		this.targetPlanet = bestPlanet;
+	private Ship dockedEnemy;
+	private double distanceSquared;
+	public RushTask(Ship dockedEnemy) {
+		this.dockedEnemy = dockedEnemy;
+		Projection projection = ProjectionManager.INSTANCE.calculate(dockedEnemy.getPosition(), 1, s->false);
+		distanceSquared = projection.getEnemyProjectionItems().first().getDistanceSquared()-4*GameConstants.MAX_SPEED*GameConstants.MAX_SPEED;
 	}
 	@Override
 	public void accept(Ship ship) {
@@ -50,17 +31,50 @@ public class RushTask implements Task {
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles) {
-		// TODO Auto-generated method stub
-		return null;
+		double direction = ship.getPosition().getDirectionTowards(dockedEnemy.getPosition());
+		double directionDegrees = Math.toDegrees(direction);
+		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
+		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;
+		//try candidates
+		for(int i=7;i>0;--i) {
+			for(int j=0;j<=MathUtil.PI_DEGREES;++j) {
+				int candidateA = MathUtil.normalizeDegrees(roundedDegrees+j*preferredSign);
+				int candidateB = MathUtil.normalizeDegrees(roundedDegrees-j*preferredSign);
+				if(pathfinder.getCandidate(i, candidateA, ObstacleType.PERMANENT)==null) {
+					Obstacle obstacle = pathfinder.getCandidate(i, candidateA, ObstacleType.UNCERTAIN);
+					if(obstacle==null) {
+						return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateA));
+					}else {
+						blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+						return null;
+					}
+				}
+				if(pathfinder.getCandidate(i, candidateB, ObstacleType.PERMANENT)==null) {
+					Obstacle obstacle = pathfinder.getCandidate(i, candidateB, ObstacleType.UNCERTAIN);
+					if(obstacle==null) {
+						return new ThrustMove(ship.getId(), new ThrustPlan(i, candidateB));
+					}else {
+						blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+						return null;
+					}
+				}
+			}
+		}
+		Obstacle obstacle = pathfinder.getStillCandidate(ObstacleType.UNCERTAIN);
+		if(obstacle==null) {
+			return new ThrustMove(ship.getId(), new ThrustPlan(0, 0));
+		}else {
+			blameMap.add(uncertainObstacles.getKey(obstacle), ship.getId());
+			return null;
+		}
 	}
 	@Override
 	public double getScore(Ship ship) {
-		if(!activate) {
+		double distanceSquared = ship.getPosition().getDistanceSquared(dockedEnemy.getPosition());
+		if(distanceSquared<this.distanceSquared) {
+			return 1.0/distanceSquared;
+		}else {
 			return -Double.MAX_VALUE;
 		}
-		if(ship.getPosition().getDistanceSquared(targetPlanet.getPosition())<buffer*buffer) {
-			return -Double.MAX_VALUE;
-		}
-		return -Double.MAX_VALUE;
 	}
 }
