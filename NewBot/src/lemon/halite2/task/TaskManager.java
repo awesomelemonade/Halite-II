@@ -16,19 +16,16 @@ public enum TaskManager {
 	INSTANCE;
 	private List<Task> tasks;
 	private Map<Integer, DockTask> dockTasks;
-	private List<DefendDockedShipTask> defendTasks;
 	private Map<Integer, Task> taskMap;
 	public void init() {
 		tasks = new ArrayList<Task>();
 		dockTasks = new HashMap<Integer, DockTask>();
-		defendTasks = new ArrayList<DefendDockedShipTask>();
 		taskMap = new HashMap<Integer, Task>();
 	}
 	public void clear(){
 		tasks.clear();
 		dockTasks.clear();
 		taskMap.clear();
-		defendTasks.clear();
 	}
 	public void update() {
 		clear();
@@ -40,16 +37,13 @@ public enum TaskManager {
 		}
 		for(Ship ship: GameMap.INSTANCE.getShips()){
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
-				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
-					DefendDockedShipTask task = new DefendDockedShipTask(ship);
-					defendTasks.add(task);
-					tasks.add(task);
-				}
+				
 			}else{
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
 					tasks.add(new FindProjectedDockedEnemyTask(ship));
-					//tasks.add(new FindEnemyTask(ship));
+					tasks.add(new FindEnemyTask(ship));
 					tasks.add(new AttackEnemyTask(ship));
+					tasks.add(new DefendDockedShipTask(ship));
 				}else{
 					tasks.add(new AttackDockedEnemyTask(ship));
 				}
@@ -58,9 +52,6 @@ public enum TaskManager {
 	}
 	public DockTask getDockTask(int planetId){
 		return dockTasks.get(planetId);
-	}
-	public List<DefendDockedShipTask> getDefendTasks(){
-		return defendTasks;
 	}
 	public void assignTask(int shipId, Task task){
 		taskMap.put(shipId, task);

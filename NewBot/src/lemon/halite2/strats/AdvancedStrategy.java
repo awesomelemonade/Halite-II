@@ -149,9 +149,6 @@ public class AdvancedStrategy implements Strategy {
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
 		while(!undockedShips.isEmpty()) {
 			benchmark.push();
-			for(DefendDockedShipTask task: TaskManager.INSTANCE.getDefendTasks()) {
-				task.updateProjection();
-			}
 			taskTime.put(DefendDockedShipTask.class, taskTime.getOrDefault(DefendDockedShipTask.class, 0L)+benchmark.pop());
 			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
