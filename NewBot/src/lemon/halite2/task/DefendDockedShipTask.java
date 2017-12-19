@@ -24,6 +24,8 @@ public class DefendDockedShipTask implements Task {
 	private Ship dockedShip;
 	private double enemyDirection;
 	private Vector enemyPropagated;
+	private double propagatedDistance;
+	private double remainingDistance;
 	private boolean activate;
 	private boolean greedyMode;
 	private Vector intersection;
@@ -44,16 +46,20 @@ public class DefendDockedShipTask implements Task {
 		this.activate = dockedShip!=null;
 		this.greedyMode = false;
 		if(activate){
-			double distanceSquared = enemyShip.getPosition().getDistanceSquared(dockedShip.getPosition());
+			double distance = enemyShip.getPosition().getDistanceTo(dockedShip.getPosition());
 			Projection projection = ProjectionManager.INSTANCE.calculate(dockedShip.getPosition(), 1, s->false);
-			if(projection.getFriendlyProjectionItems().first().getDistanceSquared()>distanceSquared-72){
-				intersection = enemyShip.getPosition();
+			if(Math.sqrt(projection.getFriendlyProjectionItems().first().getDistanceSquared())>distance-GameConstants.MAX_SPEED){
+				intersection = dockedShip.getPosition();
 				greedyMode = true;
 			}else {
 				enemyDirection = enemyShip.getPosition().getDirectionTowards(dockedShip.getPosition());
-				if(distanceSquared<GameConstants.MAX_SPEED*GameConstants.MAX_SPEED){
-					enemyPropagated = enemyShip.getPosition().addPolar(Math.sqrt(distanceSquared), enemyDirection);
+				if(distance<GameConstants.MAX_SPEED){
+					propagatedDistance = distance;
+					remainingDistance = 0;
+					enemyPropagated = enemyShip.getPosition().addPolar(propagatedDistance, enemyDirection);
 				}else{
+					propagatedDistance = GameConstants.MAX_SPEED;
+					remainingDistance = distance-GameConstants.MAX_SPEED;
 					enemyPropagated = enemyShip.getPosition().addPolar(7, enemyDirection);
 				}
 			}
@@ -146,6 +152,9 @@ public class DefendDockedShipTask implements Task {
 			}
 			double distance = ship.getPosition().getDistanceTo(enemyPropagated);
 			double intersectionDistance = Math.sin(theta)/(Math.sin(Math.PI-2*theta)/distance);
+			if(intersectionDistance>remainingDistance) {
+				return -Double.MAX_VALUE;
+			}
 			intersectionDistances.put(ship.getId(), intersectionDistance);
 			return -intersectionDistance*intersectionDistance;
 		}
