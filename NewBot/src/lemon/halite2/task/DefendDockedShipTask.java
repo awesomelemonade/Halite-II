@@ -25,6 +25,7 @@ public class DefendDockedShipTask implements Task {
 	private double enemyDistance;
 	private boolean activate;
 	public DefendDockedShipTask(Ship enemyShip) {
+		this.enemyShip = enemyShip;
 		double closestDistanceSquared = Double.MAX_VALUE;
 		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
