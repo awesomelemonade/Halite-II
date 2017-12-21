@@ -46,7 +46,7 @@ public enum TaskManager {
 					tasks.add(new AttackEnemyTask(ship));
 					tasks.add(new DefendDockedShipTask(ship));
 				}else{
-					tasks.add(new AttackDockedEnemyTask(ship));
+					//tasks.add(new AttackDockedEnemyTask(ship));
 					tasks.add(new RushTask(ship));
 				}
 			}
