@@ -37,18 +37,6 @@ public class DockTask implements Task {
 		if(planet.isOwned()) {
 			if(planet.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
 				this.dockSpaces = planet.getDockingSpots()-planet.getDockedShips().size();
-				for(int shipId: planet.getDockedShips()) {
-					Vector position = GameMap.INSTANCE.getMyPlayer().getShip(shipId).getPosition();
-					for(Ship s: GameMap.INSTANCE.getShips()) {
-						if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-							continue;
-						}
-						if(s.getPosition().getDistanceSquared(position)<(GameConstants.MAX_SPEED*3)*(GameConstants.MAX_SPEED*3)){
-							dockSpaces = 0;
-							return;
-						}
-					}
-				}
 			}
 		}else {
 			this.dockSpaces = planet.getDockingSpots();
@@ -176,7 +164,7 @@ public class DockTask implements Task {
 		if(acceptedShips.size()>=dockSpaces) {
 			return -Double.MAX_VALUE;
 		}
-		/*Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
+		Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
 				planet.getPosition().getDirectionTowards(ship.getPosition()));
 		int enemyCount = 0;
 		for(Ship s: GameMap.INSTANCE.getShips()){
@@ -196,10 +184,10 @@ public class DockTask implements Task {
 		acceptedShips.remove((Object)ship.getId());
 		//DebugLog.log("Dock Task: shipId="+ship.getId()+", planetId="+planet.getId());
 		//DebugLog.log("DockTask Projection: "+projection.toString());
-		if(!projection.isSafe(120)) {
+		if(!projection.isSafe(-120)) {
 			return -Double.MAX_VALUE;
-		}*/
-		Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
+		}
+		/*Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
 				planet.getPosition().getDirectionTowards(ship.getPosition()));
 		for(Ship s: GameMap.INSTANCE.getShips()){
 			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
@@ -208,7 +196,7 @@ public class DockTask implements Task {
 			if(s.getPosition().getDistanceSquared(projectedLanding)<(GameConstants.MAX_SPEED*3)*(GameConstants.MAX_SPEED*3)){
 				return -Double.MAX_VALUE;
 			}
-		}
+		}*/
 		double score = Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0);
 		score = score*score;
 		return -score;

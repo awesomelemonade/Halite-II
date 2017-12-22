@@ -27,7 +27,7 @@ public class RushTask implements Task {
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		distanceSquared = 0;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,

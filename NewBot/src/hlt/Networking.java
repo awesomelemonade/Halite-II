@@ -36,6 +36,7 @@ public class Networking {
 	}
 	public static void send(String string) {
 		writer.print(string);
+		writer.flush();
 	}
 	public static void flush() {
 		writer.println();

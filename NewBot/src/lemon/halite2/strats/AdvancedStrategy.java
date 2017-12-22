@@ -95,13 +95,16 @@ public class AdvancedStrategy implements Strategy {
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
+		benchmark.push();
 		//Clear taskTime
 		taskTime.clear();
 		//Update Managers
 		ProjectionManager.INSTANCE.update();
 		TaskManager.INSTANCE.update();
 		//Preprocess Tasks
+		benchmark.push();
 		AttackEnemyTask.newTurn();
+		DebugLog.log("AttackEnemyTask Preprocess: "+Benchmark.format(benchmark.pop())+"s");
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Define ships to be processed
@@ -149,7 +152,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
-		while(!undockedShips.isEmpty()) {
+		while(!undockedShips.isEmpty()&&checkInterruption()) {
 			benchmark.push();
 			taskTime.put(DefendDockedShipTask.class, taskTime.getOrDefault(DefendDockedShipTask.class, 0L)+benchmark.pop());
 			double bestScore = -Double.MAX_VALUE;
@@ -173,6 +176,7 @@ public class AdvancedStrategy implements Strategy {
 			undockedShips.remove((Object)bestShip.getId());
 			queue.add(bestShip.getId());
 		}
+		DebugLog.log("Assigned Ships Time: "+Benchmark.format(benchmark.peek())+"s");
 		Set<Integer> forcedShips = new HashSet<Integer>();
 		BlameMap blameMap = new BlameMap();
 		do {
@@ -235,6 +239,7 @@ public class AdvancedStrategy implements Strategy {
 		for(Class<? extends Task> clazz: taskTime.keySet()) {
 			DebugLog.log("Scoring of "+clazz.getSimpleName()+" time: "+Benchmark.format(taskTime.get(clazz))+"s");
 		}
+		DebugLog.log("Final Turn Time: "+Benchmark.format(benchmark.pop())+"s");
 	}
 	public boolean checkInterruption() {
 		return !Thread.currentThread().isInterrupted();

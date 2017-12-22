@@ -48,17 +48,33 @@ public class AttackEnemyTask implements Task {
 		friendlies = new HashMap<Integer, List<Integer>>();
 	}
 	public static void newTurn() {
+		Map<Integer, Double> distanceSquares = new HashMap<Integer, Double>();
+		List<Ship> myShips = new ArrayList<Ship>();
 		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+				myShips.add(ship);
+			}
+		}
+		for(int i=0;i<myShips.size();++i) {
+			Vector position = myShips.get(i).getPosition();
+			for(int j=i+1;j<myShips.size();++j) {
+				distanceSquares.put(i*myShips.size()+j, position.getDistanceSquared(myShips.get(j).getPosition()));
+			}
+		}
+		for(int i=0;i<myShips.size();++i) {
 			List<Integer> ships = new ArrayList<Integer>();
-			for(Ship s: GameMap.INSTANCE.getMyPlayer().getShips()) {
-				if(s.getDockingStatus()!=DockingStatus.UNDOCKED) {
-					continue;
-				}
-				if(s.getPosition().getDistanceSquared(ship.getPosition())<DETECT_RADIUS_SQUARED) {
-					ships.add(s.getId());
+			for(int j=0;j<i;++j) {
+				if(distanceSquares.get(j*myShips.size()+i)<DETECT_RADIUS_SQUARED) {
+					ships.add(myShips.get(j).getId());
 				}
 			}
-			friendlies.put(ship.getId(), ships);
+			ships.add(myShips.get(i).getId());
+			for(int j=i+1;j<myShips.size();++j) {
+				if(distanceSquares.get(i*myShips.size()+j)<DETECT_RADIUS_SQUARED) {
+					ships.add(myShips.get(j).getId());
+				}
+			}
+			friendlies.put(myShips.get(i).getId(), ships);
 		}
 	}
 	@Override
