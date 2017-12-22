@@ -22,7 +22,8 @@ public class RushTask implements Task {
 	public RushTask(Ship dockedEnemy) {
 		this.dockedEnemy = dockedEnemy;
 		Projection projection = ProjectionManager.INSTANCE.calculate(dockedEnemy.getPosition(), 1, s->false);
-		distanceSquared = projection.getEnemyProjectionItems().first().getDistanceSquared()-25*GameConstants.MAX_SPEED*GameConstants.MAX_SPEED;
+		distanceSquared = Math.max(Math.sqrt(projection.getEnemyProjectionItems().first().getDistanceSquared())-5*GameConstants.MAX_SPEED, 0);
+		distanceSquared = distanceSquared * distanceSquared;
 	}
 	@Override
 	public void accept(Ship ship) {

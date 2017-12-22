@@ -16,8 +16,8 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
-	private static final double DETECTION_BUFFER = GameConstants.MAX_SPEED+2.0;
-	private static final double MOVE_BUFFER = DETECTION_BUFFER+GameConstants.MAX_SPEED; //1.0 for uncertainty
+	private static final double DETECTION_BUFFER = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED+1.0;
+	private static final double MOVE_BUFFER = 2*DETECTION_BUFFER; //1.0 for uncertainty
 	private Ship dockedShip;
 	private Ship enemyShip;
 	private Vector enemyPropagated;
@@ -47,7 +47,7 @@ public class DefendDockedShipTask implements Task {
 	}
 	@Override
 	public void accept(Ship ship) {
-		
+		activate = false;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -128,8 +128,8 @@ public class DefendDockedShipTask implements Task {
 		if(!activate){
 			return -Double.MAX_VALUE;
 		}
-		double intersectionDistance = calculateIntersectionDistance(enemyPropagated, enemyDirection, ship.getPosition());
-		if(intersectionDistance>enemyDistance-DETECTION_BUFFER){
+		double intersectionDistance = calculateIntersectionDistance(enemyShip.getPosition(), enemyDirection, ship.getPosition());
+		if(intersectionDistance>enemyDistance){
 			return -ship.getPosition().getDistanceSquared(dockedShip.getPosition());
 		}else{
 			return -intersectionDistance*intersectionDistance;

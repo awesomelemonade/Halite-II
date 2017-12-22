@@ -40,13 +40,13 @@ public enum TaskManager {
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				
 			}else{
+				tasks.add(new AttackEnemyTask(ship));
 				if(ship.getDockingStatus()==DockingStatus.UNDOCKED){
-					tasks.add(new FindProjectedDockedEnemyTask(ship));
-					tasks.add(new FindEnemyTask(ship));
-					tasks.add(new AttackEnemyTask(ship));
+					//tasks.add(new FindProjectedDockedEnemyTask(ship));
+					//tasks.add(new FindEnemyTask(ship));
 					tasks.add(new DefendDockedShipTask(ship));
 				}else{
-					//tasks.add(new AttackDockedEnemyTask(ship));
+					tasks.add(new AttackDockedEnemyTask(ship));
 					tasks.add(new RushTask(ship));
 				}
 			}

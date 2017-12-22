@@ -42,9 +42,12 @@ public class FindProjectedDockedEnemyTask implements Task {
 			}
 		}
 		if(bestPlanet!=null&&(!bestPlanet.isOwned())){
-			this.activate = true;
-			this.projection = bestProjection;
-			this.distanceSquared = bestDistance*bestDistance;
+			Projection projection = ProjectionManager.INSTANCE.calculate(bestProjection, 1, s->false);
+			if(projection.getFriendlyProjectionItems().first().getDistanceSquared()>64*GameConstants.MAX_SPEED*GameConstants.MAX_SPEED) {
+				this.activate = true;
+				this.projection = bestProjection;
+				this.distanceSquared = bestDistance*bestDistance;
+			}
 		}else{
 			this.activate = false;
 		}

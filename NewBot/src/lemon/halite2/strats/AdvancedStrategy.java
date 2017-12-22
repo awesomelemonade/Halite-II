@@ -100,6 +100,8 @@ public class AdvancedStrategy implements Strategy {
 		//Update Managers
 		ProjectionManager.INSTANCE.update();
 		TaskManager.INSTANCE.update();
+		//Preprocess Tasks
+		AttackEnemyTask.newTurn();
 		//Define Obstacles
 		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Define ships to be processed
@@ -166,7 +168,6 @@ public class AdvancedStrategy implements Strategy {
 					}
 				}
 			}
-			DebugLog.log("Assign: "+bestShip.getId()+" - "+bestTask.getClass().getSimpleName());
 			bestTask.accept(bestShip);
 			TaskManager.INSTANCE.assignTask(bestShip.getId(), bestTask);
 			undockedShips.remove((Object)bestShip.getId());
@@ -186,7 +187,6 @@ public class AdvancedStrategy implements Strategy {
 			if(biggestSize>0) {
 				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(biggestSet);
 				forcedShips.add(ship.getId());
-				DebugLog.log("Forcing Move: "+ship.getId());
 				Obstacle uncertainObstacle = uncertainObstacles.getValue(ship.getId());
 				obstacles.addObstacle(ObstacleType.PERMANENT, uncertainObstacle);
 				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacle);

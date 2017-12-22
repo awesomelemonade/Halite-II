@@ -62,6 +62,7 @@ public enum ProjectionManager {
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
 				projection.compareEnemyShip(distanceSquared, ship.getId(), ship.getPosition());
 			}
+			//TODO add undocking of enemy ships?
 		}
 		// Project ships that would be created in the future
 		for(Planet planet: gameMap.getPlanets()){
