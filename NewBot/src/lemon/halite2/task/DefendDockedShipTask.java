@@ -3,6 +3,7 @@ package lemon.halite2.task;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
+import hlt.Planet;
 import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
@@ -18,9 +19,8 @@ import lemon.halite2.util.MathUtil;
 public class DefendDockedShipTask implements Task {
 	private static final double DETECTION_BUFFER = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED+1.0;
 	private static final double MOVE_BUFFER = 2*DETECTION_BUFFER; //1.0 for uncertainty
-	private Ship dockedShip;
+	private Vector defendPoint;
 	private Ship enemyShip;
-	private Vector enemyPropagated;
 	private double enemyDirection;
 	private double enemyDistance;
 	private boolean activate;
@@ -33,15 +33,27 @@ public class DefendDockedShipTask implements Task {
 			}
 			double distanceSquared = ship.getPosition().getDistanceSquared(enemyShip.getPosition());
 			if(distanceSquared<closestDistanceSquared) {
-				dockedShip = ship;
+				defendPoint = ship.getPosition();
 				closestDistanceSquared = distanceSquared;
 			}
 		}
-		if(dockedShip!=null){
-			this.enemyDirection = this.enemyShip.getPosition().getDirectionTowards(dockedShip.getPosition());
+		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
+			if(!planet.isOwned()) {
+				continue;
+			}
+			if(planet.getOwner()!=GameMap.INSTANCE.getMyPlayerId()) {
+				continue;
+			}
+			Vector spawnPoint = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS, planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
+			double distanceSquared = spawnPoint.getDistanceSquared(enemyShip.getPosition());
+			if(distanceSquared<closestDistanceSquared) {
+				defendPoint = spawnPoint;
+				closestDistanceSquared = distanceSquared;
+			}
+		}
+		if(defendPoint!=null){
+			this.enemyDirection = this.enemyShip.getPosition().getDirectionTowards(defendPoint);
 			this.enemyDistance = Math.sqrt(closestDistanceSquared);
-			double propagation = Math.min(enemyDistance, DETECTION_BUFFER);
-			enemyPropagated = this.enemyShip.getPosition().addPolar(propagation, enemyDirection);
 			this.activate = true;
 		}
 	}
@@ -56,7 +68,7 @@ public class DefendDockedShipTask implements Task {
 		double intersectionDistance = calculateIntersectionDistance(propagation, enemyDirection, ship.getPosition());
 		Vector intersection;
 		if(intersectionDistance>enemyDistance-MOVE_BUFFER){
-			intersection = dockedShip.getPosition();
+			intersection = defendPoint;
 		}else{
 			intersection = enemyShip.getPosition().addPolar(intersectionDistance, enemyDirection);
 		}
@@ -130,7 +142,7 @@ public class DefendDockedShipTask implements Task {
 		}
 		double intersectionDistance = calculateIntersectionDistance(enemyShip.getPosition(), enemyDirection, ship.getPosition());
 		if(intersectionDistance>enemyDistance){
-			return -ship.getPosition().getDistanceSquared(dockedShip.getPosition());
+			return -ship.getPosition().getDistanceSquared(defendPoint);
 		}else{
 			return -intersectionDistance*intersectionDistance;
 		}

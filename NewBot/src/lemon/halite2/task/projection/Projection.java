@@ -2,6 +2,7 @@ package lemon.halite2.task.projection;
 
 import java.util.Iterator;
 import java.util.TreeSet;
+import java.util.function.BiPredicate;
 
 import hlt.Vector;
 
@@ -16,13 +17,13 @@ public class Projection {
 		friendlyProjectionItems = new TreeSet<ProjectionItem>();
 		enemyProjectionItems = new TreeSet<ProjectionItem>();
 	}
-	public boolean isSafe(int margin) {
+	public boolean isSafe(BiPredicate<Double, Double> comparator) {
 		Iterator<ProjectionItem> friendlyIterator = friendlyProjectionItems.iterator();
 		Iterator<ProjectionItem> enemyIterator = enemyProjectionItems.iterator();
 		while(friendlyIterator.hasNext()&&enemyIterator.hasNext()) {
 			ProjectionItem friendly = friendlyIterator.next();
 			ProjectionItem enemy = enemyIterator.next();
-			if(enemy.getDistanceSquared()-margin<friendly.getDistanceSquared()) {
+			if(comparator.test(enemy.getDistanceSquared(), friendly.getDistanceSquared())) {
 				return false;
 			}
 		}

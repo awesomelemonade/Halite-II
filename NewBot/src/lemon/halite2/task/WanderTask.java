@@ -16,7 +16,7 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class WanderTask implements Task {
-	private Random r;
+	private Random random;
 	public WanderTask() {
 		long hash = GameMap.INSTANCE.getWidth();
 		hash = hash*500+GameMap.INSTANCE.getHeight();
@@ -24,7 +24,7 @@ public class WanderTask implements Task {
 		hash = hash*4+GameMap.INSTANCE.getMyPlayerId();
 		hash = hash*4+GameMap.INSTANCE.getPlayers().size();
 		hash = hash*300+GameMap.INSTANCE.getTurnNumber();
-		r = new Random(hash);
+		random = new Random(hash);
 	}
 	@Override
 	public void accept(Ship ship) {

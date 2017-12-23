@@ -2,33 +2,40 @@ package lemon.halite2.task;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class BlameMap {
+	private Map<Integer, Integer> order;
 	private Map<Integer, Set<Integer>> blameMap;
 	public BlameMap() {
+		order = new LinkedHashMap<Integer, Integer>();
 		blameMap = new HashMap<Integer, Set<Integer>>();
 	}
-	public void add(int key, int value) {
-		if(!blameMap.containsKey(key)) {
-			blameMap.put(key, new HashSet<Integer>());
+	public void add(int blameId, int shipId) {
+		if(!blameMap.containsKey(blameId)) {
+			blameMap.put(blameId, new HashSet<Integer>());
 		}
-		blameMap.get(key).add(value);
+		blameMap.get(blameId).add(shipId);
+		order.put(shipId, blameId);
 	}
-	public void clear(int key) {
-		blameMap.remove(key);
+	public int getFirst() {
+		return order.get(order.keySet().iterator().next());
 	}
-	public boolean containsKey(int key) {
-		return blameMap.containsKey(key);
+	public void clear(int blameId) {
+		for(int shipId: blameMap.get(blameId)) {
+			order.remove(shipId);
+		}
+		blameMap.remove(blameId);
 	}
-	public Set<Integer> get(int key){
-		return blameMap.get(key);
+	public boolean containsKey(int blameId) {
+		return blameMap.containsKey(blameId);
 	}
-	public Set<Integer> keySet(){
-		return blameMap.keySet();
+	public Set<Integer> get(int blameId){
+		return blameMap.get(blameId);
 	}
 	public boolean isEmpty() {
-		return blameMap.isEmpty();
+		return order.isEmpty();
 	}
 }

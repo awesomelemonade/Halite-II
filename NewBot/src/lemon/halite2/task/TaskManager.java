@@ -9,9 +9,8 @@ import hlt.GameMap;
 import hlt.Planet;
 import hlt.Ship;
 import hlt.Ship.DockingStatus;
-import lemon.halite2.task.experimental.FindEnemyTask;
+import lemon.halite2.task.experimental.AbandonTask;
 import lemon.halite2.task.experimental.RushTask;
-import lemon.halite2.task.projection.FindProjectedDockedEnemyTask;
 
 public enum TaskManager {
 	INSTANCE;
@@ -31,6 +30,7 @@ public enum TaskManager {
 	public void update() {
 		clear();
 		tasks.add(new WanderTask());
+		tasks.add(new AbandonTask());
 		for(Planet planet: GameMap.INSTANCE.getPlanets()){
 			DockTask task = new DockTask(planet);
 			dockTasks.put(planet.getId(), task);

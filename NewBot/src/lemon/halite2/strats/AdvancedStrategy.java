@@ -1,6 +1,5 @@
 package lemon.halite2.strats;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -8,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 import hlt.DebugLog;
@@ -150,11 +150,15 @@ public class AdvancedStrategy implements Strategy {
 					o->o.equals(uncertainObstacles.getValue(shipId))); //Weird use of Lambdas :)
 			pathfinders.put(shipId, pathfinder);
 		}
-		ArrayDeque<Integer> queue = new ArrayDeque<Integer>();
+		Map<Integer, Double> scores = new HashMap<Integer, Double>();
+		PriorityQueue<Integer> queue = new PriorityQueue<Integer>(Math.max(undockedShips.size(), 1), new Comparator<Integer>() {
+			@Override
+			public int compare(Integer shipA, Integer shipB) {
+				return Double.compare(scores.get(shipA), scores.get(shipB));
+			}
+		});
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
 		while(!undockedShips.isEmpty()&&checkInterruption()) {
-			benchmark.push();
-			taskTime.put(DefendDockedShipTask.class, taskTime.getOrDefault(DefendDockedShipTask.class, 0L)+benchmark.pop());
 			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
 			Task bestTask = null;
@@ -172,6 +176,7 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}
 			bestTask.accept(bestShip);
+			scores.put(bestShip.getId(), bestScore);
 			TaskManager.INSTANCE.assignTask(bestShip.getId(), bestTask);
 			undockedShips.remove((Object)bestShip.getId());
 			queue.add(bestShip.getId());
@@ -180,16 +185,8 @@ public class AdvancedStrategy implements Strategy {
 		Set<Integer> forcedShips = new HashSet<Integer>();
 		BlameMap blameMap = new BlameMap();
 		do {
-			int biggestSet = 0;
-			int biggestSize = 0;
-			for(int id: blameMap.keySet()) {
-				if(blameMap.get(id).size()>biggestSize) {
-					biggestSet = id;
-					biggestSize = blameMap.get(id).size();
-				}
-			}
-			if(biggestSize>0) {
-				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(biggestSet);
+			if(!blameMap.isEmpty()) {
+				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(blameMap.getFirst());
 				forcedShips.add(ship.getId());
 				Obstacle uncertainObstacle = uncertainObstacles.getValue(ship.getId());
 				obstacles.addObstacle(ObstacleType.PERMANENT, uncertainObstacle);
