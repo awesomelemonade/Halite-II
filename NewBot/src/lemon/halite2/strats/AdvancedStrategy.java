@@ -194,7 +194,7 @@ public class AdvancedStrategy implements Strategy {
 				for(int shipId: blameMap.get(ship.getId())) {
 					queue.add(shipId);
 					if(forcedShips.contains(shipId)) {
-						Obstacle obstacle = uncertainObstacles.getValue(ship.getId());
+						Obstacle obstacle = uncertainObstacles.getValue(shipId);
 						obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
 						obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
 						forcedShips.remove(shipId);
@@ -211,7 +211,7 @@ public class AdvancedStrategy implements Strategy {
 						for(int shipId: blameMap.get(ship.getId())) {
 							queue.add(shipId);
 							if(forcedShips.contains(shipId)) {
-								Obstacle obstacle = uncertainObstacles.getValue(ship.getId());
+								Obstacle obstacle = uncertainObstacles.getValue(shipId);
 								obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
 								obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
 								forcedShips.remove(shipId);

@@ -2,6 +2,7 @@ package hlt;
 
 import java.io.PrintWriter;
 
+import lemon.halite2.benchmark.Benchmark;
 import lemon.halite2.util.MathUtil;
 
 public class Networking {
@@ -42,7 +43,7 @@ public class Networking {
 		writer.println();
 		writer.flush();
 	}
-	private static String readLine() {
+	private static String readLine(Benchmark benchmark) {
 		try {
 			StringBuilder builder = new StringBuilder();
 			int buffer;
@@ -54,6 +55,9 @@ public class Networking {
 					// Ignore carriage return if on windows for manual testing.
 					continue;
 				}
+				if(builder.length()==0&&benchmark!=null) {
+					benchmark.push();
+				}
 				builder = builder.append((char) buffer);
 			}
 			return builder.toString();
@@ -61,16 +65,16 @@ public class Networking {
 			return null;
 		}
 	}
-	public static Metadata readLineIntoMetadata() {
-		return new Metadata(readLine().trim());
+	public static Metadata readLineIntoMetadata(Benchmark benchmark) {
+		return new Metadata(readLine(benchmark).trim());
 	}
 	public static void initialize() {
-		int myId = Integer.parseInt(readLine());
-		Metadata inputStringMapSize = readLineIntoMetadata();
+		int myId = Integer.parseInt(readLine(null));
+		Metadata inputStringMapSize = readLineIntoMetadata(null);
 		int width = Integer.parseInt(inputStringMapSize.pop());
 		int height = Integer.parseInt(inputStringMapSize.pop());
 		GameMap.INSTANCE.init(width, height, myId);
-		Metadata inputStringMetadata = readLineIntoMetadata();
+		Metadata inputStringMetadata = readLineIntoMetadata(null);
 		GameMap.INSTANCE.updateMap(inputStringMetadata);
 	}
 	public static void finalizeInitialization(String botName) {

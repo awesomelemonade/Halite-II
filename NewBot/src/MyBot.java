@@ -69,19 +69,17 @@ public class MyBot {
 			Networking.finalizeInitialization("Lemon");
 			
 			while (true) {
-				benchmark.push();
 				DebugLog.log("New Turn: "+GameMap.INSTANCE.getTurnNumber());
-				GameMap.INSTANCE.updateMap(Networking.readLineIntoMetadata());
-				benchmark.push();
+				GameMap.INSTANCE.updateMap(Networking.readLineIntoMetadata(benchmark)); //Pushes Benchmark
 				millis = Math.max(0, (int)(timeout-Math.ceil(benchmark.peek()/1000000.0)));
 				strategy.newTurn(moveQueue);
-				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.pop())));
+				DebugLog.log(String.format("Finished Processing in %s seconds", Benchmark.format(benchmark.peek())));
 				if(!Thread.interrupted()) {
 					DebugLog.log("Interrupting Timer Thread");
 					thread.interrupt();
 				}
 				moveQueue.flush();
-				DebugLog.log(String.format("Total Time = %s seconds", Benchmark.format(benchmark.pop())));
+				DebugLog.log(String.format("Total Time = %s seconds", Benchmark.format(benchmark.pop()))); //Pops Benchmark
 			}
 		}catch(Exception ex) {
 			DebugLog.log(ex);

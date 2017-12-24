@@ -10,16 +10,17 @@ public class Obstacles<T> {
 	public Obstacles() {
 		obstacles = new HashMap<T, List<Obstacle>>();
 	}
-	public void addObstacle(T type, Obstacle obstacle) {
+	public boolean addObstacle(T type, Obstacle obstacle) {
 		if(!obstacles.containsKey(type)) {
 			obstacles.put(type, new ArrayList<Obstacle>());
 		}
-		obstacles.get(type).add(obstacle);
+		return obstacles.get(type).add(obstacle);
 	}
-	public void removeObstacle(T type, Obstacle obstacle) {
+	public boolean removeObstacle(T type, Obstacle obstacle) {
 		if(obstacles.containsKey(type)) {
-			obstacles.get(type).remove(obstacle);
+			return obstacles.get(type).remove(obstacle);
 		}
+		return false;
 	}
 	public List<Obstacle> getObstacles(T type){
 		if(!obstacles.containsKey(type)) {
