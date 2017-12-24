@@ -61,7 +61,7 @@ public class AbandonTask implements Task {
 				closestPosition = s.getPosition();
 			}
 		}
-		double direction = ship.getPosition().getDirectionTowards(closestPosition);
+		double direction = closestPosition.getDirectionTowards(ship.getPosition());
 		double directionDegrees = Math.toDegrees(direction);
 		int roundedDegrees = RoundPolicy.ROUND.applyDegrees(direction);
 		int preferredSign = directionDegrees-((int)directionDegrees)<0.5?1:-1;

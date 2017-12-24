@@ -158,6 +158,8 @@ public class AdvancedStrategy implements Strategy {
 			}
 		});
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
+		Set<Integer> forcedShips = new HashSet<Integer>();
+		BlameMap blameMap = new BlameMap();
 		while(!undockedShips.isEmpty()&&checkInterruption()) {
 			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
@@ -180,59 +182,57 @@ public class AdvancedStrategy implements Strategy {
 			TaskManager.INSTANCE.assignTask(bestShip.getId(), bestTask);
 			undockedShips.remove((Object)bestShip.getId());
 			queue.add(bestShip.getId());
-		}
-		DebugLog.log("Assigned Ships Time: "+Benchmark.format(benchmark.peek())+"s");
-		Set<Integer> forcedShips = new HashSet<Integer>();
-		BlameMap blameMap = new BlameMap();
-		do {
-			if(!blameMap.isEmpty()) {
-				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(blameMap.getFirst());
-				forcedShips.add(ship.getId());
-				Obstacle uncertainObstacle = uncertainObstacles.getValue(ship.getId());
-				obstacles.addObstacle(ObstacleType.PERMANENT, uncertainObstacle);
-				obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacle);
-				for(int shipId: blameMap.get(ship.getId())) {
-					queue.add(shipId);
-					if(forcedShips.contains(shipId)) {
-						Obstacle obstacle = uncertainObstacles.getValue(shipId);
-						obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
-						obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
-						forcedShips.remove(shipId);
-					}
-				}
-				blameMap.clear(ship.getId());
-			}
-			while(!queue.isEmpty()&&checkInterruption()) {
-				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(queue.poll());
-				Task task = TaskManager.INSTANCE.getTask(ship.getId());
-				Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
-				if(move!=null) {
-					if(blameMap.containsKey(ship.getId())) {
-						for(int shipId: blameMap.get(ship.getId())) {
-							queue.add(shipId);
-							if(forcedShips.contains(shipId)) {
-								Obstacle obstacle = uncertainObstacles.getValue(shipId);
-								obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
-								obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
-								forcedShips.remove(shipId);
-							}
+			//Execute ships that are possible
+			do {
+				if(!blameMap.isEmpty()) {
+					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(blameMap.getFirst());
+					forcedShips.add(ship.getId());
+					Obstacle uncertainObstacle = uncertainObstacles.getValue(ship.getId());
+					obstacles.addObstacle(ObstacleType.PERMANENT, uncertainObstacle);
+					obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacle);
+					for(int shipId: blameMap.get(ship.getId())) {
+						queue.add(shipId);
+						if(forcedShips.contains(shipId)) {
+							Obstacle obstacle = uncertainObstacles.getValue(shipId);
+							obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
+							obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
+							forcedShips.remove(shipId);
 						}
-						blameMap.clear(ship.getId());
 					}
-					if(move instanceof ThrustMove) {
-						ThrustMove thrustMove = (ThrustMove)move;
-						obstacles.addObstacle(ObstacleType.PERMANENT, new DynamicObstacle(
-								new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), thrustMove.getThrustPlan()));
-						moveQueue.add(thrustMove, classId.getOrDefault(task.getClass(), 32));
-					}else {
-						obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(
-								new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
-						moveQueue.add(move);
-					}
-					obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
+					blameMap.clear(ship.getId());
 				}
-			}
-		}while((!blameMap.isEmpty())&&checkInterruption());
+				while(!queue.isEmpty()&&checkInterruption()) {
+					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(queue.poll());
+					Task task = TaskManager.INSTANCE.getTask(ship.getId());
+					Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
+					if(move!=null) {
+						if(blameMap.containsKey(ship.getId())) {
+							for(int shipId: blameMap.get(ship.getId())) {
+								queue.add(shipId);
+								if(forcedShips.contains(shipId)) {
+									Obstacle obstacle = uncertainObstacles.getValue(shipId);
+									obstacles.addObstacle(ObstacleType.UNCERTAIN, obstacle);
+									obstacles.removeObstacle(ObstacleType.PERMANENT, obstacle);
+									forcedShips.remove(shipId);
+								}
+							}
+							blameMap.clear(ship.getId());
+						}
+						if(move instanceof ThrustMove) {
+							ThrustMove thrustMove = (ThrustMove)move;
+							obstacles.addObstacle(ObstacleType.PERMANENT, new DynamicObstacle(
+									new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS), thrustMove.getThrustPlan()));
+							moveQueue.add(thrustMove, classId.getOrDefault(task.getClass(), 32));
+						}else {
+							obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(
+									new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
+							moveQueue.add(move);
+						}
+						obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
+					}
+				}
+			}while((!blameMap.isEmpty())&&checkInterruption());
+		}
 		for(Class<? extends Task> clazz: taskTime.keySet()) {
 			DebugLog.log("Scoring of "+clazz.getSimpleName()+" time: "+Benchmark.format(taskTime.get(clazz))+"s");
 		}

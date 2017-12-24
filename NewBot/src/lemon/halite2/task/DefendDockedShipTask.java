@@ -3,6 +3,7 @@ package lemon.halite2.task;
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
+import hlt.Planet;
 import hlt.RoundPolicy;
 import hlt.Ship;
 import hlt.ThrustMove;
@@ -33,6 +34,20 @@ public class DefendDockedShipTask implements Task {
 			double distanceSquared = ship.getPosition().getDistanceSquared(enemyShip.getPosition());
 			if(distanceSquared<closestDistanceSquared) {
 				defendPoint = ship.getPosition();
+				closestDistanceSquared = distanceSquared;
+			}
+		}
+		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
+			if(!planet.isOwned()) {
+				continue;
+			}
+			if(planet.getOwner()!=GameMap.INSTANCE.getMyPlayerId()) {
+				continue;
+			}
+			Vector spawnPoint = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS, planet.getPosition().getDirectionTowards(GameMap.INSTANCE.getCenterPosition()));
+			double distanceSquared = spawnPoint.getDistanceSquared(enemyShip.getPosition());
+			if(distanceSquared<closestDistanceSquared) {
+				defendPoint = spawnPoint;
 				closestDistanceSquared = distanceSquared;
 			}
 		}
