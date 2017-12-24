@@ -136,7 +136,7 @@ public class DefendDockedShipTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		if(!activate){
 			return -Double.MAX_VALUE;
 		}

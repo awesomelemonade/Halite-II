@@ -118,7 +118,7 @@ public class AttackDockedEnemyTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		double score = -ship.getPosition().getDistanceSquared(enemyShip.getPosition());
 		if(counter>2) {
 			score-=Math.pow(-score, (counter-2));

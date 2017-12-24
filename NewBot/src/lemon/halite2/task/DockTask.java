@@ -160,8 +160,13 @@ public class DockTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		if(acceptedShips.size()>=dockSpaces) {
+			return -Double.MAX_VALUE;
+		}
+		double potentialScore = Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0);
+		potentialScore = -(potentialScore*potentialScore);
+		if(potentialScore<=minScore) {
 			return -Double.MAX_VALUE;
 		}
 		Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
@@ -197,8 +202,6 @@ public class DockTask implements Task {
 				return -Double.MAX_VALUE;
 			}
 		}*/
-		double score = Math.max(ship.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0);
-		score = score*score;
-		return -score;
+		return potentialScore;
 	}
 }

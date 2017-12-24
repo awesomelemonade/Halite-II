@@ -119,7 +119,7 @@ public class WanderTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		return -Double.MAX_VALUE+Math.ulp(Double.MAX_VALUE);
 	}
 }

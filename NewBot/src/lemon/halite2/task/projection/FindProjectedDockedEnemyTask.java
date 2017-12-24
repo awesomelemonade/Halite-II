@@ -132,7 +132,7 @@ public class FindProjectedDockedEnemyTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		if(activate){
 			double distanceSquared = projection.getDistanceSquared(ship.getPosition());
 			if(distanceSquared>this.distanceSquared){

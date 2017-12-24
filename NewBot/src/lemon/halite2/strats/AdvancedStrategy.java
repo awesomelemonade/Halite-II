@@ -168,7 +168,7 @@ public class AdvancedStrategy implements Strategy {
 				for(Task task: TaskManager.INSTANCE.getTasks()) {
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
 					benchmark.push();
-					double score = task.getScore(ship);
+					double score = task.getScore(ship, bestScore);
 					taskTime.put(task.getClass(), taskTime.getOrDefault(task.getClass(), 0L)+benchmark.pop());
 					if(score>bestScore) {
 						bestScore = score;

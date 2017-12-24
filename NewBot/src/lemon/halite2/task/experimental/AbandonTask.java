@@ -134,7 +134,7 @@ public class AbandonTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		return abandon?Double.MAX_VALUE:-Double.MAX_VALUE;
 	}
 }

@@ -108,7 +108,7 @@ public class FindEnemyTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		double score = ship.getPosition().getDistanceTo(enemyShip.getPosition())*FACTOR;
 		score = score*score;
 		if(counter>3){

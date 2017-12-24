@@ -10,5 +10,5 @@ public interface Task {
 	public void accept(Ship ship);
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles);
-	public double getScore(Ship ship);
+	public double getScore(Ship ship, double minScore);
 }

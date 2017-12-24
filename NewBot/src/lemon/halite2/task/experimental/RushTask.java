@@ -70,7 +70,7 @@ public class RushTask implements Task {
 		}
 	}
 	@Override
-	public double getScore(Ship ship) {
+	public double getScore(Ship ship, double minScore) {
 		double distanceSquared = ship.getPosition().getDistanceSquared(dockedEnemy.getPosition());
 		if(distanceSquared<this.distanceSquared) {
 			return 1.0/distanceSquared;
