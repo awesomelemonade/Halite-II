@@ -50,13 +50,17 @@ import lemon.halite2.util.MoveQueue;
 public class AdvancedStrategy implements Strategy {
 	private Benchmark benchmark;
 	private Map<Class<? extends Task>, Integer> classId;
-	private Map<Class<? extends Task>, Long> taskTime;
+	private Map<Class<? extends Task>, Long> scoreTime;
+	private Map<Class<? extends Task>, Long> executeTime;
+	private Map<Class<? extends Task>, Integer> executeCount;
 	@Override
 	public void init() {
 		//Initialize Benchmark
 		benchmark = new Benchmark();
-		//Initialize taskTime
-		taskTime = new HashMap<Class<? extends Task>, Long>();
+		//Initialize benchmark maps
+		scoreTime = new HashMap<Class<? extends Task>, Long>();
+		executeTime = new HashMap<Class<? extends Task>, Long>();
+		executeCount = new HashMap<Class<? extends Task>, Integer>();
 		//Initialize Pathfinder
 		Pathfinder.init();
 		//Initialize TaskManager
@@ -96,8 +100,10 @@ public class AdvancedStrategy implements Strategy {
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
 		benchmark.push();
-		//Clear taskTime
-		taskTime.clear();
+		//Clear benchmark maps
+		scoreTime.clear();
+		executeTime.clear();
+		executeCount.clear();
 		//Update Managers
 		ProjectionManager.INSTANCE.update();
 		TaskManager.INSTANCE.update();
@@ -169,7 +175,7 @@ public class AdvancedStrategy implements Strategy {
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
 					benchmark.push();
 					double score = task.getScore(ship, bestScore);
-					taskTime.put(task.getClass(), taskTime.getOrDefault(task.getClass(), 0L)+benchmark.pop());
+					scoreTime.put(task.getClass(), scoreTime.getOrDefault(task.getClass(), 0L)+benchmark.pop());
 					if(score>bestScore) {
 						bestScore = score;
 						bestTask = task;
@@ -204,7 +210,10 @@ public class AdvancedStrategy implements Strategy {
 				while(!queue.isEmpty()&&checkInterruption()) {
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(queue.poll());
 					Task task = TaskManager.INSTANCE.getTask(ship.getId());
+					benchmark.push();
 					Move move = task.execute(ship, pathfinders.get(ship.getId()), blameMap, uncertainObstacles);
+					executeTime.put(task.getClass(), executeTime.getOrDefault(task.getClass(), 0L)+benchmark.pop());
+					executeCount.put(task.getClass(), executeCount.getOrDefault(task.getClass(), 0)+1);
 					if(move!=null) {
 						if(blameMap.containsKey(ship.getId())) {
 							for(int shipId: blameMap.get(ship.getId())) {
@@ -233,8 +242,11 @@ public class AdvancedStrategy implements Strategy {
 				}
 			}while((!blameMap.isEmpty())&&checkInterruption());
 		}
-		for(Class<? extends Task> clazz: taskTime.keySet()) {
-			DebugLog.log("Scoring of "+clazz.getSimpleName()+" time: "+Benchmark.format(taskTime.get(clazz))+"s");
+		for(Class<? extends Task> clazz: classId.keySet()) {
+			DebugLog.log(String.format("%s time: scoring=%ss, execution=%ss (count=%d, average=%s)", clazz.getSimpleName(),
+					Benchmark.format(scoreTime.getOrDefault(clazz, 0L)), Benchmark.format(executeTime.getOrDefault(clazz, 0L)),
+					executeCount.getOrDefault(clazz, 0), executeCount.getOrDefault(clazz, 0)==0?"Infinity":
+						(Benchmark.format(executeTime.getOrDefault(clazz, 0L)/executeCount.getOrDefault(clazz, 0)))));
 		}
 		DebugLog.log("Final Turn Time: "+Benchmark.format(benchmark.pop())+"s");
 	}
