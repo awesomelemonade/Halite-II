@@ -18,23 +18,34 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class AbandonTask implements Task {
-	private static final double FACTOR = 0.75;
+	private static final int NUM_PLAYERS = 4;
+	private static final double PLANET_FACTOR = 0.75;
+	private static final double SHIP_FACTOR = 10;
 	private static boolean abandon = false;
 	public AbandonTask() {
-		if(GameMap.INSTANCE.getPlayers().size()==4) {
+		if(GameMap.INSTANCE.getPlayers().size()==NUM_PLAYERS) { //Only abandon in 4 player games
 			abandon = false;
-			int[] count = new int[4];
+			int[] planetCount = new int[NUM_PLAYERS];
+			int[] shipCount = new int[NUM_PLAYERS];
 			for(Planet planet: GameMap.INSTANCE.getPlanets()) {
 				if(planet.isOwned()) {
-					count[planet.getOwner()]++;
+					planetCount[planet.getOwner()]++;
 				}
 			}
-			for(int i=0;i<count.length;++i) {
+			for(Ship ship: GameMap.INSTANCE.getShips()) {
+				shipCount[ship.getOwner()]++;
+			}
+			for(int i=0;i<NUM_PLAYERS;++i) {
 				if(i==GameMap.INSTANCE.getMyPlayerId()) { //Don't abandon if you're winning!
 					continue;
 				}
-				if(((double)count[i])/((double)GameMap.INSTANCE.getPlanets().size())>FACTOR) {
+				if(((double)planetCount[i])/((double)GameMap.INSTANCE.getPlanets().size())>PLANET_FACTOR) {
 					abandon = true;
+					return;
+				}
+				if(((double)shipCount[i])/((double)shipCount[GameMap.INSTANCE.getMyPlayerId()])>=SHIP_FACTOR) {
+					abandon = true;
+					return;
 				}
 			}
 		}
