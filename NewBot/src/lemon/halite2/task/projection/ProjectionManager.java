@@ -86,7 +86,7 @@ public enum ProjectionManager {
 			for(int i=0;i<acceptedShips.size();++i) {
 				Ship s = gameMap.getMyPlayer().getShip(acceptedShips.get(i));
 				dockedProgress[planet.getDockedShips().size()+i] = GameConstants.DOCK_TURNS+
-						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0))/7.0);
+						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0))/GameConstants.MAX_SPEED);
 			}
 			while(remainingProduction>0) {
 				while(remainingProduction>0) {

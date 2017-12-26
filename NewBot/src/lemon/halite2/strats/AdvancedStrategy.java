@@ -1,7 +1,6 @@
 package lemon.halite2.strats;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,7 +43,6 @@ import lemon.halite2.task.projection.FindProjectedDockedEnemyTask;
 import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
-import lemon.halite2.util.MathUtil;
 import lemon.halite2.util.MoveQueue;
 
 public class AdvancedStrategy implements Strategy {
@@ -81,21 +79,6 @@ public class AdvancedStrategy implements Strategy {
 		classId.put(RushTask.class, 94);
 		//Projection
 		classId.put(FindProjectedDockedEnemyTask.class, 113);
-	}
-	public List<Integer> getClosestPlanets(Vector position){
-		List<Integer> planets = new ArrayList<Integer>();
-		final Map<Integer, Double> distances = new HashMap<Integer, Double>();
-		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
-			planets.add(planet.getId());
-			distances.put(planet.getId(), position.getDistanceTo(planet.getPosition())-planet.getRadius());
-		}
-		Collections.sort(planets, new Comparator<Integer>() {
-			@Override
-			public int compare(Integer a, Integer b) {
-				return Double.compare(distances.get(a), distances.get(b));
-			}
-		});
-		return planets;
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
@@ -166,12 +149,15 @@ public class AdvancedStrategy implements Strategy {
 		DebugLog.log("Assigning "+undockedShips.size()+" ships to "+TaskManager.INSTANCE.getTasks().size()+" tasks");
 		Set<Integer> forcedShips = new HashSet<Integer>();
 		BlameMap blameMap = new BlameMap();
-		while(!undockedShips.isEmpty()&&checkInterruption()) {
+		mainLoop: while(!undockedShips.isEmpty()&&(!isInterrupted())) {
 			double bestScore = -Double.MAX_VALUE;
 			Ship bestShip = null;
 			Task bestTask = null;
 			for(int shipId: undockedShips) {
 				for(Task task: TaskManager.INSTANCE.getTasks()) {
+					if(isInterrupted()) {
+						break mainLoop;
+					}
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
 					benchmark.push();
 					double score = task.getScore(ship, bestScore);
@@ -207,7 +193,7 @@ public class AdvancedStrategy implements Strategy {
 					}
 					blameMap.clear(ship.getId());
 				}
-				while(!queue.isEmpty()&&checkInterruption()) {
+				while(!queue.isEmpty()&&(!isInterrupted())) {
 					Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(queue.poll());
 					Task task = TaskManager.INSTANCE.getTask(ship.getId());
 					benchmark.push();
@@ -240,7 +226,7 @@ public class AdvancedStrategy implements Strategy {
 						obstacles.removeObstacle(ObstacleType.UNCERTAIN, uncertainObstacles.getValue(ship.getId()));
 					}
 				}
-			}while((!blameMap.isEmpty())&&checkInterruption());
+			}while((!blameMap.isEmpty())&&(!isInterrupted()));
 		}
 		for(Class<? extends Task> clazz: classId.keySet()) {
 			DebugLog.log(String.format("%s time: scoring=%ss, execution=%ss (count=%d, average=%s)", clazz.getSimpleName(),
@@ -250,82 +236,7 @@ public class AdvancedStrategy implements Strategy {
 		}
 		DebugLog.log("Final Turn Time: "+Benchmark.format(benchmark.pop())+"s");
 	}
-	public boolean checkInterruption() {
-		return !Thread.currentThread().isInterrupted();
-	}
-	public int countEnemyShips(Vector position, double buffer) {
-		buffer = buffer*buffer; //compares against distanceSquared
-		int count = 0;
-		for(Ship ship: GameMap.INSTANCE.getShips()) {
-			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-				continue;
-			}
-			double distanceSquared = ship.getPosition().getDistanceSquared(position);
-			if(distanceSquared<buffer) {
-				count++;
-			}
-		}
-		return count;
-	}
-	public Planet getClosestOwnedPlanet(Vector position) {
-		Planet closestPlanet = null;
-		double closestDistance = Double.MAX_VALUE;
-		for(Planet planet: GameMap.INSTANCE.getPlanets()) {
-			if(!planet.isOwned()) {
-				continue;
-			}
-			double distance = position.getDistanceTo(planet.getPosition())-planet.getRadius();
-			if(closestDistance>distance) {
-				closestDistance = distance;
-				closestPlanet = planet;
-			}
-		}
-		return closestPlanet;
-	}
-	public Ship findEnemyShip(Planet planet, Vector position) {
-		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
-		bufferSquared = bufferSquared*bufferSquared;
-		
-		double startDirection = planet.getPosition().getDirectionTowards(position);
-		double shortestDirection = Double.MAX_VALUE;
-		Ship shortestShip = null;
-		
-		for(Ship ship: GameMap.INSTANCE.getShips()) {
-			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
-				continue;
-			}
-			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {
-				double targetDirection = planet.getPosition().getDirectionTowards(ship.getPosition());
-				double deltaDirection = MathUtil.angleBetweenRadians(startDirection, targetDirection);
-				if(shortestDirection>deltaDirection) {
-					shortestDirection = deltaDirection;
-					shortestShip = ship;
-				}
-			}
-		}
-		return shortestShip;
-	}
-	public Ship findEnemyDockedShip(Planet planet, Vector position) {
-		double bufferSquared = (planet.getRadius()+GameConstants.DOCK_RADIUS+GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
-		bufferSquared = bufferSquared*bufferSquared;
-		
-		double startDirection = planet.getPosition().getDirectionTowards(position);
-		double shortestDirection = Double.MAX_VALUE;
-		Ship shortestShip = null;
-		
-		for(Ship ship: GameMap.INSTANCE.getShips()) {
-			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()||ship.getDockingStatus()==DockingStatus.UNDOCKED) {
-				continue;
-			}
-			if(planet.getPosition().getDistanceSquared(ship.getPosition())<bufferSquared) {
-				double targetDirection = planet.getPosition().getDirectionTowards(ship.getPosition());
-				double deltaDirection = MathUtil.angleBetweenRadians(startDirection, targetDirection);
-				if(shortestDirection>deltaDirection) {
-					shortestDirection = deltaDirection;
-					shortestShip = ship;
-				}
-			}
-		}
-		return shortestShip;
+	public boolean isInterrupted() {
+		return Thread.currentThread().isInterrupted();
 	}
 }
