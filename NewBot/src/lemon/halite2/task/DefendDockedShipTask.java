@@ -1,5 +1,8 @@
 package lemon.halite2.task;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import hlt.GameConstants;
 import hlt.GameMap;
 import hlt.Move;
@@ -19,12 +22,14 @@ import lemon.halite2.util.MathUtil;
 public class DefendDockedShipTask implements Task {
 	private static final double DETECTION_BUFFER = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED+1.0;
 	private static final double MOVE_BUFFER = 2*DETECTION_BUFFER; //1.0 for uncertainty
+	private Map<Integer, Double> cache;
 	private Vector defendPoint;
 	private Ship enemyShip;
 	private double enemyDirection;
 	private double enemyDistance;
 	private boolean activate;
 	public DefendDockedShipTask(Ship enemyShip) {
+		this.cache = new HashMap<Integer, Double>();
 		this.enemyShip = enemyShip;
 		double closestDistanceSquared = Double.MAX_VALUE;
 		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
@@ -65,7 +70,7 @@ public class DefendDockedShipTask implements Task {
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
 			BiMap<Integer, Obstacle> uncertainObstacles) {
 		Vector propagation = enemyShip.getPosition().addPolar(Math.min(enemyDistance, MOVE_BUFFER), enemyDirection);
-		double intersectionDistance = calculateIntersectionDistance(propagation, enemyDirection, ship.getPosition());
+		double intersectionDistance = calculateIntersectionDistance(propagation, enemyDirection, ship.getPosition())+1.0;
 		Vector intersection;
 		if(intersectionDistance>enemyDistance-MOVE_BUFFER){
 			intersection = defendPoint;
@@ -140,12 +145,15 @@ public class DefendDockedShipTask implements Task {
 		if(!activate){
 			return -Double.MAX_VALUE;
 		}
-		double intersectionDistance = calculateIntersectionDistance(enemyShip.getPosition(), enemyDirection, ship.getPosition());
-		if(intersectionDistance>enemyDistance){
-			return -ship.getPosition().getDistanceSquared(defendPoint);
-		}else{
-			return -intersectionDistance*intersectionDistance;
+		if(!cache.containsKey(ship.getId())) {
+			double intersectionDistance = calculateIntersectionDistance(enemyShip.getPosition(), enemyDirection, ship.getPosition());
+			if(intersectionDistance<=enemyDistance) {
+				cache.put(ship.getId(), -intersectionDistance*intersectionDistance);
+			}else {
+				cache.put(ship.getId(), -ship.getPosition().getDistanceSquared(defendPoint));
+			}
 		}
+		return cache.get(ship.getId());
 	}
 	public double calculateIntersectionDistance(Vector enemyPosition, double enemyDirection, Vector shipPosition){
 		double theta = MathUtil.angleBetweenRadians(enemyDirection, enemyPosition.getDirectionTowards(shipPosition));
