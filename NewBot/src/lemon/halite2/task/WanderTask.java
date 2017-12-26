@@ -1,7 +1,5 @@
 package lemon.halite2.task;
 
-import java.util.Random;
-
 import hlt.GameMap;
 import hlt.Move;
 import hlt.Planet;
@@ -16,15 +14,8 @@ import lemon.halite2.util.BiMap;
 import lemon.halite2.util.MathUtil;
 
 public class WanderTask implements Task {
-	private Random random;
 	public WanderTask() {
-		long hash = GameMap.INSTANCE.getWidth();
-		hash = hash*500+GameMap.INSTANCE.getHeight();
-		hash = hash*50+GameMap.INSTANCE.getPlanets().size();
-		hash = hash*4+GameMap.INSTANCE.getMyPlayerId();
-		hash = hash*4+GameMap.INSTANCE.getPlayers().size();
-		hash = hash*300+GameMap.INSTANCE.getTurnNumber();
-		random = new Random(hash);
+		
 	}
 	@Override
 	public void accept(Ship ship) {
