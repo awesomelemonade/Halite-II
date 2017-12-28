@@ -108,7 +108,7 @@ public class AdvancedStrategy implements Strategy {
 				Projection projection = ProjectionManager.INSTANCE.calculate(ship.getPosition(), 3, s->s.getId()==ship.getId());
 				if(projection.getEnemyProjectionItems().first().getDistanceSquared()>
 						GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS&&
-						(!projection.isSafe((enemy, friendly)->enemy<friendly))) {
+						(!projection.isSafe((enemy, friendly)->Math.sqrt(enemy)-GameConstants.MAX_SPEED<Math.sqrt(friendly)))) {
 					ProjectionManager.INSTANCE.addUndockingShip(ship.getId());
 					moveQueue.add(new UndockMove(ship.getId()));
 					DebugLog.log("Undocking Ship: "+ship.getId());
