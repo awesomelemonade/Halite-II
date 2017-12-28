@@ -112,33 +112,31 @@ public enum ProjectionManager {
 			int remainingProduction = (spawnCount.getOrDefault(planet.getId(), 0)+1)*
 					GameConstants.TOTAL_PRODUCTION-planet.getCurrentProduction();
 			List<Integer> acceptedShips = TaskManager.INSTANCE.getDockTask(planet.getId()).getAcceptedShips();
-			int[] dockedProgress = new int[planet.getDockedShips().size()+acceptedShips.size()];
-			if(dockedProgress.length==0) {
-				continue;
-			}
+			List<Integer> dockedProgress = new ArrayList<Integer>();
 			int turns = 0;
 			for(int i=0;i<planet.getDockedShips().size();++i) {
 				Ship s = gameMap.getShip(planet.getOwner(), planet.getDockedShips().get(i));
 				if(s.getDockingStatus()==DockingStatus.DOCKED) {
-					if(undockingShips.contains(s.getId())) {
-						dockedProgress[i] = Integer.MAX_VALUE;
-					}else {
-						dockedProgress[i] = 0;
+					if(!undockingShips.contains(s.getId())) {
+						dockedProgress.add(0);
 					}
 				}else if(s.getDockingStatus()==DockingStatus.DOCKING) {
-					dockedProgress[i] = s.getDockingProgress();
+					dockedProgress.add(s.getDockingProgress());
 				}
 			}
 			for(int i=0;i<acceptedShips.size();++i) {
 				Ship s = gameMap.getMyPlayer().getShip(acceptedShips.get(i));
-				dockedProgress[planet.getDockedShips().size()+i] = GameConstants.DOCK_TURNS+
-						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0))/GameConstants.MAX_SPEED);
+				dockedProgress.add(GameConstants.DOCK_TURNS+
+						(int)Math.ceil(((double)Math.max(s.getPosition().getDistanceTo(planet.getPosition())-planet.getRadius()-GameConstants.DOCK_RADIUS, 0))/GameConstants.MAX_SPEED));
+			}
+			if(dockedProgress.isEmpty()) {
+				continue;
 			}
 			while(remainingProduction>0) {
 				while(remainingProduction>0) {
-					for(int i=0;i<dockedProgress.length;++i) {
-						if(dockedProgress[i]>0) {
-							dockedProgress[i]--;
+					for(int i=0;i<dockedProgress.size();++i) {
+						if(dockedProgress.get(i)>0) {
+							dockedProgress.set(i, dockedProgress.get(i)-1);
 						}else {
 							remainingProduction-=GameConstants.BASE_PRODUCTION;
 						}
