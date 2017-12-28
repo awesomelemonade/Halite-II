@@ -18,6 +18,7 @@ import hlt.Vector;
 import hlt.Ship;
 import hlt.Ship.DockingStatus;
 import hlt.ThrustMove;
+import hlt.UndockMove;
 import lemon.halite2.benchmark.Benchmark;
 import lemon.halite2.pathfinding.DynamicObstacle;
 import lemon.halite2.pathfinding.EnemyShipObstacle;
@@ -40,6 +41,7 @@ import lemon.halite2.task.experimental.FindEnemyTask;
 import lemon.halite2.task.experimental.LureEnemyTask;
 import lemon.halite2.task.experimental.RushTask;
 import lemon.halite2.task.projection.FindProjectedDockedEnemyTask;
+import lemon.halite2.task.projection.Projection;
 import lemon.halite2.task.projection.ProjectionManager;
 import lemon.halite2.util.BiMap;
 import lemon.halite2.util.Circle;
@@ -94,10 +96,25 @@ public class AdvancedStrategy implements Strategy {
 		benchmark.push();
 		AttackEnemyTask.newTurn();
 		DebugLog.log("AttackEnemyTask Preprocess: "+Benchmark.format(benchmark.pop())+"s");
-		//Define Obstacles
-		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Define ships to be processed
 		List<Integer> undockedShips = new ArrayList<Integer>();
+		//Process undockedShips and undocking of docked ships
+		for(Ship ship: GameMap.INSTANCE.getMyPlayer().getShips()) {
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKED) {
+				undockedShips.add(ship.getId());
+			}
+			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
+				//Check if we should undock
+				Projection projection = ProjectionManager.INSTANCE.calculate(ship.getPosition(), 3, s->s.getId()==ship.getId());
+				if(projection.getEnemyProjectionItems().first().getDistanceSquared()>GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS&&
+						(!projection.isSafe((enemy, friendly)->enemy<friendly))) {
+					ProjectionManager.INSTANCE.addUndockingShip(ship.getId());
+					moveQueue.add(new UndockMove(ship.getId()));
+				}
+			}
+		}
+		//Define Obstacles
+		Obstacles<ObstacleType> obstacles = new Obstacles<ObstacleType>();
 		//Add Map Border Obstacle
 		obstacles.addObstacle(ObstacleType.PERMANENT, new MapBorderObstacle(new Vector(0, 0), new Vector(GameMap.INSTANCE.getWidth(), GameMap.INSTANCE.getHeight())));
 		//Add Ship Obstacles
@@ -105,8 +122,6 @@ public class AdvancedStrategy implements Strategy {
 			if(ship.getOwner()==GameMap.INSTANCE.getMyPlayerId()){
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){
 					obstacles.addObstacle(ObstacleType.PERMANENT, new StaticObstacle(new Circle(ship.getPosition(), GameConstants.SHIP_RADIUS)));
-				}else {
-					undockedShips.add(ship.getId());
 				}
 			}else{
 				if(ship.getDockingStatus()!=DockingStatus.UNDOCKED){

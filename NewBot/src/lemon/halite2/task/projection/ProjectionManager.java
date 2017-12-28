@@ -20,11 +20,13 @@ public enum ProjectionManager {
 	private Map<Integer, Vector> spawnPositions;
 	private Map<Integer, Integer> spawnCount;
 	private List<Integer> ships;
+	private List<Integer> undockingShips;
 	private ProjectionManager(GameMap gameMap) {
 		this.gameMap = gameMap;
 		this.spawnPositions = new HashMap<Integer, Vector>();
 		this.spawnCount = new HashMap<Integer, Integer>();
 		this.ships = new ArrayList<Integer>();
+		this.undockingShips = new ArrayList<Integer>();
 	}
 	public void init(){
 		for(Planet planet: gameMap.getPlanets()){
@@ -36,9 +38,13 @@ public enum ProjectionManager {
 	public void update() {
 		ships.clear();
 		spawnCount.clear();
+		undockingShips.clear();
 		for(Ship ship: gameMap.getMyPlayer().getShips()){
 			ships.add(ship.getId());
 		}
+	}
+	public void addUndockingShip(int shipId) {
+		undockingShips.add(shipId);
 	}
 	public Projection calculate(Vector target, int size, Predicate<Ship> shipExceptions) {
 		Projection projection = new Projection(target, size);
@@ -52,20 +58,17 @@ public enum ProjectionManager {
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
 				projection.compareFriendlyShip(distanceSquared, ship.getId(), ship.getPosition());
 			}
-			if(ship.getDockingStatus()==DockingStatus.DOCKING) {
-				double distance = (ship.getDockingProgress()+GameConstants.UNDOCK_TURNS)*GameConstants.MAX_SPEED+
-						ship.getPosition().getDistanceTo(target);
-				projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
-			}
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKING) {
 				double distance = ship.getDockingProgress()*GameConstants.MAX_SPEED+
 						ship.getPosition().getDistanceTo(target);
 				projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
 			}
 			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
-				double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
-						ship.getPosition().getDistanceTo(target);
-				projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
+				if(undockingShips.contains(ship.getId())) {
+					double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
+							ship.getPosition().getDistanceTo(target);
+					projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
+				}
 			}
 		}
 		// Enemy Ships
@@ -77,20 +80,17 @@ public enum ProjectionManager {
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
 				projection.compareEnemyShip(distanceSquared, ship.getId(), ship.getPosition());
 			}
-			if(ship.getDockingStatus()==DockingStatus.DOCKING) {
-				double distance = (ship.getDockingProgress()+GameConstants.UNDOCK_TURNS)*GameConstants.MAX_SPEED+
-						ship.getPosition().getDistanceTo(target);
-				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
-			}
 			if(ship.getDockingStatus()==DockingStatus.UNDOCKING) {
 				double distance = ship.getDockingProgress()*GameConstants.MAX_SPEED+
 						ship.getPosition().getDistanceTo(target);
 				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
 			}
 			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
-				double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
-						ship.getPosition().getDistanceTo(target);
-				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
+				if(undockingShips.contains(ship.getId())) {
+					double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
+							ship.getPosition().getDistanceTo(target);
+					projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
+				}
 			}
 		}
 		//Project undocking of accepted ships
@@ -120,7 +120,11 @@ public enum ProjectionManager {
 			for(int i=0;i<planet.getDockedShips().size();++i) {
 				Ship s = gameMap.getShip(planet.getOwner(), planet.getDockedShips().get(i));
 				if(s.getDockingStatus()==DockingStatus.DOCKED) {
-					dockedProgress[i] = 0;
+					if(undockingShips.contains(s.getId())) {
+						dockedProgress[i] = Integer.MAX_VALUE;
+					}else {
+						dockedProgress[i] = 0;
+					}
 				}else if(s.getDockingStatus()==DockingStatus.DOCKING) {
 					dockedProgress[i] = s.getDockingProgress();
 				}
