@@ -52,6 +52,21 @@ public enum ProjectionManager {
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
 				projection.compareFriendlyShip(distanceSquared, ship.getId(), ship.getPosition());
 			}
+			if(ship.getDockingStatus()==DockingStatus.DOCKING) {
+				double distance = (ship.getDockingProgress()+GameConstants.UNDOCK_TURNS)*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
+			}
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKING) {
+				double distance = ship.getDockingProgress()*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
+			}
+			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
+				double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareFriendlyShip(distance*distance, ship.getId(), ship.getPosition());
+			}
 		}
 		// Enemy Ships
 		for(Ship ship: gameMap.getShips()) {
@@ -62,7 +77,34 @@ public enum ProjectionManager {
 				double distanceSquared = target.getDistanceSquared(ship.getPosition());
 				projection.compareEnemyShip(distanceSquared, ship.getId(), ship.getPosition());
 			}
-			//TODO add undocking of enemy ships?
+			if(ship.getDockingStatus()==DockingStatus.DOCKING) {
+				double distance = (ship.getDockingProgress()+GameConstants.UNDOCK_TURNS)*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
+			}
+			if(ship.getDockingStatus()==DockingStatus.UNDOCKING) {
+				double distance = ship.getDockingProgress()*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
+			}
+			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
+				double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
+			}
+		}
+		//Project undocking of accepted ships
+		for(Planet planet: gameMap.getPlanets()) {
+			List<Integer> acceptedShips = TaskManager.INSTANCE.getDockTask(planet.getId()).getAcceptedShips();
+			for(int shipId: acceptedShips) {
+				Ship ship = GameMap.INSTANCE.getMyPlayer().getShip(shipId);
+				Vector projectedLanding = planet.getPosition().addPolar(
+						Math.min(planet.getRadius()+GameConstants.DOCK_RADIUS, ship.getPosition().getDistanceTo(planet.getPosition())),
+						planet.getPosition().getDirectionTowards(ship.getPosition()));
+				double distance = GameConstants.MAX_SPEED*(GameConstants.DOCK_TURNS+GameConstants.UNDOCK_TURNS)+
+						projectedLanding.getDistanceTo(target);
+				projection.compareFriendlyShip(distance*distance, shipId, projectedLanding);
+			}
 		}
 		// Project ships that would be created in the future
 		for(Planet planet: gameMap.getPlanets()){
