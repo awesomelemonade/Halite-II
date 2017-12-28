@@ -86,11 +86,9 @@ public enum ProjectionManager {
 				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
 			}
 			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
-				if(undockingShips.contains(ship.getId())) {
-					double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
-							ship.getPosition().getDistanceTo(target);
-					projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
-				}
+				double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
+						ship.getPosition().getDistanceTo(target);
+				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
 			}
 		}
 		//Project undocking of accepted ships
@@ -143,8 +141,7 @@ public enum ProjectionManager {
 					}
 					turns++;
 				}
-				Vector projectedSpawn = planet.getPosition().addPolar(planet.getRadius()+GameConstants.SPAWN_RADIUS,
-						planet.getPosition().getDirectionTowards(gameMap.getCenterPosition()));
+				Vector projectedSpawn = spawnPositions.get(planet.getId());
 				double distanceSquared = target.getDistanceTo(projectedSpawn)+turns*GameConstants.MAX_SPEED;
 				distanceSquared = distanceSquared*distanceSquared;
 				if((!planet.isOwned())||planet.getOwner()==gameMap.getMyPlayerId()){

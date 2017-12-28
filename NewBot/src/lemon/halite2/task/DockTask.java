@@ -189,7 +189,7 @@ public class DockTask implements Task {
 		acceptedShips.remove((Object)ship.getId());
 		//DebugLog.log("Dock Task: shipId="+ship.getId()+", planetId="+planet.getId());
 		//DebugLog.log("DockTask Projection: "+projection.toString());
-		if(!projection.isSafe((enemy, friendly)->Math.sqrt(enemy)-GameConstants.MAX_SPEED<Math.sqrt(friendly))) {
+		if(!projection.isSafe((enemy, friendly)->Math.sqrt(enemy)-2*GameConstants.MAX_SPEED<Math.sqrt(friendly))) {
 			return -Double.MAX_VALUE;
 		}
 		/*Vector projectedLanding = planet.getPosition().addPolar(planet.getRadius()+0.65,
