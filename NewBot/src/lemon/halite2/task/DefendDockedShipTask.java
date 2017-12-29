@@ -28,6 +28,7 @@ public class DefendDockedShipTask implements Task {
 	private double enemyDirection;
 	private double enemyDistance;
 	private boolean activate;
+	private int counter;
 	public DefendDockedShipTask(Ship enemyShip) {
 		this.cache = new HashMap<Integer, Double>();
 		this.enemyShip = enemyShip;
@@ -61,9 +62,12 @@ public class DefendDockedShipTask implements Task {
 			this.enemyDistance = Math.sqrt(closestDistanceSquared);
 			this.activate = true;
 		}
+		this.counter = 0;
 	}
 	@Override
 	public void accept(Ship ship) {
+		TaskManager.INSTANCE.addHandledEnemies(enemyShip.getId());
+		counter++;
 		activate = false;
 	}
 	@Override
@@ -143,6 +147,9 @@ public class DefendDockedShipTask implements Task {
 	@Override
 	public double getScore(Ship ship, double minScore) {
 		if(!activate){
+			return -Double.MAX_VALUE;
+		}
+		if(counter==0&&TaskManager.INSTANCE.containsHandledEnemies(enemyShip.getId())) {
 			return -Double.MAX_VALUE;
 		}
 		if(!cache.containsKey(ship.getId())) {

@@ -2,8 +2,10 @@ package lemon.halite2.task;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import hlt.GameMap;
 import hlt.Planet;
@@ -17,15 +19,18 @@ public enum TaskManager {
 	private List<Task> tasks;
 	private Map<Integer, DockTask> dockTasks;
 	private Map<Integer, Task> taskMap;
+	private Set<Integer> handledEnemies;
 	public void init() {
 		tasks = new ArrayList<Task>();
 		dockTasks = new HashMap<Integer, DockTask>();
 		taskMap = new HashMap<Integer, Task>();
+		handledEnemies = new HashSet<Integer>();
 	}
 	public void clear(){
 		tasks.clear();
 		dockTasks.clear();
 		taskMap.clear();
+		handledEnemies.clear();
 	}
 	public void update() {
 		clear();
@@ -54,6 +59,12 @@ public enum TaskManager {
 	}
 	public DockTask getDockTask(int planetId){
 		return dockTasks.get(planetId);
+	}
+	public void addHandledEnemies(int shipId) {
+		handledEnemies.add(shipId);
+	}
+	public boolean containsHandledEnemies(int shipId) {
+		return handledEnemies.contains(shipId);
 	}
 	public void assignTask(int shipId, Task task){
 		taskMap.put(shipId, task);

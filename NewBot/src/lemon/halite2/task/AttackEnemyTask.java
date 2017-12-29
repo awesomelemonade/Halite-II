@@ -78,6 +78,7 @@ public class AttackEnemyTask implements Task {
 	}
 	@Override
 	public void accept(Ship ship) {
+		TaskManager.INSTANCE.addHandledEnemies(enemyShip.getId());
 		counter++;
 	}
 	@Override
@@ -127,6 +128,9 @@ public class AttackEnemyTask implements Task {
 	@Override
 	public double getScore(Ship ship, double minScore) {
 		if(((double)(counter+1))/((double)enemyCount)>MAX_RATIO) {
+			return -Double.MAX_VALUE;
+		}
+		if(counter==0&&TaskManager.INSTANCE.containsHandledEnemies(enemyShip.getId())) {
 			return -Double.MAX_VALUE;
 		}
 		double potentialScore = -Math.max(ship.getPosition().getDistanceSquared(enemyShip.getPosition()), 0);

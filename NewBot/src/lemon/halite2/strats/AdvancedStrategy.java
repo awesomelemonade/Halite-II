@@ -81,6 +81,21 @@ public class AdvancedStrategy implements Strategy {
 		classId.put(RushTask.class, 94);
 		//Projection
 		classId.put(FindProjectedDockedEnemyTask.class, 113);
+		/*
+		{
+			"info":	"You can put message lookups in this file for the Angle Message parser. The ones here are what I'm using, but you can replace everything.",
+			"71": "DockTask",
+			"72": "AttackDockedEnemyTask",
+			"73": "AttackEnemyTask",
+			"74": "DefendDockedShipTask",
+			"75": "WanderTask",
+			"91": "AbandonTask",
+			"92": "FindEnemyTask",
+			"93": "LureEnemyTask",
+			"94": "RushTask",
+			"113": "FindProjectedDockedEnemyTask"
+		}
+		*/
 	}
 	@Override
 	public void newTurn(MoveQueue moveQueue) {
@@ -105,7 +120,7 @@ public class AdvancedStrategy implements Strategy {
 			}
 			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
 				//Check if we should undock
-				Projection projection = ProjectionManager.INSTANCE.calculate(ship.getPosition(), 3, s->s.getId()==ship.getId());
+				Projection projection = ProjectionManager.INSTANCE.calculate(ship.getPosition(), 1, s->false);
 				if(projection.getEnemyProjectionItems().first().getDistanceSquared()>
 						GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS&&
 						(!projection.isSafe((enemy, friendly)->Math.sqrt(enemy)-GameConstants.MAX_SPEED<Math.sqrt(friendly)))) {

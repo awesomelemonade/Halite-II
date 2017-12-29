@@ -85,11 +85,6 @@ public enum ProjectionManager {
 						ship.getPosition().getDistanceTo(target);
 				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
 			}
-			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
-				double distance = GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED+
-						ship.getPosition().getDistanceTo(target);
-				projection.compareEnemyShip(distance*distance, ship.getId(), ship.getPosition());
-			}
 		}
 		//Project undocking of accepted ships
 		for(Planet planet: gameMap.getPlanets()) {
