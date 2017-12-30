@@ -120,10 +120,10 @@ public class AdvancedStrategy implements Strategy {
 			}
 			if(ship.getDockingStatus()==DockingStatus.DOCKED) {
 				//Check if we should undock
-				Projection projection = ProjectionManager.INSTANCE.calculate(ship.getPosition(), 1, s->false);
+				Projection projection = ProjectionManager.INSTANCE.calculate(ship.getPosition(), 3, s->false);
 				if(projection.getEnemyProjectionItems().first().getDistanceSquared()>
 						GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS*GameConstants.MAX_SPEED*GameConstants.UNDOCK_TURNS&&
-						(!projection.isSafe((enemy, friendly)->Math.sqrt(enemy)-GameConstants.MAX_SPEED<Math.sqrt(friendly)))) {
+						(!projection.isSafe((enemy, friendly)->enemy<friendly))) {
 					ProjectionManager.INSTANCE.addUndockingShip(ship.getId());
 					moveQueue.add(new UndockMove(ship.getId()));
 					DebugLog.log("Undocking Ship: "+ship.getId());

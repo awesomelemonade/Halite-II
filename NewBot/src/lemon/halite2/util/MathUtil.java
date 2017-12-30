@@ -30,6 +30,13 @@ public class MathUtil {
 		}
 		return between;
 	}
+	public static double compressScore(double score) {
+		if(score<0) {
+			return (score+Double.MAX_VALUE)/2;
+		}else {
+			return score/2+Double.MAX_VALUE/2;
+		}
+	}
 	//https://gamedev.stackexchange.com/questions/97337/detect-if-two-objects-are-going-to-collide
 	public static double getMinTime(Vector a, Vector velocityA, Vector b, Vector velocityB) {
 		double deltaVelocityX = velocityA.getX()-velocityB.getX();

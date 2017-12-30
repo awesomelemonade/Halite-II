@@ -21,7 +21,7 @@ import lemon.halite2.util.MathUtil;
 
 public class DefendDockedShipTask implements Task {
 	private static final double DETECTION_BUFFER = GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED+1.0;
-	private static final double MOVE_BUFFER = 2*DETECTION_BUFFER; //1.0 for uncertainty
+	private static final double MOVE_BUFFER = DETECTION_BUFFER; //1.0 for uncertainty
 	private Map<Integer, Double> cache;
 	private Vector defendPoint;
 	private Ship enemyShip;
@@ -68,7 +68,6 @@ public class DefendDockedShipTask implements Task {
 	public void accept(Ship ship) {
 		TaskManager.INSTANCE.addHandledEnemies(enemyShip.getId());
 		counter++;
-		activate = false;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,

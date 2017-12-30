@@ -22,8 +22,8 @@ import lemon.halite2.util.Geometry;
 import lemon.halite2.util.MathUtil;
 
 public class AttackEnemyTask implements Task {
-	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED)*
-			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS+GameConstants.MAX_SPEED);
+	private static final double DETECT_RADIUS_SQUARED = (GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS)*
+			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
 	private static final double MAX_RATIO = 2.0;
 	private Ship enemyShip;
 	private int counter;
@@ -133,7 +133,7 @@ public class AttackEnemyTask implements Task {
 		if(counter==0&&TaskManager.INSTANCE.containsHandledEnemies(enemyShip.getId())) {
 			return -Double.MAX_VALUE;
 		}
-		double potentialScore = -Math.max(ship.getPosition().getDistanceSquared(enemyShip.getPosition()), 0);
+		double potentialScore = -Math.max(ship.getPosition().getDistanceSquared(enemyShip.getPosition())-4*GameConstants.MAX_SPEED*GameConstants.MAX_SPEED, 0);
 		if(potentialScore<=minScore) {
 			return -Double.MAX_VALUE;
 		}

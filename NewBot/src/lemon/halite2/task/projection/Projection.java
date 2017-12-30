@@ -3,6 +3,7 @@ package lemon.halite2.task.projection;
 import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.function.BiPredicate;
+import java.util.function.DoubleBinaryOperator;
 
 import hlt.Vector;
 
@@ -18,6 +19,9 @@ public class Projection {
 		enemyProjectionItems = new TreeSet<ProjectionItem>();
 	}
 	public boolean isSafe(BiPredicate<Double, Double> comparator) {
+		if(enemyProjectionItems.size()>friendlyProjectionItems.size()) {
+			return false;
+		}
 		Iterator<ProjectionItem> friendlyIterator = friendlyProjectionItems.iterator();
 		Iterator<ProjectionItem> enemyIterator = enemyProjectionItems.iterator();
 		while(friendlyIterator.hasNext()&&enemyIterator.hasNext()) {
@@ -27,7 +31,24 @@ public class Projection {
 				return false;
 			}
 		}
-		return !enemyIterator.hasNext();
+		return true;
+	}
+	public double getSafetyScore(DoubleBinaryOperator scorer) {
+		if(enemyProjectionItems.size()>friendlyProjectionItems.size()) {
+			return -Double.MAX_VALUE;
+		}
+		double worstScore = Double.MAX_VALUE;
+		Iterator<ProjectionItem> friendlyIterator = friendlyProjectionItems.iterator();
+		Iterator<ProjectionItem> enemyIterator = enemyProjectionItems.iterator();
+		while(friendlyIterator.hasNext()&&enemyIterator.hasNext()) {
+			ProjectionItem friendly = friendlyIterator.next();
+			ProjectionItem enemy = enemyIterator.next();
+			double score = scorer.applyAsDouble(enemy.getDistanceSquared(), friendly.getDistanceSquared());
+			if(score<worstScore) {
+				worstScore = score;
+			}
+		}
+		return worstScore;
 	}
 	private boolean add(TreeSet<ProjectionItem> items, ProjectionItem item) {
 		if(items.size()>=size&&item.compareTo(items.last())>0) {
