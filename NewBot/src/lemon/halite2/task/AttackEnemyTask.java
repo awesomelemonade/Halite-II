@@ -26,21 +26,40 @@ public class AttackEnemyTask implements Task {
 			(GameConstants.SHIP_RADIUS+GameConstants.WEAPON_RADIUS);
 	private static final double MAX_RATIO = 2.0;
 	private Ship enemyShip;
-	private int counter;
-	private int enemyCount;
+	private int friendlyHealth;
+	private int enemyHealth;
+	private boolean activate;
 	public AttackEnemyTask(Ship enemyShip) {
 		this.enemyShip = enemyShip;
+		double nearestFriendlyDockedShip = Double.MAX_VALUE;
+		double nearestEnemyDockedShip = Double.MAX_VALUE;
+		for(Ship s: GameMap.INSTANCE.getShips()) {
+			if(s.getDockingStatus()==DockingStatus.UNDOCKED) {
+				continue;
+			}
+			if(s.getOwner()==GameMap.INSTANCE.getMyPlayerId()) {
+				nearestFriendlyDockedShip = enemyShip.getPosition().getDistanceSquared(s.getPosition());
+			}else {
+				nearestEnemyDockedShip = enemyShip.getPosition().getDistanceSquared(s.getPosition());
+			}
+		}
+		if(nearestFriendlyDockedShip<nearestEnemyDockedShip) {
+			activate = false;
+			return;
+		}
 		for(Ship ship: GameMap.INSTANCE.getShips()) {
 			if(ship.getDockingStatus()!=DockingStatus.UNDOCKED) {
 				continue;
 			}
 			if(ship.getPosition().getDistanceSquared(enemyShip.getPosition())<DETECT_RADIUS_SQUARED) {
 				if(ship.getOwner()!=GameMap.INSTANCE.getMyPlayerId()) {
-					enemyCount++;
+					enemyHealth+=ship.getHealth();
 				}
 			}
 		}
-		this.counter = 0;
+		this.enemyHealth = Math.max(256, this.enemyHealth);
+		this.friendlyHealth = 0;
+		this.activate = true;
 	}
 	private static Map<Integer, List<Integer>> friendlies;
 	static {
@@ -79,7 +98,7 @@ public class AttackEnemyTask implements Task {
 	@Override
 	public void accept(Ship ship) {
 		TaskManager.INSTANCE.addHandledEnemies(enemyShip.getId());
-		counter++;
+		this.friendlyHealth+=ship.getHealth();
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
@@ -127,24 +146,27 @@ public class AttackEnemyTask implements Task {
 	}
 	@Override
 	public double getScore(Ship ship, double minScore) {
-		if(((double)(counter+1))/((double)enemyCount)>MAX_RATIO) {
+		if(!activate) {
 			return -Double.MAX_VALUE;
 		}
-		if(counter==0&&TaskManager.INSTANCE.containsHandledEnemies(enemyShip.getId())) {
+		if(friendlyHealth+ship.getHealth()>MAX_RATIO*enemyHealth) {
+			return -Double.MAX_VALUE;
+		}
+		if(friendlyHealth==0&&TaskManager.INSTANCE.containsHandledEnemies(enemyShip.getId())) {
 			return -Double.MAX_VALUE;
 		}
 		double potentialScore = -Math.max(ship.getPosition().getDistanceSquared(enemyShip.getPosition())-4*GameConstants.MAX_SPEED*GameConstants.MAX_SPEED, 0);
 		if(potentialScore<=minScore) {
 			return -Double.MAX_VALUE;
 		}
-		int friendlyCount = 0;
+		int friendlyHealth = 0;
 		for(int shipId: friendlies.get(ship.getId())) {
 			Task task = TaskManager.INSTANCE.getTask(shipId);
 			if(task==null||task.getClass().equals(AttackEnemyTask.class)) {
-				friendlyCount++;
+				friendlyHealth+=GameMap.INSTANCE.getMyPlayer().getShip(shipId).getHealth();
 			}
 		}
-		if(friendlyCount>enemyCount) {
+		if(friendlyHealth>enemyHealth) {
 			return potentialScore;
 		}else {
 			return -Double.MAX_VALUE;

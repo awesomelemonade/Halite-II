@@ -68,6 +68,7 @@ public class DefendDockedShipTask implements Task {
 	public void accept(Ship ship) {
 		TaskManager.INSTANCE.addHandledEnemies(enemyShip.getId());
 		counter++;
+		activate = false;
 	}
 	@Override
 	public Move execute(Ship ship, Pathfinder pathfinder, BlameMap blameMap,
